@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Permite tráfico HTTP en claro (sin HTTPS) SOLO hacia el servidor local de pruebas.
+  - 10.0.2.2  -> alias del "localhost" del PC cuando usas el EMULADOR de Android.
+  - 192.168.x.y -> IP de tu PC en la red WiFi cuando usas un TELÉFONO físico.
+    Cambia/añade la tuya: en Windows ejecuta `ipconfig` y copia la "Dirección IPv4".
+  En producción usa HTTPS y borra este bloque.
+-->
+<network-security-config>
+    <domain-config cleartextTrafficPermitted="true">
+        <domain includeSubdomains="true">10.160.101.177</domain>
+        <domain includeSubdomains="true">localhost</domain>
+        <!-- Ejemplo: descomenta y pon la IP de tu PC para probar con teléfono físico -->
+        <!-- <domain includeSubdomains="true">192.168.1.100</domain> -->
+    </domain-config>
+</network-security-config>
