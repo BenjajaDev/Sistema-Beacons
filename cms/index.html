@@ -4,7 +4,23 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <link rel="icon" type="image/png" href="/src/assets/ISOTIPO.png" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Sora:wght@500;600;700;800&display=swap"
+      rel="stylesheet"
+    />
     <title>Proyecto Signal · CMS de Beacons</title>
+    <script>
+      // Aplica el tema antes de pintar para evitar el destello del modo claro.
+      (function () {
+        var t = localStorage.getItem("signal-cms-tema");
+        if (t !== "claro" && t !== "oscuro") {
+          t = window.matchMedia("(prefers-color-scheme: dark)").matches ? "oscuro" : "claro";
+        }
+        document.documentElement.dataset.tema = t;
+      })();
+    </script>
   </head>
   <body>
     <div id="root"></div>

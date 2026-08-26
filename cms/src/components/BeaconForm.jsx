@@ -68,7 +68,7 @@ export default function BeaconForm({ beacon, beaconsExistentes, onGuardar, onCan
     <form className="form" onSubmit={handleSubmit}>
       <div className="form__fila">
         <label className="campo">
-          <span>Major</span>
+          <span className="campo__label">Major</span>
           <input
             type="text"
             inputMode="numeric"
@@ -79,7 +79,7 @@ export default function BeaconForm({ beacon, beaconsExistentes, onGuardar, onCan
           />
         </label>
         <label className="campo">
-          <span>Minor</span>
+          <span className="campo__label">Minor</span>
           <input
             type="text"
             inputMode="numeric"
@@ -90,9 +90,14 @@ export default function BeaconForm({ beacon, beaconsExistentes, onGuardar, onCan
           />
         </label>
       </div>
+      <p className="campo__ayuda">
+        {esEdicion
+          ? "La clave identifica al beacon físico y no se puede cambiar."
+          : "Identificadores del beacon físico. Juntos forman la clave major-minor."}
+      </p>
 
       <label className="campo">
-        <span>Título</span>
+        <span className="campo__label">Título</span>
         <input
           type="text"
           value={form.titulo}
@@ -102,9 +107,9 @@ export default function BeaconForm({ beacon, beaconsExistentes, onGuardar, onCan
       </label>
 
       <label className="campo">
-        <span>Descripción</span>
+        <span className="campo__label">Descripción</span>
         <textarea
-          rows={4}
+          rows={5}
           value={form.descripcion}
           onChange={(e) => actualizar("descripcion", e.target.value)}
           placeholder="Texto que verá el usuario al acercarse a este beacon."
@@ -112,7 +117,7 @@ export default function BeaconForm({ beacon, beaconsExistentes, onGuardar, onCan
       </label>
 
       <label className="campo">
-        <span>Ubicación</span>
+        <span className="campo__label">Ubicación</span>
         <input
           type="text"
           value={form.ubicacion}
