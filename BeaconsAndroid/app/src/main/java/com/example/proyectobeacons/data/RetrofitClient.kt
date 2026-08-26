@@ -16,7 +16,7 @@ import java.util.concurrent.TimeUnit
  */
 object RetrofitClient {
 
-    private const val BASE_URL = "http://10.160.101.177:3000/"
+    private const val BASE_URL = "http://10.187.248.177:3000/"
 
     val api: BeaconApi by lazy {
         val logging = HttpLoggingInterceptor().apply {

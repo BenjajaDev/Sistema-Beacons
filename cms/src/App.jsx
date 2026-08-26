@@ -2,6 +2,8 @@ import { useEffect, useState, useCallback } from "react";
 import { listarBeacons, guardarBeacon, borrarBeacon } from "./api.js";
 import BeaconList from "./components/BeaconList.jsx";
 import BeaconForm from "./components/BeaconForm.jsx";
+import logotipo from "./assets/LOGOTIPO.png";
+import isotipo from "./assets/ISOTIPO.png";
 
 export default function App() {
   const [beacons, setBeacons] = useState({});
@@ -59,8 +61,12 @@ export default function App() {
   return (
     <div className="layout">
       <header className="header">
-        <h1>📡 CMS de Beacons</h1>
-        <p>Configura la información que verá la app al detectar cada beacon.</p>
+        <img src={logotipo} alt="Proyecto Signal" className="header__logo" />
+        <div className="header__sep" />
+        <div className="header__texto">
+          <h1>CMS de Beacons</h1>
+          <p>Configura la información que verá la app al detectar cada beacon.</p>
+        </div>
       </header>
 
       {aviso && <div className="banner banner--ok">{aviso}</div>}
@@ -101,6 +107,11 @@ export default function App() {
           />
         </section>
       </main>
+
+      <footer className="footer">
+        <img src={isotipo} alt="Isotipo Proyecto Signal" className="footer__iso" />
+        <span>Proyecto Signal · Sistema de Beacons</span>
+      </footer>
     </div>
   );
 }
