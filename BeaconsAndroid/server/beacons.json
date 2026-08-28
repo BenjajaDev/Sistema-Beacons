@@ -9,9 +9,14 @@
     "descripcion": "Aquí encontrarás la muestra temporal de arte contemporáneo. Audioguía disponible.",
     "ubicacion": "Planta 1 - Ala este"
   },
-  "10-5": {
-    "titulo": "Cafetería",
-    "descripcion": "Zona de descanso con bebidas y comida. Horario de 8:00 a 20:00.",
-    "ubicacion": "Planta 2"
+  "1-3": {
+    "titulo": "Entrada principal",
+    "descripcion": "Te estás acercando a la entrada de la sede Alameda.",
+    "ubicacion": "Planta baja - Vestíbulo"
+  },
+  "1-4": {
+    "titulo": "Ascensor Edificio A",
+    "descripcion": "Te estás aproximando al ascensor del edicio A",
+    "ubicacion": "Planta baja - Vestíbulo"
   }
 }
