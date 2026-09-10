@@ -207,6 +207,7 @@ private fun SignalApp(
                 SignalTab.AJUSTES -> SettingsScreen(
                     themeViewModel = themeViewModel,
                     settingsViewModel = settingsViewModel,
+                    beaconViewModel = beaconViewModel,
                 )
             }
         }

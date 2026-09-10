@@ -68,9 +68,21 @@ export default function App() {
     }, 3000);
   }
 
-  async function handleGuardar(major, minor, info) {
+  // `claveOriginal` llega solo en edición. Si el major/minor cambió, la ficha se
+  // escribe primero en la clave nueva y solo después se borra la antigua, para
+  // no perder datos si algo falla a medio camino.
+  async function handleGuardar(major, minor, info, claveOriginal = null) {
+    const nuevaClave = `${major}-${minor}`;
     await guardarBeacon(major, minor, info);
-    mostrarAviso(`Beacon ${major}-${minor} guardado.`);
+
+    if (claveOriginal && claveOriginal !== nuevaClave) {
+      const [majorAnterior, minorAnterior] = claveOriginal.split("-");
+      await borrarBeacon(majorAnterior, minorAnterior);
+      mostrarAviso(`Beacon ${claveOriginal} movido a ${nuevaClave}.`);
+    } else {
+      mostrarAviso(`Beacon ${nuevaClave} guardado.`);
+    }
+
     setEditando(null);
     await recargar();
   }

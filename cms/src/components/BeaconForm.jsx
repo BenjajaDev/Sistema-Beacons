@@ -5,7 +5,8 @@ import { useState } from "react";
 export default function BeaconForm({ beacon, beaconsExistentes, onGuardar, onCancelar, onError }) {
   const esEdicion = Boolean(beacon);
 
-  // En edición, major/minor salen de la clave "major-minor" y no se editan.
+  // En edición, major/minor salen de la clave "major-minor" y se pueden cambiar:
+  // al guardar, la ficha se mueve a la nueva clave.
   const [major, minor] = esEdicion ? beacon.clave.split("-") : ["", ""];
 
   const [form, setForm] = useState({
@@ -40,19 +41,26 @@ export default function BeaconForm({ beacon, beaconsExistentes, onGuardar, onCan
       onError("El título es obligatorio.");
       return;
     }
-    // Evita pisar un beacon existente al crear uno nuevo.
-    if (!esEdicion && beaconsExistentes[`${maj}-${min}`]) {
-      onError(`Ya existe el beacon ${maj}-${min}. Edítalo desde la lista.`);
+    // Evita pisar un beacon existente, tanto al crear como al renombrar la clave.
+    const nuevaClave = `${maj}-${min}`;
+    if (nuevaClave !== beacon?.clave && beaconsExistentes[nuevaClave]) {
+      onError(`Ya existe el beacon ${nuevaClave}. Edítalo desde la lista.`);
       return;
     }
 
     setGuardando(true);
     try {
-      await onGuardar(maj, min, {
-        titulo: form.titulo.trim(),
-        descripcion: form.descripcion.trim(),
-        ubicacion: form.ubicacion.trim(),
-      });
+      await onGuardar(
+        maj,
+        min,
+        {
+          titulo: form.titulo.trim(),
+          descripcion: form.descripcion.trim(),
+          ubicacion: form.ubicacion.trim(),
+        },
+        // Clave original: si cambió, App mueve la ficha y borra la antigua.
+        beacon?.clave ?? null
+      );
       if (!esEdicion) {
         // Limpia el formulario tras crear.
         setForm({ major: "", minor: "", titulo: "", descripcion: "", ubicacion: "" });
@@ -73,7 +81,6 @@ export default function BeaconForm({ beacon, beaconsExistentes, onGuardar, onCan
             type="text"
             inputMode="numeric"
             value={form.major}
-            disabled={esEdicion}
             onChange={(e) => actualizar("major", e.target.value)}
             placeholder="1"
           />
@@ -84,7 +91,6 @@ export default function BeaconForm({ beacon, beaconsExistentes, onGuardar, onCan
             type="text"
             inputMode="numeric"
             value={form.minor}
-            disabled={esEdicion}
             onChange={(e) => actualizar("minor", e.target.value)}
             placeholder="1"
           />
@@ -92,7 +98,7 @@ export default function BeaconForm({ beacon, beaconsExistentes, onGuardar, onCan
       </div>
       <p className="campo__ayuda">
         {esEdicion
-          ? "La clave identifica al beacon físico y no se puede cambiar."
+          ? `Identificadores del beacon físico. Si los cambias, la ficha se moverá de ${beacon.clave} a ${form.major || "?"}-${form.minor || "?"} al guardar.`
           : "Identificadores del beacon físico. Juntos forman la clave major-minor."}
       </p>
 

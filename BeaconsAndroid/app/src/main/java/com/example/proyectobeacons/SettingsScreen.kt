@@ -46,11 +46,13 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 fun SettingsScreen(
     themeViewModel: ThemeViewModel,
     settingsViewModel: SettingsViewModel,
+    beaconViewModel: BeaconViewModel,
     modifier: Modifier = Modifier,
 ) {
     val palette = LocalSignalPalette.current
     val themeMode by themeViewModel.themeMode.collectAsStateWithLifecycle()
     val settings by settingsViewModel.settings.collectAsStateWithLifecycle()
+    val nearby by beaconViewModel.nearbyBeacons.collectAsStateWithLifecycle()
 
     // Sub-pantalla del slider de distancia de activación.
     var showDistanceScreen by remember { mutableStateOf(false) }
@@ -59,7 +61,11 @@ fun SettingsScreen(
         ActivationDistanceScreen(
             palette = palette,
             distance = settings.activationDistance,
+            referenceRssi = settings.referenceRssi,
+            nearby = nearby,
             onChange = { settingsViewModel.setActivationDistance(it) },
+            onCalibrar = { beaconViewModel.calibrarAUnMetro() },
+            onBorrarCalibracion = { beaconViewModel.borrarCalibracion() },
             onBack = { showDistanceScreen = false },
             modifier = modifier,
         )
@@ -131,7 +137,7 @@ fun SettingsScreen(
             ChevronRow(
                 palette = palette,
                 title = "Distancia de activación",
-                value = "${settings.activationDistance.toInt()} m",
+                value = "${formatMeters(settings.activationDistance)} m",
                 onClick = { showDistanceScreen = true },
             )
             Spacer(Modifier.size(4.dp))
@@ -152,7 +158,11 @@ fun SettingsScreen(
 private fun ActivationDistanceScreen(
     palette: SignalPalette,
     distance: Float,
+    referenceRssi: Int?,
+    nearby: List<TrackedBeacon>,
     onChange: (Float) -> Unit,
+    onCalibrar: () -> Int?,
+    onBorrarCalibracion: () -> Unit,
     onBack: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -160,6 +170,7 @@ private fun ActivationDistanceScreen(
         modifier = modifier
             .fillMaxSize()
             .background(palette.surface)
+            .verticalScroll(rememberScrollState())
             .padding(24.dp),
         verticalArrangement = Arrangement.spacedBy(20.dp),
     ) {
@@ -181,23 +192,28 @@ private fun ActivationDistanceScreen(
         }
 
         Text(
-            text = "Solo se anunciarán los beacons que estén a esta distancia o menos.",
+            text = "Solo se detectará y anunciará el beacon más cercano cuando esté " +
+                "a esta distancia o menos. Con 0,5 m hay que acercar el teléfono " +
+                "casi al beacon, lo que evita que dos señales se solapen.",
             color = palette.textSecondary,
             fontSize = 15.sp,
         )
 
         Text(
-            text = "${distance.toInt()} metros",
+            text = "${formatMeters(distance)} metros",
             color = palette.accent,
             fontSize = 32.sp,
             fontWeight = FontWeight.Bold,
         )
 
+        // El slider se mueve en pasos de 0,5 m entre 0,5 m y 10 m.
+        val steps = ((MAX_ACTIVATION_DISTANCE - MIN_ACTIVATION_DISTANCE) /
+            ACTIVATION_DISTANCE_STEP).toInt() - 1
         Slider(
-            value = distance,
+            value = distance.coerceIn(MIN_ACTIVATION_DISTANCE, MAX_ACTIVATION_DISTANCE),
             onValueChange = onChange,
-            valueRange = 1f..10f,
-            steps = 8,
+            valueRange = MIN_ACTIVATION_DISTANCE..MAX_ACTIVATION_DISTANCE,
+            steps = steps,
             colors = SliderDefaults.colors(
                 thumbColor = palette.accent,
                 activeTrackColor = palette.accent,
@@ -206,10 +222,163 @@ private fun ActivationDistanceScreen(
             modifier = Modifier
                 .fillMaxWidth()
                 .semantics {
-                    contentDescription = "Distancia de activación: ${distance.toInt()} metros"
+                    contentDescription = "Distancia de activación: ${formatMeters(distance)} metros"
                 },
         )
+
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+        ) {
+            Text(
+                text = "${formatMeters(MIN_ACTIVATION_DISTANCE)} m",
+                color = palette.textMuted,
+                fontSize = 13.sp,
+                modifier = Modifier.clearAndSetSemantics { },
+            )
+            Text(
+                text = "${formatMeters(MAX_ACTIVATION_DISTANCE)} m",
+                color = palette.textMuted,
+                fontSize = 13.sp,
+                modifier = Modifier.clearAndSetSemantics { },
+            )
+        }
+
+        Text(
+            text = "Recomendado: 0,5 m para puntos contiguos.",
+            color = palette.textMuted,
+            fontSize = 14.sp,
+        )
+
+        CalibracionBloque(
+            palette = palette,
+            referenceRssi = referenceRssi,
+            nearby = nearby,
+            onCalibrar = onCalibrar,
+            onBorrarCalibracion = onBorrarCalibracion,
+        )
     }
+}
+
+/**
+ * Calibración de la medida de distancia.
+ *
+ * El modelo convierte RSSI en metros usando como referencia la potencia que el
+ * beacon dice tener a 1 m. Ese valor suele venir de fábrica y no coincidir con
+ * la emisión real, y entonces un umbral fino como 0,5 m no se alcanza nunca.
+ * Midiéndolo una vez con el teléfono a 1 m, las distancias pasan a ser reales.
+ */
+@Composable
+private fun CalibracionBloque(
+    palette: SignalPalette,
+    referenceRssi: Int?,
+    nearby: List<TrackedBeacon>,
+    onCalibrar: () -> Int?,
+    onBorrarCalibracion: () -> Unit,
+) {
+    val masCercano = nearby.firstOrNull()
+    var resultado by remember { mutableStateOf<String?>(null) }
+
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(20.dp))
+            .background(palette.card)
+            .border(BorderStroke(1.dp, palette.border), RoundedCornerShape(20.dp))
+            .padding(20.dp),
+        verticalArrangement = Arrangement.spacedBy(10.dp),
+    ) {
+        Text(
+            text = "Calibración",
+            color = palette.accent,
+            fontSize = 13.sp,
+            fontWeight = FontWeight.SemiBold,
+        )
+
+        // Lectura en vivo: sirve para comprobar que el escaneo funciona
+        // y para ver qué distancia calcula la app en cada momento.
+        val lectura = if (masCercano == null) {
+            "Ningún beacon a la vista."
+        } else {
+            "Más cercano: ${masCercano.id} · ${formatMeters(masCercano.closestDistance.toFloat())} m " +
+                "· ${"%.0f".format(masCercano.rssi)} dBm"
+        }
+        Text(
+            text = lectura,
+            color = palette.textPrimary,
+            fontSize = 15.sp,
+            modifier = Modifier.semantics { contentDescription = lectura },
+        )
+
+        Text(
+            text = if (referenceRssi == null) {
+                "Sin calibrar: se usa la potencia que anuncia cada beacon. Si la " +
+                    "app no detecta nada al acercarte, coloca el teléfono a 1 metro " +
+                    "del beacon y pulsa Calibrar."
+            } else {
+                "Calibrado: 1 metro = $referenceRssi dBm."
+            },
+            color = palette.textMuted,
+            fontSize = 14.sp,
+        )
+
+        resultado?.let {
+            Text(text = it, color = palette.accent, fontSize = 14.sp)
+        }
+
+        Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+            Box(
+                modifier = Modifier
+                    .weight(1f)
+                    .heightIn(min = 56.dp)
+                    .clip(RoundedCornerShape(14.dp))
+                    .background(palette.accentSoft)
+                    .border(BorderStroke(1.dp, palette.accent), RoundedCornerShape(14.dp))
+                    .clickable {
+                        val medido = onCalibrar()
+                        resultado = if (medido == null) {
+                            "No hay ningún beacon a la vista para calibrar."
+                        } else {
+                            "Listo: 1 metro = $medido dBm."
+                        }
+                    }
+                    .semantics {
+                        contentDescription = "Calibrar: el teléfono está a 1 metro del beacon"
+                    },
+                contentAlignment = Alignment.Center,
+            ) {
+                Text(
+                    text = "Calibrar a 1 m",
+                    color = palette.accent,
+                    fontSize = 15.sp,
+                    fontWeight = FontWeight.SemiBold,
+                )
+            }
+
+            Box(
+                modifier = Modifier
+                    .weight(1f)
+                    .heightIn(min = 56.dp)
+                    .clip(RoundedCornerShape(14.dp))
+                    .border(BorderStroke(1.dp, palette.border), RoundedCornerShape(14.dp))
+                    .clickable {
+                        onBorrarCalibracion()
+                        resultado = "Calibración borrada."
+                    }
+                    .semantics { contentDescription = "Borrar calibración" },
+                contentAlignment = Alignment.Center,
+            ) {
+                Text(text = "Borrar", color = palette.textSecondary, fontSize = 15.sp)
+            }
+        }
+    }
+}
+
+/** Formatea metros en castellano: "0,5", "1", "2,5", "10". */
+private fun formatMeters(meters: Float): String {
+    val rounded = Math.round(meters * 10) / 10f
+    return if (rounded % 1f == 0f) rounded.toInt().toString()
+    else "%.1f".format(rounded).replace('.', ',')
 }
 
 /* ----------------------------- Componentes ----------------------------- */
