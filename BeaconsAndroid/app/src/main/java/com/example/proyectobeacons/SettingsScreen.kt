@@ -193,8 +193,10 @@ private fun ActivationDistanceScreen(
 
         Text(
             text = "Solo se detectará y anunciará el beacon más cercano cuando esté " +
-                "a esta distancia o menos. Con 0,5 m hay que acercar el teléfono " +
-                "casi al beacon, lo que evita que dos señales se solapen.",
+                "a esta distancia o menos. Valores muy bajos (0,5–1 m) exigen " +
+                "acercar mucho el teléfono y pueden tardar en detectar por el " +
+                "ruido normal de la señal; valores altos facilitan la detección " +
+                "pero aumentan el riesgo de que dos beacons próximos se solapen.",
             color = palette.textSecondary,
             fontSize = 15.sp,
         )
@@ -245,7 +247,8 @@ private fun ActivationDistanceScreen(
         }
 
         Text(
-            text = "Recomendado: 0,5 m para puntos contiguos.",
+            text = "Recomendado: 1,5–2 m para movilidad fluida. Baja a 0,5–1 m " +
+                "solo si los beacons están muy próximos entre sí.",
             color = palette.textMuted,
             fontSize = 14.sp,
         )

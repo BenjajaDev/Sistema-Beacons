@@ -34,6 +34,17 @@ data class TrackedBeacon(
      * y la media larga nunca llega a bajar tanto. Este valor sí.
      */
     val closestDistance: Double,
+    /**
+     * Distancia "reciente": promedio simple (sin filtrar por fuerza) de los
+     * últimos [BeaconDistanceTracker] `nearWindowMillis`.
+     *
+     * A diferencia de [distance] (que promedia varios segundos y por eso
+     * tarda en reflejar que el usuario se alejó), esta reacciona en ~2 s
+     * tanto al acercarse como al alejarse. Es la que se usa para decidir
+     * cuándo soltar el beacon enganchado o cambiar a otro: [distance] solo
+     * sirve para el número estable que se muestra en pantalla.
+     */
+    val awayDistance: Double,
     val samples: Int,
     val lastSeen: Long,
 )
@@ -156,6 +167,7 @@ class BeaconDistanceTracker(
         val rssi = filteredRssi(track) ?: track.lastRssi ?: return null
         track.lastRssi = rssi
         val nearRssi = approachRssi(track, now) ?: rssi
+        val recentRssi = awayRssi(track, now) ?: rssi
         val referencia = referenceRssi ?: track.txPower
         return TrackedBeacon(
             id = id,
@@ -165,6 +177,7 @@ class BeaconDistanceTracker(
             rssi = rssi,
             distance = distanceFrom(referencia, rssi),
             closestDistance = distanceFrom(referencia, nearRssi),
+            awayDistance = distanceFrom(referencia, recentRssi),
             samples = track.samples.size,
             lastSeen = track.lastSeen,
         )
@@ -212,6 +225,20 @@ class BeaconDistanceTracker(
         val fuertes = recientes.sortedDescending()
         val cuantas = maxOf(1, fuertes.size / 3)
         return fuertes.take(cuantas).sum().toDouble() / cuantas
+    }
+
+    /**
+     * RSSI reciente sin filtrar por fuerza: promedio simple de las muestras de
+     * los últimos [nearWindowMillis]. A favor de un beacon o en contra por
+     * igual, así que sirve para detectar que el usuario se alejó sin esperar
+     * a que la media larga de [filteredRssi] lo "olvide".
+     */
+    private fun awayRssi(track: Track, now: Long): Double? {
+        val recientes = track.samples
+            .filter { now - it.timestamp <= nearWindowMillis }
+            .map { it.rssi }
+        if (recientes.isEmpty()) return null
+        return recientes.sum().toDouble() / recientes.size
     }
 
     /** Modelo log-distancia. Devuelve metros con 2 decimales. */

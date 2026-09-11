@@ -34,10 +34,18 @@ data class SignalSettings(
 const val MIN_ACTIVATION_DISTANCE = 0.5f
 const val MAX_ACTIVATION_DISTANCE = 10f
 const val ACTIVATION_DISTANCE_STEP = 0.5f
-const val DEFAULT_ACTIVATION_DISTANCE = MIN_ACTIVATION_DISTANCE
+
+/**
+ * 0,5 m (el mínimo permitido) exige que el RSSI filtrado baje de un umbral
+ * casi imposible de alcanzar de forma fiable en interiores: el ruido típico
+ * de BLE hace que la detección falle o tarde mucho en dispararse. 1,5 m es un
+ * punto de partida realista que sigue permitiendo bajar el valor a mano si
+ * los beacons están muy próximos entre sí.
+ */
+const val DEFAULT_ACTIVATION_DISTANCE = 1.5f
 
 /** Se incrementa al cambiar el rango o el valor por defecto de un ajuste. */
-private const val SETTINGS_VERSION = 2
+private const val SETTINGS_VERSION = 3
 
 // Un único DataStore para toda la app.
 private val Context.dataStore: DataStore<Preferences> by preferencesDataStore(name = "signal_settings")
@@ -61,9 +69,11 @@ class SettingsRepository(private val context: Context) {
     }
 
     /**
-     * Migración única: la distancia de activación pasó a moverse en el rango
-     * 0,5–10 m con 0,5 m por defecto, así que los valores guardados con el
-     * rango antiguo (1–10 m enteros) se restablecen al nuevo por defecto.
+     * Migración: cada vez que cambia el rango o el valor por defecto de la
+     * distancia de activación, se restablece al nuevo valor por defecto en
+     * lugar de arrastrar uno guardado con una lógica antigua. La versión 3
+     * subió el valor por defecto de 0,5 m a 1,5 m: 0,5 m resultaba casi
+     * imposible de alcanzar de forma fiable con el ruido normal de RSSI.
      */
     suspend fun migrateIfNeeded() = context.dataStore.edit { prefs ->
         if ((prefs[Keys.VERSION] ?: 0) < SETTINGS_VERSION) {

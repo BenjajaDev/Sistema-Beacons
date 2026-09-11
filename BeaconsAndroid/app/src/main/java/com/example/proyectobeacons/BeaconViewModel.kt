@@ -55,20 +55,28 @@ class BeaconViewModel(application: Application) : AndroidViewModel(application) 
         const val CONFIRMACIONES_ENTRADA = 2
 
         /** Comprobaciones seguidas para que un rival sustituya al enganchado. */
-        const val CONFIRMACIONES_CAMBIO = 3
+        const val CONFIRMACIONES_CAMBIO = 2
 
-        /** Comprobaciones seguidas fuera de rango para soltar el enganchado. */
-        const val CONFIRMACIONES_SALIDA = 8
+        /**
+         * Comprobaciones seguidas fuera de rango para soltar el enganchado.
+         * Como la comprobación ya usa [TrackedBeacon.awayDistance] (que se
+         * promedia sobre ~2 s), con 4 comprobaciones a [REFRESH_INTERVAL_MS]
+         * el resultado sigue exigiendo ~1 s sostenido fuera de rango: basta
+         * para no parpadear, sin dejar al usuario "atrapado" en un beacon que
+         * ya dejó atrás.
+         */
+        const val CONFIRMACIONES_SALIDA = 4
 
         /**
          * Radio de salida: múltiplo de la distancia de activación a partir del
-         * cual se considera que el usuario ya abandonó el punto. Es amplio a
-         * propósito para que el mensaje no parpadee mientras sigues ahí.
+         * cual se considera que el usuario ya abandonó el punto. Antes era 6x
+         * con un mínimo de 5 m, lo que en la práctica casi nunca se superaba
+         * caminando entre beacons próximos y dejaba el enganche "pegado".
          */
-        const val FACTOR_SALIDA = 6.0
+        const val FACTOR_SALIDA = 3.0
 
         /** Radio de salida mínimo en metros, pase lo que pase. */
-        const val SALIDA_MINIMA = 5.0
+        const val SALIDA_MINIMA = 2.5
 
         /** No se repite el anuncio del mismo beacon antes de este tiempo. */
         const val REANNOUNCE_COOLDOWN_MS = 8_000L
@@ -224,20 +232,25 @@ class BeaconViewModel(application: Application) : AndroidViewModel(application) 
         votosEntrada = 0
         candidatoEntrada = null
 
-        // ¿Se alejó de verdad? Radio de salida amplio para no parpadear.
+        // ¿Se alejó de verdad? Se usa awayDistance (reacciona en ~2 s) y no la
+        // media larga de "distance", que tarda varios segundos en "olvidar"
+        // que estuvo cerca y dejaba el enganche pegado al beacon anterior.
         val radioSalida = maxOf(SALIDA_MINIMA, activationDistance * FACTOR_SALIDA)
-        votosSalida = if (active.distance > radioSalida) votosSalida + 1 else 0
+        votosSalida = if (active.awayDistance > radioSalida) votosSalida + 1 else 0
         if (votosSalida >= CONFIRMACIONES_SALIDA) {
-            Log.i("SIGNAL_VM", "Beacon ${active.id} abandonado a ${fmt(active.distance)}m")
+            Log.i("SIGNAL_VM", "Beacon ${active.id} abandonado a ${fmt(active.awayDistance)}m")
             soltarEnganche()
             return@withLock
         }
 
         // ¿Otro beacon está claramente más cerca y dentro de su propio umbral?
+        // Se comparan dos métricas igual de rápidas (~2 s): la aproximación del
+        // rival contra el alejamiento del enganchado, para que el relevo no
+        // dependa de que la media larga del enganchado termine de subir.
         val rival = visible.firstOrNull {
             it.id != active.id &&
                 it.closestDistance <= activationDistance &&
-                it.distance < active.distance * SWITCH_RATIO
+                it.closestDistance < active.awayDistance * SWITCH_RATIO
         }
         if (rival == null) {
             votosCambio = 0
