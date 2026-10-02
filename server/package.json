@@ -1,0 +1,42 @@
+{
+  "name": "@signal/server",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "API de SIGNAL: endpoint de beacons para la app Android, API pública de la landing y API del panel.",
+  "scripts": {
+    "dev": "tsx watch --env-file-if-exists=.env src/index.ts",
+    "build": "prisma generate && tsc -p tsconfig.build.json",
+    "postinstall": "prisma generate",
+    "start": "node --env-file-if-exists=.env dist/index.js",
+    "db:local": "tsx scripts/db-local.ts",
+    "db:migrate": "prisma migrate dev",
+    "db:deploy": "prisma migrate deploy",
+    "seed": "tsx --env-file-if-exists=.env prisma/seed.ts",
+    "import:beacons": "tsx --env-file-if-exists=.env prisma/import-beacons.ts",
+    "backup": "tsx --env-file-if-exists=.env scripts/backup.ts",
+    "restore": "tsx --env-file-if-exists=.env scripts/restore.ts",
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@node-rs/argon2": "^2.2.1",
+    "@prisma/adapter-pg": "7.10.0",
+    "@prisma/client": "7.10.0",
+    "express": "^5.2.1",
+    "pino": "^10.3.1",
+    "pino-http": "^11.0.0",
+    "zod": "^4.6.5"
+  },
+  "devDependencies": {
+    "@types/express": "^5.0.6",
+    "@types/node": "^24.19.1",
+    "@types/pg": "^8.23.1",
+    "@types/supertest": "^7.2.1",
+    "embedded-postgres": "^17.10.0-beta.17",
+    "prisma": "7.10.0",
+    "supertest": "^7.3.1",
+    "tsx": "^4.23.15",
+    "vitest": "^4.1.11"
+  }
+}

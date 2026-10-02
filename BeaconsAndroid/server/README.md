@@ -1,3 +1,7 @@
+> **Obsoleto.** Este servidor fue reemplazado por [`server/`](../../server) en la raíz del repositorio,
+> que mantiene el mismo `GET /beacons/:major/:minor` para la app y guarda los datos en PostgreSQL.
+> Se conserva hasta completar la migración; no lo uses para datos nuevos.
+
 # Backend del Proyecto Beacons
 
 Servidor sencillo (Node.js + Express) que almacena la información de cada beacon

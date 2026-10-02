@@ -1,0 +1,29 @@
+# Dependencias y builds
+node_modules/
+dist/
+build/
+coverage/
+*.tsbuildinfo
+
+# Variables de entorno: solo se versiona la plantilla
+.env
+.env.*
+!.env.example
+
+# Datos locales del servidor
+server/backups/
+server/uploads/
+server/.pgdata/
+server/src/generated/
+
+# Reportes de tests
+playwright-report/
+test-results/
+.lighthouseci/
+
+# Editor / SO
+*.local
+.DS_Store
+Thumbs.db
+.vscode/*
+!.vscode/extensions.json

@@ -1,0 +1,9 @@
+node_modules
+dist
+coverage
+server/src/generated
+server/prisma/migrations
+BeaconsAndroid
+cms
+package-lock.json
+docs

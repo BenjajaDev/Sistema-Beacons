@@ -1,0 +1,270 @@
+// Modelo de datos de SIGNAL.
+//
+// Se escribe para PostgreSQL (Supabase en producción) evitando tipos propios de
+// Postgres, para que el schema siga siendo portable a SQLite si hiciera falta.
+//
+// Toda migración nueva debe dejar las tablas con RLS activado: ver la sección
+// "Supabase" del README y la migración inicial.
+
+generator client {
+  provider               = "prisma-client"
+  output                 = "../src/generated/prisma"
+  moduleFormat           = "esm"
+  importFileExtension    = "js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum Role {
+  ADMIN
+  EDITOR
+}
+
+enum NewsStatus {
+  DRAFT
+  REVIEW
+  PUBLISHED
+}
+
+// Estado del borrador de una sección. Sin borrador pendiente, el campo es null.
+enum DraftStatus {
+  DRAFT
+  REVIEW
+}
+
+// Página de la landing a la que pertenece una sección.
+enum Page {
+  INICIO
+  NOSOTROS
+  NOTICIAS
+  CONTACTO
+}
+
+model User {
+  id                 String    @id @default(uuid())
+  // Siempre en minúsculas: lo normaliza la capa de servicio.
+  email              String    @unique
+  name               String
+  role               Role
+  passwordHash       String
+  mustChangePassword Boolean   @default(true)
+  failedLogins       Int       @default(0)
+  lockedUntil        DateTime?
+  // Se incrementa al cambiar la contraseña o al desactivar la cuenta, e invalida
+  // los JWT emitidos antes.
+  tokenVersion       Int       @default(0)
+  // Las cuentas no se borran (la bitácora las referencia); se desactivan.
+  active             Boolean   @default(true)
+  lastLoginAt        DateTime?
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
+
+  newsAuthored  News[]     @relation("NewsAuthor")
+  newsReviewed  News[]     @relation("NewsReviewer")
+  sectionDrafts Section[]  @relation("SectionDraftAuthor")
+  beaconsEdited Beacon[]
+  uploads       Media[]
+  auditLogs     AuditLog[]
+
+  @@map("users")
+}
+
+// Configuración global del sitio. Es una sola fila (id = 1).
+model SiteSettings {
+  id                     Int      @id @default(1)
+  siteName               String   @default("SIGNAL")
+  tagline                String?
+  logoLightId            String?
+  logoLightAlt           String?
+  logoDarkId             String?
+  logoDarkAlt            String?
+  faviconId              String?
+  // { light: { fondo, superficie, texto, ... }, dark: { ... } }. Ver src/content/theme.ts.
+  palette                Json
+  // { cuerpo: <id>, titulos: <id> }, con ids de la lista de fuentes permitidas.
+  fonts                  Json
+  contactPhone           String?
+  contactEmail           String?
+  contactAddress         String?
+  // [{ red, url, etiqueta }]
+  socials                Json     @default("[]")
+  accessibilityStatement String
+  updatedAt              DateTime @updatedAt
+  updatedById            String?
+
+  logoLight Media? @relation("LogoLight", fields: [logoLightId], references: [id], onDelete: SetNull)
+  logoDark  Media? @relation("LogoDark", fields: [logoDarkId], references: [id], onDelete: SetNull)
+  favicon   Media? @relation("Favicon", fields: [faviconId], references: [id], onDelete: SetNull)
+
+  @@map("site_settings")
+}
+
+// Bloque de contenido de la landing. `content` es lo publicado; los cambios de un
+// editor van a `draftContent` y solo pasan a `content` cuando un admin los publica.
+// La forma del JSON depende de `key` y se valida con src/content/sections.ts.
+model Section {
+  id             String       @id @default(uuid())
+  key            String       @unique
+  page           Page
+  order          Int
+  visible        Boolean      @default(true)
+  content        Json
+  draftContent   Json?
+  draftStatus    DraftStatus?
+  draftAuthorId  String?
+  draftUpdatedAt DateTime?
+  reviewNote     String?
+  publishedAt    DateTime?
+  updatedAt      DateTime     @updatedAt
+
+  draftAuthor User? @relation("SectionDraftAuthor", fields: [draftAuthorId], references: [id])
+
+  @@index([page, order])
+  @@map("sections")
+}
+
+model News {
+  id          String     @id @default(uuid())
+  title       String
+  slug        String     @unique
+  // Bajada: texto plano, se usa en tarjetas y en la meta description.
+  excerpt     String
+  // Documento del editor (fuente de verdad) y su HTML saneado, que es lo que se
+  // muestra en la landing.
+  bodyJson    Json
+  bodyHtml    String
+  coverId     String?
+  // Obligatorio si hay imagen: lo exige un CHECK en la base de datos.
+  coverAlt    String?
+  category    String
+  status      NewsStatus @default(DRAFT)
+  authorId    String
+  reviewerId  String?
+  reviewNote  String?
+  submittedAt DateTime?
+  publishedAt DateTime?
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+
+  cover    Media? @relation(fields: [coverId], references: [id], onDelete: Restrict)
+  author   User   @relation("NewsAuthor", fields: [authorId], references: [id])
+  reviewer User?  @relation("NewsReviewer", fields: [reviewerId], references: [id])
+
+  @@index([status, publishedAt])
+  @@map("news")
+}
+
+model TeamMember {
+  id        String   @id @default(uuid())
+  name      String
+  position  String
+  bio       String?
+  photoId   String?
+  photoAlt  String?
+  // [{ red, url, etiqueta }]
+  links     Json     @default("[]")
+  order     Int
+  visible   Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  photo Media? @relation(fields: [photoId], references: [id], onDelete: Restrict)
+
+  @@index([order])
+  @@map("team_members")
+}
+
+model Collaborator {
+  id          String   @id @default(uuid())
+  name        String
+  description String?
+  url         String?
+  logoId      String?
+  logoAlt     String?
+  order       Int
+  visible     Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  logo Media? @relation(fields: [logoId], references: [id], onDelete: Restrict)
+
+  @@index([order])
+  @@map("collaborators")
+}
+
+// Ficha que la app Android lee en GET /beacons/:major/:minor. Los nombres de los
+// campos en español son parte del contrato con la app: no se renombran.
+model Beacon {
+  id          String   @id @default(uuid())
+  major       Int
+  minor       Int
+  titulo      String
+  descripcion String
+  ubicacion   String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  updatedById String?
+
+  updatedBy User? @relation(fields: [updatedById], references: [id])
+
+  @@unique([major, minor])
+  @@map("beacons")
+}
+
+model Media {
+  id           String   @id @default(uuid())
+  storageKey   String   @unique
+  url          String
+  mimeType     String
+  sizeBytes    Int
+  width        Int?
+  height       Int?
+  originalName String
+  uploadedById String?
+  createdAt    DateTime @default(now())
+
+  uploadedBy     User?          @relation(fields: [uploadedById], references: [id])
+  newsCovers     News[]
+  teamPhotos     TeamMember[]
+  collabLogos    Collaborator[]
+  logoLightOf    SiteSettings[] @relation("LogoLight")
+  logoDarkOf     SiteSettings[] @relation("LogoDark")
+  faviconOf      SiteSettings[] @relation("Favicon")
+
+  @@map("media")
+}
+
+model AuditLog {
+  id        String   @id @default(uuid())
+  userId    String?
+  // Verbo en mayúsculas: LOGIN_OK, NEWS_PUBLISH, BEACON_DELETE...
+  action    String
+  entity    String?
+  entityId  String?
+  meta      Json?
+  ip        String?
+  userAgent String?
+  createdAt DateTime @default(now())
+
+  user User? @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([createdAt])
+  @@index([userId])
+  @@map("audit_logs")
+}
+
+model ContactMessage {
+  id        String    @id @default(uuid())
+  name      String
+  email     String
+  phone     String?
+  subject   String?
+  message   String
+  readAt    DateTime?
+  createdAt DateTime  @default(now())
+
+  @@index([createdAt])
+  @@map("contact_messages")
+}
