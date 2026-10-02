@@ -13,7 +13,7 @@ export function securityHeaders(env: ServerEnv): RequestHandler {
         scriptSrc: ["'self'"],
         // Las variables del tema se inyectan en un <style> del HTML.
         styleSrc: ["'self'", "'unsafe-inline'"],
-        imgSrc: ["'self'", "data:", "blob:", ...env.CSP_IMG_HOSTS],
+        imgSrc: ["'self'", "data:", "blob:", ...env.imgHosts],
         fontSrc: ["'self'"],
         connectSrc: ["'self'"],
         manifestSrc: ["'self'"],

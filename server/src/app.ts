@@ -12,7 +12,10 @@ import type { Db } from "./lib/prisma.js";
 import { adminPanel } from "./routes/admin-panel.js";
 import { adminApi } from "./routes/admin/index.js";
 import { legacyBeaconsRouter } from "./routes/legacy-beacons.js";
+import { writeBeaconSnapshot } from "./beacons/snapshot.js";
+import { publicApi } from "./routes/public.js";
 import { createAudit } from "./services/audit.js";
+import { createMediaStorage, type MediaStorage } from "./services/media-storage.js";
 
 export interface AppDeps {
   env: ServerEnv;
@@ -21,6 +24,8 @@ export interface AppDeps {
   beacons: { primary: BeaconReader; fallback: BeaconReader };
   // Comprueba la base de datos para /api/health. Lanza si no responde.
   pingDb: () => Promise<void>;
+  // Por defecto, según STORAGE_DRIVER. Los tests pueden inyectar otro.
+  storage?: MediaStorage;
 }
 
 export function createApp(deps: AppDeps) {
@@ -44,7 +49,8 @@ export function createApp(deps: AppDeps) {
   );
   app.use(securityHeaders(env));
   app.use(cookieParser());
-  app.use(express.json({ limit: "100kb" }));
+  // 1 MB: una noticia larga, en el JSON del editor, puede pasar de 100 KB.
+  app.use(express.json({ limit: "1mb" }));
 
   // --- App Android (contrato histórico) ---
   app.use(legacyBeaconsRouter({ ...deps.beacons, logger }));
@@ -67,10 +73,40 @@ export function createApp(deps: AppDeps) {
     secureCookies: env.COOKIE_SECURE,
   });
   const csrf = createCsrf({ secret: env.CSRF_SECRET, secureCookies: env.COOKIE_SECURE });
-  const admin = adminApi({ db, env, logger, sessions, csrf, audit: createAudit(db, logger) });
+  app.use("/api/public", publicApi({ db, logger }));
+
+  const admin = adminApi({
+    db,
+    env,
+    logger,
+    sessions,
+    csrf,
+    audit: createAudit(db, logger),
+    storage: deps.storage ?? createMediaStorage(env),
+    onBeaconsChanged: async () => {
+      try {
+        await writeBeaconSnapshot(db, env.beaconSnapshotPath);
+      } catch (err) {
+        logger.error({ err }, "No se pudo actualizar el snapshot de beacons");
+      }
+    },
+  });
   app.use("/api/admin", admin.router);
   // Expuesta para el test que recorre todas las rutas y verifica 401/403.
   app.locals.adminRoutes = admin.routes;
+
+  // --- Imágenes subidas (solo con almacenamiento local) ---
+  if (env.STORAGE_DRIVER === "local") {
+    app.use(
+      "/uploads",
+      express.static(env.uploadDir, {
+        index: false,
+        dotfiles: "deny",
+        immutable: true,
+        maxAge: "365d",
+      }),
+    );
+  }
 
   // --- Panel (ruta oculta) ---
   app.use(adminPanel({ adminPath: env.ADMIN_PATH, distDir: env.adminDistDir }));

@@ -1,8 +1,13 @@
+import { mkdtempSync } from "node:fs";
+import { tmpdir } from "node:os";
 import path from "node:path";
 import { loadServerEnv } from "../../src/config/env.js";
 
 export const TEST_ADMIN_PATH = "panel-de-prueba-0123456789abcdef";
 export const TEST_DATABASE_URL = process.env.TEST_DATABASE_URL;
+
+// Carpeta temporal por proceso: los tests nunca tocan server/uploads ni server/backups.
+const TMP = mkdtempSync(path.join(tmpdir(), "signal-test-"));
 
 // Entorno de test explícito: no hereda el server/.env de quien ejecuta las pruebas.
 export function testEnv(overrides: Record<string, string> = {}) {
@@ -16,6 +21,9 @@ export function testEnv(overrides: Record<string, string> = {}) {
     CSRF_SECRET: "csrf-secreto-de-prueba-0123456789abcdef012",
     COOKIE_SECURE: "true",
     BACKUP_INTERVAL_HOURS: "0",
+    UPLOAD_DIR: path.join(TMP, "uploads"),
+    BEACON_SNAPSHOT_PATH: path.join(TMP, "beacons.snapshot.json"),
+    BACKUP_DIR: path.join(TMP, "backups"),
     ...overrides,
   });
 }

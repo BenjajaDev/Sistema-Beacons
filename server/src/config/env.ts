@@ -57,6 +57,14 @@ const serverEnvSchema = z
     TRUST_PROXY: z.string().default("false"),
     CSP_IMG_HOSTS: lista,
 
+    // --- Imágenes subidas ---
+    STORAGE_DRIVER: z.enum(["local", "supabase"]).default("local"),
+    UPLOAD_DIR: z.string().default("uploads"),
+    UPLOAD_MAX_MB: z.coerce.number().min(0.1).max(50).default(5),
+    SUPABASE_URL: z.url().optional(),
+    SUPABASE_SERVICE_ROLE_KEY: z.string().min(20).optional(),
+    SUPABASE_BUCKET: z.string().default("media"),
+
     // --- Respaldos ---
     BACKUP_DIR: z.string().default("backups"),
     BACKUP_INTERVAL_HOURS: z.coerce.number().min(0).default(24),
@@ -68,6 +76,14 @@ const serverEnvSchema = z
     message:
       "En producción las cookies deben ser Secure (COOKIE_SECURE=true) y el sitio servirse por HTTPS.",
   })
+  .refine(
+    (e) => e.STORAGE_DRIVER !== "supabase" || (e.SUPABASE_URL && e.SUPABASE_SERVICE_ROLE_KEY),
+    {
+      path: ["STORAGE_DRIVER"],
+      message:
+        "Con STORAGE_DRIVER=supabase hay que definir SUPABASE_URL y SUPABASE_SERVICE_ROLE_KEY.",
+    },
+  )
   .refine((e) => e.JWT_SECRET !== e.CSRF_SECRET, {
     path: ["CSRF_SECRET"],
     message: "CSRF_SECRET debe ser distinto de JWT_SECRET.",
@@ -82,6 +98,9 @@ export type ServerEnv = ParsedEnv & {
   beaconSnapshotPath: string;
   // Valor listo para app.set("trust proxy", ...).
   trustProxy: boolean | number | string;
+  uploadDir: string;
+  // Hosts de imágenes para la CSP, incluido Supabase Storage si se usa.
+  imgHosts: string[];
 };
 
 function parseTrustProxy(valor: string): boolean | number | string {
@@ -109,6 +128,13 @@ export function loadServerEnv(source: NodeJS.ProcessEnv = process.env): ServerEn
     backupDir: path.resolve(SERVER_ROOT, env.BACKUP_DIR),
     beaconSnapshotPath: path.resolve(SERVER_ROOT, env.BEACON_SNAPSHOT_PATH),
     trustProxy: parseTrustProxy(env.TRUST_PROXY),
+    uploadDir: path.resolve(SERVER_ROOT, env.UPLOAD_DIR),
+    imgHosts: [
+      ...env.CSP_IMG_HOSTS,
+      ...(env.STORAGE_DRIVER === "supabase" && env.SUPABASE_URL
+        ? [new URL(env.SUPABASE_URL).origin]
+        : []),
+    ],
   };
 }
 

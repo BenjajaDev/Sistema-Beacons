@@ -4,11 +4,30 @@ import { authenticate } from "../../auth/middleware.js";
 import { ApiError } from "../../http/errors.js";
 import { auditLogRoutes } from "./audit-log.js";
 import { authRoutes, loginHandler } from "./auth.js";
+import { beaconRoutes } from "./beacons.js";
+import { mediaRoutes } from "./media.js";
+import { messageRoutes } from "./messages.js";
+import { newsRoutes } from "./news.js";
+import { sectionRoutes } from "./sections.js";
+import { settingsRoutes } from "./settings.js";
+import { teamRoutes } from "./team.js";
+import { userRoutes } from "./users.js";
 import type { AdminDeps } from "./deps.js";
 import { mountAdminRoutes, type AdminRoute } from "./registry.js";
 
 export function adminRouteTable(deps: AdminDeps): AdminRoute[] {
-  return [...authRoutes(deps), ...auditLogRoutes(deps)];
+  return [
+    ...authRoutes(deps),
+    ...newsRoutes(deps),
+    ...sectionRoutes(deps),
+    ...teamRoutes(deps),
+    ...settingsRoutes(deps),
+    ...mediaRoutes(deps),
+    ...beaconRoutes(deps),
+    ...userRoutes(deps),
+    ...messageRoutes(deps),
+    ...auditLogRoutes(deps),
+  ];
 }
 
 function rateLimited(mensaje: string) {

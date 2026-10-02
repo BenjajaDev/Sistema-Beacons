@@ -20,22 +20,25 @@ const nombre = (r: AdminRoute) => `${r.method.toUpperCase()} ${r.path} [${r.role
 // Política del proyecto, independiente de lo que declare cada ruta: estas rutas son
 // SOLO de administración. Si alguien declara una por error como accesible a
 // editores, este test falla aunque la matriz de abajo pase.
-const SOLO_ADMIN = [
-  /^\/audit(\/|$)/,
-  /^\/users(\/|$)/,
-  /^\/beacons(\/|$)/,
-  /^\/settings(\/|$)/,
-  /^\/team(\/|$)/,
-  /^\/collaborators(\/|$)/,
-  /^\/messages(\/|$)/,
-  /^\/news\/:\w+\/(publish|reject|unpublish)$/,
-  /^\/sections\/:\w+\/(publish|visibility)$/,
-  /^\/sections\/order$/,
+const SOLO_ADMIN: [método: string, ruta: RegExp][] = [
+  ["*", /^\/audit(\/|$)/],
+  ["*", /^\/users(\/|$)/],
+  ["*", /^\/beacons(\/|$)/],
+  ["*", /^\/settings(\/|$)/],
+  ["*", /^\/team(\/|$)/],
+  ["*", /^\/collaborators(\/|$)/],
+  ["*", /^\/messages(\/|$)/],
+  ["*", /^\/news\/:\w+\/(publish|reject|unpublish)$/],
+  ["*", /^\/sections\/:\w+\/(publish|reject|visibility)$/],
+  ["*", /^\/sections\/order$/],
+  ["delete", /^\/media\/:\w+$/],
 ];
 
 describe("política de roles", () => {
   const rutas = buildTestApp().locals.adminRoutes as AdminRoute[];
-  const protegidas = rutas.filter((r) => SOLO_ADMIN.some((p) => p.test(r.path)));
+  const protegidas = rutas.filter((r) =>
+    SOLO_ADMIN.some(([m, p]) => (m === "*" || m === r.method) && p.test(r.path)),
+  );
 
   it("cubre al menos la bitácora", () => {
     expect(protegidas.map((r) => r.path)).toContain("/audit");

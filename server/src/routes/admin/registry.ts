@@ -12,11 +12,12 @@ export interface AdminRoute extends RouteGuard {
   method: Method;
   // Relativa a /api/admin.
   path: string;
-  handler: RequestHandler;
+  // Varios handlers para encadenar middlewares (por ejemplo, la subida de archivos).
+  handler: RequestHandler | RequestHandler[];
 }
 
 export function mountAdminRoutes(router: Router, routes: AdminRoute[]) {
-  for (const r of routes) router[r.method](r.path, requireRole(r), r.handler);
+  for (const r of routes) router[r.method](r.path, requireRole(r), ...[r.handler].flat());
 }
 
 export const ADMIN_ONLY = ["ADMIN"] as const;

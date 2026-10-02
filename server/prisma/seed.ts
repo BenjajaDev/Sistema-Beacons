@@ -8,6 +8,7 @@
 import { z } from "zod";
 import { loadScriptEnv } from "../src/config/env.js";
 import { createPrisma } from "../src/lib/prisma.js";
+import { asJson } from "../src/lib/json.js";
 import { hashPassword, PASSWORD_MIN_LENGTH } from "../src/auth/password.js";
 import { DEFAULT_SITE_SETTINGS } from "../src/content/settings.js";
 import { SECTION_DEFINITIONS, sectionSchemas, type SectionKey } from "../src/content/sections.js";
@@ -110,7 +111,7 @@ try {
         page: def.page,
         order: def.order,
         visible: true,
-        content,
+        content: asJson(content),
         publishedAt: new Date(),
       },
     });

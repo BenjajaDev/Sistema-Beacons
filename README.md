@@ -48,6 +48,7 @@ Todas están documentadas en [`server/.env.example`](server/.env.example). `serv
 | `COOKIE_SECURE`, `SESSION_TTL_HOURS`                 | Cookies solo por HTTPS (obligatorio en producción) y duración de la sesión.                                |
 | `LOGIN_*`, `API_RATE_LIMIT`                          | Bloqueo de cuenta por intentos fallidos y límites de peticiones por IP.                                    |
 | `CORS_ORIGINS`, `TRUST_PROXY`, `CSP_IMG_HOSTS`       | Orígenes extra permitidos, proxy delante del servidor y hosts de imágenes para la CSP.                     |
+| `STORAGE_DRIVER`, `UPLOAD_*`, `SUPABASE_*`           | Dónde se guardan las imágenes: disco local en desarrollo, Supabase Storage en producción.                  |
 | `SEED_ADMIN_*`, `SEED_EDITOR_*`                      | Cuentas iniciales que crea `npm run seed`.                                                                 |
 | `BACKUP_DIR`, `BACKUP_INTERVAL_HOURS`, `BACKUP_KEEP` | Respaldos locales automáticos.                                                                             |
 | `BEACON_SNAPSHOT_PATH`                               | Copia local de los beacons para cuando la base de datos no responde.                                       |
@@ -57,6 +58,7 @@ Todas están documentadas en [`server/.env.example`](server/.env.example). `serv
 
 1. En Supabase, **Project Settings → Database → Connection string**, copia la URL del pooler en modo transacción en `DATABASE_URL` y la de sesión en `DIRECT_URL`.
 2. Ejecuta `npm run db:deploy`, `npm run import:beacons` y `npm run seed`.
+3. Para las imágenes, crea un bucket **público** en Storage (por defecto `media`) y define `STORAGE_DRIVER=supabase`, `SUPABASE_URL` y `SUPABASE_SERVICE_ROLE_KEY`. La service role key solo vive en el servidor.
 
 Supabase publica el schema `public` a través de su Data API. La migración inicial **activa RLS sin políticas en todas las tablas** y revoca los permisos de los roles `anon` y `authenticated`. Así nadie puede leer los datos (incluidos los hashes de contraseña) con la clave pública del proyecto. Prisma se conecta como dueño de las tablas y no se ve afectado. **Toda migración que cree tablas nuevas debe activar RLS en ellas**; la prueba de integración `todas las tablas del schema public tienen RLS activado` lo verifica.
 
@@ -70,7 +72,31 @@ La ruta oculta evita que el panel aparezca a simple vista, pero **no es la segur
 - **Roles:** cada ruta de `/api/admin` declara qué roles la pueden usar. Sin sesión responde 401 y con un rol insuficiente, 403. `test/integration/permissions.test.ts` recorre todas las rutas automáticamente y exige que bitácora, usuarios, beacons, identidad visual, equipo y publicación sean solo de administración.
 - **Login:** el error es el mismo para un correo inexistente y una contraseña incorrecta. Tras `LOGIN_MAX_ATTEMPTS` fallos la cuenta se bloquea `LOGIN_LOCK_MINUTES` minutos, y hay un límite de intentos por IP. En el primer inicio de sesión se obliga a cambiar la contraseña.
 - **Cabeceras:** helmet aplica CSP estricta, nosniff, prohibición de iframes y HSTS en producción. CORS queda cerrado salvo los orígenes de `CORS_ORIGINS`.
-- **Bitácora:** `audit_logs` registra quién, qué, cuándo, la IP y el navegador (inicios de sesión, bloqueos, cambios de contraseña y, más adelante, cada cambio de contenido). Se consulta en `GET /api/admin/audit`.
+- **Bitácora:** `audit_logs` registra quién, qué, cuándo, la IP y el navegador (inicios de sesión, bloqueos, cambios de contraseña y cada cambio de contenido, con los campos modificados). Se consulta en `GET /api/admin/audit`.
+
+## API
+
+Todas las respuestas de error tienen la forma `{ error, code, campos? }`. `error` es un mensaje para la persona que usa el sitio y `campos` indica el error de cada input del formulario.
+
+**Pública** (`/api/public`, solo lectura, caché de 60 s): `GET /site`, `GET /pages/:page` (`inicio`, `nosotros`, `noticias` o `contacto`), `GET /news?pagina&porPagina&categoria`, `GET /news/:slug`, `GET /team` y `GET /collaborators`, más `POST /contact` (limitado a 5 por hora por IP y con campo trampa contra bots). Solo entrega lo visible y lo publicado.
+
+**Panel** (`/api/admin`, con sesión y CSRF):
+
+| Módulo                                                                                    | Editor                                                                | Administrador                                                  |
+| ----------------------------------------------------------------------------------------- | --------------------------------------------------------------------- | -------------------------------------------------------------- |
+| Noticias                                                                                  | Crea, edita sus borradores, los envía a revisión y ve la vista previa | Además publica, devuelve con observaciones, despublica y borra |
+| Secciones                                                                                 | Edita borradores y los envía a revisión                               | Además publica, devuelve, oculta y ordena                      |
+| Imágenes                                                                                  | Sube y lista                                                          | Además borra (si no están en uso)                              |
+| Equipo, colaboradores, identidad visual, contacto, beacons, usuarios, mensajes y bitácora | —                                                                     | Todo                                                           |
+
+Garantías que impone el servidor, no solo la interfaz:
+
+- **Texto enriquecido:** el servidor valida el documento del editor (solo los nodos de la barra) y genera él mismo el HTML, escapando todo. Un `<script>`, un `onerror=` o un `javascript:` no pueden llegar a la landing.
+- **Accesibilidad:** una nota no se envía a revisión ni se publica si le faltan bajada o categoría, si tiene imágenes sin texto alternativo o si el cuerpo está vacío. Los saltos de nivel en los subtítulos, los enlaces tipo «clic aquí» y los párrafos muy largos se advierten sin bloquear.
+- **Identidad visual:** una paleta que no cumple el contraste de WCAG 2.1 AA, en claro o en oscuro, se rechaza indicando qué combinación falla.
+- **Imágenes:** ninguna se guarda sin texto alternativo; lo exige también un CHECK en la base de datos.
+- **Usuarios:** nadie puede desactivarse ni quitarse el rol de administrador a sí mismo, y el sitio nunca queda sin una cuenta administradora activa, ni siquiera si dos admins se quitan el rol al mismo tiempo.
+- **Beacons:** cambiar major/minor es una sola operación atómica, y cada cambio actualiza el snapshot que usa la app si la base de datos no responde.
 
 ## Cuentas y seed
 
@@ -113,7 +139,7 @@ El CI (`.github/workflows/ci.yml`) ejecuta todo lo anterior contra un PostgreSQL
 - [x] **Fase 0:** saneamiento del repo, workspaces, TypeScript, ESLint, Prettier y CI.
 - [x] **Fase 1:** modelo de datos, migraciones con RLS, importación de beacons, seed idempotente, respaldos y paridad con la app Android.
 - [x] **Fase 2:** autenticación, roles, CSRF, rate limit, bitácora y ruta oculta del panel.
-- [ ] **Fase 3:** API de administración.
+- [x] **Fase 3:** API de administración y API pública.
 - [ ] **Fase 4:** base del frontend (dos builds de Vite, tokens y kit de UI).
 - [ ] **Fase 5:** landing y PWA.
 - [ ] **Fase 6:** panel de administración.

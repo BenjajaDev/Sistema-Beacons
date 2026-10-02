@@ -61,6 +61,16 @@ export function errorHandler(logger: Logger): ErrorRequestHandler {
       });
       return;
     }
+    if (err?.name === "MulterError") {
+      const grande = err.code === "LIMIT_FILE_SIZE";
+      res.status(grande ? 413 : 400).json({
+        error: grande
+          ? "La imagen supera el tamaño máximo permitido. Redúcela o comprímela e intenta de nuevo."
+          : "No se pudo recibir el archivo. Sube una sola imagen en el campo «archivo».",
+        code: grande ? "FILE_TOO_LARGE" : "BAD_UPLOAD",
+      });
+      return;
+    }
     logger.error({ err, url: req.originalUrl }, "Error no controlado");
     res.status(500).json({
       error:
