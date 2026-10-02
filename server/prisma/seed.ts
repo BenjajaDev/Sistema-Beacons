@@ -6,7 +6,7 @@
 // contraseña ni su rol; si una sección ya existe, NO pisa su contenido.
 
 import { z } from "zod";
-import { loadServerEnv } from "../src/config/env.js";
+import { loadScriptEnv } from "../src/config/env.js";
 import { createPrisma } from "../src/lib/prisma.js";
 import { hashPassword, PASSWORD_MIN_LENGTH } from "../src/auth/password.js";
 import { DEFAULT_SITE_SETTINGS } from "../src/content/settings.js";
@@ -39,7 +39,7 @@ if (!seedEnv.success) {
 }
 const s = seedEnv.data;
 
-const env = loadServerEnv();
+const env = loadScriptEnv();
 const db = createPrisma(env.DATABASE_URL);
 
 const cuentas = [

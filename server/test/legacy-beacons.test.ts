@@ -3,10 +3,9 @@ import { tmpdir } from "node:os";
 import path from "node:path";
 import request from "supertest";
 import { describe, expect, it } from "vitest";
-import { pino } from "pino";
-import { createApp } from "../src/app.js";
 import { beaconKey, parseLegacyBeacons, type BeaconRecord } from "../src/beacons/legacy-format.js";
 import { snapshotBeaconReader, type BeaconReader } from "../src/beacons/store.js";
+import { buildTestApp } from "./helpers/app.js";
 
 // Contrato con la app Android: GET /beacons/:major/:minor debe responder
 // exactamente lo mismo que el servidor anterior, que servía beacons.json tal cual.
@@ -30,11 +29,7 @@ const lectorQueFalla: BeaconReader = {
 };
 
 function app(primary: BeaconReader, fallback: BeaconReader = lectorQueFalla) {
-  return createApp({
-    logger: pino({ level: "silent" }),
-    beacons: { primary, fallback },
-    pingDb: async () => {},
-  });
+  return buildTestApp({ beacons: { primary, fallback } });
 }
 
 describe("GET /beacons/:major/:minor (contrato Android)", () => {

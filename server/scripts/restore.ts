@@ -8,7 +8,7 @@
 
 import path from "node:path";
 import { parseArgs } from "node:util";
-import { loadServerEnv } from "../src/config/env.js";
+import { loadScriptEnv } from "../src/config/env.js";
 import { createPrisma } from "../src/lib/prisma.js";
 import { createBackup, listBackups, readBackup, restoreDatabase } from "../src/services/backup.js";
 import { writeBeaconSnapshot } from "../src/beacons/snapshot.js";
@@ -17,7 +17,7 @@ const { values, positionals } = parseArgs({
   allowPositionals: true,
   options: { confirmar: { type: "boolean", default: false } },
 });
-const env = loadServerEnv();
+const env = loadScriptEnv();
 
 if (!positionals[0]) {
   const archivos = await listBackups(env.backupDir);

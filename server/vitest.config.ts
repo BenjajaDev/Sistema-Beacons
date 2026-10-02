@@ -9,6 +9,7 @@ try {
 export default defineConfig({
   test: {
     environment: "node",
+    globalSetup: ["./test/global-setup.ts"],
     // Las pruebas de integración comparten una base de datos: sin paralelismo entre archivos.
     fileParallelism: false,
     testTimeout: 20_000,

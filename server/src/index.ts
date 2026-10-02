@@ -10,6 +10,8 @@ const env = loadServerEnv();
 const db = createPrisma(env.DATABASE_URL);
 
 const app = createApp({
+  env,
+  db,
   logger,
   beacons: {
     primary: prismaBeaconReader(db),

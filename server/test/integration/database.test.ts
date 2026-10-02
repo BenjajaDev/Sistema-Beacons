@@ -1,37 +1,22 @@
-import { execSync } from "node:child_process";
 import { mkdtempSync, readFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import { createPrisma, type Db } from "../../src/lib/prisma.js";
+import type { Db } from "../../src/lib/prisma.js";
+import { hasTestDb, resetDb, testDb } from "../helpers/db.js";
 import { createBackup, readBackup, restoreDatabase } from "../../src/services/backup.js";
 import { writeBeaconSnapshot } from "../../src/beacons/snapshot.js";
 
 // Pruebas contra un PostgreSQL real. Se ejecutan solo si TEST_DATABASE_URL está
 // definida (por ejemplo, la base signal_test que crea `npm run db:local`).
-// ATENCIÓN: borran por completo el schema public de esa base.
 
-const url = process.env.TEST_DATABASE_URL;
-
-// Resguardo: como la prueba borra el schema, solo corre contra bases cuyo nombre termina en _test.
-if (url && !new URL(url).pathname.endsWith("_test")) {
-  throw new Error("TEST_DATABASE_URL debe apuntar a una base cuyo nombre termine en _test.");
-}
-const SERVER_DIR = path.resolve(import.meta.dirname, "../..");
-
-describe.skipIf(!url)("base de datos (integración)", () => {
+describe.skipIf(!hasTestDb)("base de datos (integración)", () => {
   let db: Db;
 
   beforeAll(async () => {
-    db = createPrisma(url!);
-    await db.$executeRawUnsafe("DROP SCHEMA IF EXISTS public CASCADE");
-    await db.$executeRawUnsafe("CREATE SCHEMA public");
-    execSync("npx prisma migrate deploy", {
-      cwd: SERVER_DIR,
-      env: { ...process.env, DATABASE_URL: url, DIRECT_URL: url },
-      stdio: "pipe",
-    });
-  }, 120_000);
+    db = testDb();
+    await resetDb(db);
+  });
 
   afterAll(async () => {
     await db?.$disconnect();

@@ -10,7 +10,7 @@
 import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { parseArgs } from "node:util";
-import { loadServerEnv, SERVER_ROOT } from "../src/config/env.js";
+import { loadScriptEnv, SERVER_ROOT } from "../src/config/env.js";
 import { createPrisma } from "../src/lib/prisma.js";
 import { beaconKey, parseLegacyBeacons } from "../src/beacons/legacy-format.js";
 import { writeBeaconSnapshot } from "../src/beacons/snapshot.js";
@@ -20,7 +20,7 @@ const { values, positionals } = parseArgs({
   options: { sobrescribir: { type: "boolean", default: false } },
 });
 
-const env = loadServerEnv();
+const env = loadScriptEnv();
 const archivo = path.resolve(
   positionals[0] ?? path.join(SERVER_ROOT, "..", "BeaconsAndroid", "server", "beacons.json"),
 );

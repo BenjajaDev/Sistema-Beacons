@@ -20,7 +20,8 @@ Navegación interior con beacons BLE para personas con discapacidad visual.
 ```bash
 npm install                       # instala todo y genera el cliente de Prisma
 cp server/.env.example server/.env
-# Completa en server/.env las variables SEED_* (correos y contraseñas iniciales).
+# Completa en server/.env las variables SEED_* (correos y contraseñas iniciales)
+# y pega ahí lo que imprime `npm run secret` (ADMIN_PATH, JWT_SECRET, CSRF_SECRET).
 
 npm run db:local                  # en otra terminal: PostgreSQL local en el puerto 5433
 npm run db:deploy                 # aplica las migraciones
@@ -29,7 +30,7 @@ npm run seed                      # crea las cuentas, la configuración y las se
 npm run dev                       # servidor en http://localhost:3000
 ```
 
-Prueba: <http://localhost:3000/beacons/1/1>
+Prueba: <http://localhost:3000/beacons/1/1>. El panel queda en `http://localhost:3000/<ADMIN_PATH>`.
 
 Si prefieres Docker en vez de `db:local`: `docker compose up -d` (mismo puerto y credenciales).
 
@@ -42,6 +43,11 @@ Todas están documentadas en [`server/.env.example`](server/.env.example). `serv
 | `PORT`, `HOST`                                       | La app Android apunta al puerto 3000. `HOST=0.0.0.0` permite que un teléfono de la misma red se conecte.   |
 | `DATABASE_URL`                                       | Conexión que usa el servidor. En Supabase, el pooler en modo transacción (puerto 6543, `?pgbouncer=true`). |
 | `DIRECT_URL`                                         | Solo para migraciones. En Supabase, la conexión de sesión (puerto 5432).                                   |
+| `ADMIN_PATH`                                         | Ruta secreta del panel. Solo existe en `/<ADMIN_PATH>`; nunca va en variables `VITE_*`.                    |
+| `JWT_SECRET`, `CSRF_SECRET`                          | Firma de sesiones y de tokens CSRF. Genera los tres valores con `npm run secret`.                          |
+| `COOKIE_SECURE`, `SESSION_TTL_HOURS`                 | Cookies solo por HTTPS (obligatorio en producción) y duración de la sesión.                                |
+| `LOGIN_*`, `API_RATE_LIMIT`                          | Bloqueo de cuenta por intentos fallidos y límites de peticiones por IP.                                    |
+| `CORS_ORIGINS`, `TRUST_PROXY`, `CSP_IMG_HOSTS`       | Orígenes extra permitidos, proxy delante del servidor y hosts de imágenes para la CSP.                     |
 | `SEED_ADMIN_*`, `SEED_EDITOR_*`                      | Cuentas iniciales que crea `npm run seed`.                                                                 |
 | `BACKUP_DIR`, `BACKUP_INTERVAL_HOURS`, `BACKUP_KEEP` | Respaldos locales automáticos.                                                                             |
 | `BEACON_SNAPSHOT_PATH`                               | Copia local de los beacons para cuando la base de datos no responde.                                       |
@@ -53,6 +59,18 @@ Todas están documentadas en [`server/.env.example`](server/.env.example). `serv
 2. Ejecuta `npm run db:deploy`, `npm run import:beacons` y `npm run seed`.
 
 Supabase publica el schema `public` a través de su Data API. La migración inicial **activa RLS sin políticas en todas las tablas** y revoca los permisos de los roles `anon` y `authenticated`. Así nadie puede leer los datos (incluidos los hashes de contraseña) con la clave pública del proyecto. Prisma se conecta como dueño de las tablas y no se ve afectado. **Toda migración que cree tablas nuevas debe activar RLS en ellas**; la prueba de integración `todas las tablas del schema public tienen RLS activado` lo verifica.
+
+## Panel y seguridad
+
+La ruta oculta evita que el panel aparezca a simple vista, pero **no es la seguridad**. Lo que protege el panel:
+
+- **Ruta oculta:** el panel se sirve solo bajo `/<ADMIN_PATH>`, con `X-Robots-Tag: noindex`. `/admin`, `/login` o cualquier otra ruta responden 404, sin redirigir. La ruta tampoco aparece en los logs de acceso.
+- **Sesión:** JWT en la cookie `__Host-signal_session` (httpOnly, Secure, SameSite=Strict). Cada petición verifica que la cuenta siga activa y que el token no haya sido revocado. Cambiar la contraseña o cerrar sesión invalida todas las sesiones de esa cuenta.
+- **CSRF:** token de doble envío firmado y atado a la sesión, en la cabecera `X-CSRF-Token`. Además se comprueba la cabecera `Origin`.
+- **Roles:** cada ruta de `/api/admin` declara qué roles la pueden usar. Sin sesión responde 401 y con un rol insuficiente, 403. `test/integration/permissions.test.ts` recorre todas las rutas automáticamente y exige que bitácora, usuarios, beacons, identidad visual, equipo y publicación sean solo de administración.
+- **Login:** el error es el mismo para un correo inexistente y una contraseña incorrecta. Tras `LOGIN_MAX_ATTEMPTS` fallos la cuenta se bloquea `LOGIN_LOCK_MINUTES` minutos, y hay un límite de intentos por IP. En el primer inicio de sesión se obliga a cambiar la contraseña.
+- **Cabeceras:** helmet aplica CSP estricta, nosniff, prohibición de iframes y HSTS en producción. CORS queda cerrado salvo los orígenes de `CORS_ORIGINS`.
+- **Bitácora:** `audit_logs` registra quién, qué, cuándo, la IP y el navegador (inicios de sesión, bloqueos, cambios de contraseña y, más adelante, cada cambio de contenido). Se consulta en `GET /api/admin/audit`.
 
 ## Cuentas y seed
 
@@ -94,7 +112,7 @@ El CI (`.github/workflows/ci.yml`) ejecuta todo lo anterior contra un PostgreSQL
 
 - [x] **Fase 0:** saneamiento del repo, workspaces, TypeScript, ESLint, Prettier y CI.
 - [x] **Fase 1:** modelo de datos, migraciones con RLS, importación de beacons, seed idempotente, respaldos y paridad con la app Android.
-- [ ] **Fase 2:** autenticación, roles, CSRF, rate limit, bitácora y ruta oculta del panel.
+- [x] **Fase 2:** autenticación, roles, CSRF, rate limit, bitácora y ruta oculta del panel.
 - [ ] **Fase 3:** API de administración.
 - [ ] **Fase 4:** base del frontend (dos builds de Vite, tokens y kit de UI).
 - [ ] **Fase 5:** landing y PWA.
