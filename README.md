@@ -134,7 +134,7 @@ Express sirve la landing en sus rutas: `/`, `/nosotros`, `/noticias`, `/noticias
   - tarjetas de noticia con un solo enlace, paginación con `aria-current` e indicador de «sin conexión»;
   - el formulario de contacto valida en línea, muestra un resumen de errores enfocable, conserva un borrador y muestra los errores del servidor junto a cada campo.
 - **PWA** (`vite-plugin-pwa`, solo en el build público):
-  - manifest instalable con íconos (`node apps/web/scripts/gen-icons.mjs` los regenera desde el isotipo);
+  - manifest instalable con íconos cuadrados (`node apps/web/scripts/gen-icons.mjs` los regenera: dibujo vectorial basado en el isotipo, con versión maskable para Android);
   - service worker que precarga la landing y guarda en caché las páginas visitadas, el contenido, las noticias publicadas y las imágenes;
   - sin conexión, las páginas ya visitadas cargan completas y las demás muestran `offline.html`;
   - el service worker solo atiende una lista de rutas de la landing, así que la del panel nunca pasa por él.
