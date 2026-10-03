@@ -1,3 +1,4 @@
+import compression from "compression";
 import cookieParser from "cookie-parser";
 import express from "express";
 import { pinoHttp } from "pino-http";
@@ -11,6 +12,7 @@ import type { Logger } from "./lib/logger.js";
 import type { Db } from "./lib/prisma.js";
 import { adminPanel } from "./routes/admin-panel.js";
 import { adminApi } from "./routes/admin/index.js";
+import { landing } from "./routes/landing.js";
 import { legacyBeaconsRouter } from "./routes/legacy-beacons.js";
 import { writeBeaconSnapshot } from "./beacons/snapshot.js";
 import { themeCss } from "./content/theme.js";
@@ -49,6 +51,8 @@ export function createApp(deps: AppDeps) {
     }),
   );
   app.use(securityHeaders(env));
+  // gzip/brotli para HTML, JS, CSS y JSON: el bundle baja de ~360 KB a ~115 KB.
+  app.use(compression());
   app.use(cookieParser());
   // 1 MB: una noticia larga, en el JSON del editor, puede pasar de 100 KB.
   app.use(express.json({ limit: "1mb" }));
@@ -124,6 +128,18 @@ export function createApp(deps: AppDeps) {
     }
   };
   app.use(adminPanel({ adminPath: env.ADMIN_PATH, distDir: env.adminDistDir, getThemeCss }));
+
+  // --- Landing pública ---
+  app.use(
+    landing({
+      db,
+      logger,
+      distDir: env.publicDistDir,
+      siteUrl: env.SITE_URL,
+      cacheHtml: env.isProduction,
+      getThemeCss,
+    }),
+  );
 
   // Cualquier otra ruta: 404, nunca una redirección al login.
   app.use(() => {

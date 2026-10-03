@@ -17,6 +17,7 @@ export function testEnv(overrides: Record<string, string> = {}) {
     DATABASE_URL: TEST_DATABASE_URL ?? "postgresql://sin-base/ninguna",
     ADMIN_PATH: TEST_ADMIN_PATH,
     ADMIN_DIST_DIR: path.resolve(import.meta.dirname, "../fixtures/admin-dist"),
+    PUBLIC_DIST_DIR: path.resolve(import.meta.dirname, "../fixtures/public-dist"),
     JWT_SECRET: "jwt-secreto-de-prueba-0123456789abcdef0123",
     CSRF_SECRET: "csrf-secreto-de-prueba-0123456789abcdef012",
     COOKIE_SECURE: "true",

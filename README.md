@@ -52,6 +52,7 @@ Todas están documentadas en [`server/.env.example`](server/.env.example). `serv
 | `JWT_SECRET`, `CSRF_SECRET`                          | Firma de sesiones y de tokens CSRF. Genera los tres valores con `npm run secret`.                          |
 | `COOKIE_SECURE`, `SESSION_TTL_HOURS`                 | Cookies solo por HTTPS (obligatorio en producción) y duración de la sesión.                                |
 | `LOGIN_*`, `API_RATE_LIMIT`                          | Bloqueo de cuenta por intentos fallidos y límites de peticiones por IP.                                    |
+| `SITE_URL`                                           | Dominio público (https://…) para el sitemap, el canonical y Open Graph.                                    |
 | `CORS_ORIGINS`, `TRUST_PROXY`, `CSP_IMG_HOSTS`       | Orígenes extra permitidos, proxy delante del servidor y hosts de imágenes para la CSP.                     |
 | `STORAGE_DRIVER`, `UPLOAD_*`, `SUPABASE_*`           | Dónde se guardan las imágenes: disco local en desarrollo, Supabase Storage en producción.                  |
 | `SEED_ADMIN_*`, `SEED_EDITOR_*`                      | Cuentas iniciales que crea `npm run seed`.                                                                 |
@@ -120,6 +121,26 @@ Garantías que impone el servidor, no solo la interfaz:
 - **Animaciones** de 150 a 300 ms. Con `prefers-reduced-motion` se desactivan todas.
 - **Fuentes autoalojadas** (Atkinson Hyperlegible Next y Bricolage Grotesque): sin dependencia de Google Fonts y disponibles offline.
 
+## Landing y PWA
+
+Express sirve la landing en sus rutas: `/`, `/nosotros`, `/noticias`, `/noticias/:slug` y `/contacto`.
+
+- **Datos incluidos en el HTML:** cada página sale con su `<title>`, meta description, Open Graph, canonical, el tema de Identidad visual y los datos iniciales en `<script type="application/json" id="datos-iniciales">`. El primer render no espera a la API, y el JSON va escapado para que ningún texto pueda cerrar el `<script>`.
+- **Sin contenido fijo en el código:** secciones, textos, noticias, equipo, colaboradores, logos, colores y contacto salen de la base de datos. Lo publicado en el panel se ve al recargar, sin redeploy.
+- **404 real:** cualquier otra ruta (incluidas `/admin` o `/login`) responde 404 con la página «no encontrada», también cuando la base de datos no responde. Una noticia en borrador o inexistente también es 404.
+- **SEO:** `/robots.txt` y `/sitemap.xml` se generan en el servidor. Solo listan lo publicado y no mencionan el panel.
+- **Accesibilidad:**
+  - un solo `<h1>` por página (el título de su primera sección) y foco en él al navegar;
+  - landmarks, enlace «Saltar al contenido» y menú móvil con `aria-expanded` que se cierra con Escape;
+  - tarjetas de noticia con un solo enlace, paginación con `aria-current` e indicador de «sin conexión»;
+  - el formulario de contacto valida en línea, muestra un resumen de errores enfocable, conserva un borrador y muestra los errores del servidor junto a cada campo.
+- **PWA** (`vite-plugin-pwa`, solo en el build público):
+  - manifest instalable con íconos (`node apps/web/scripts/gen-icons.mjs` los regenera desde el isotipo);
+  - service worker que precarga la landing y guarda en caché las páginas visitadas, el contenido, las noticias publicadas y las imágenes;
+  - sin conexión, las páginas ya visitadas cargan completas y las demás muestran `offline.html`;
+  - el service worker solo atiende una lista de rutas de la landing, así que la del panel nunca pasa por él.
+- **Medición** (Lighthouse 13, perfil móvil, servidor local con compresión): rendimiento 96–97 y accesibilidad, buenas prácticas y SEO en 100, en Inicio, Nosotros, Noticias y Contacto.
+
 ## Cuentas y seed
 
 - No hay registro público. `npm run seed` crea una cuenta de administrador y una de editor con los datos de `server/.env`.
@@ -163,6 +184,6 @@ El CI (`.github/workflows/ci.yml`) ejecuta todo lo anterior contra un PostgreSQL
 - [x] **Fase 2:** autenticación, roles, CSRF, rate limit, bitácora y ruta oculta del panel.
 - [x] **Fase 3:** API de administración y API pública.
 - [x] **Fase 4:** base del frontend (dos builds de Vite, tokens y kit de UI).
-- [ ] **Fase 5:** landing y PWA.
+- [x] **Fase 5:** landing y PWA.
 - [ ] **Fase 6:** panel de administración.
 - [ ] **Fase 7:** QA, accesibilidad en CI, Lighthouse y despliegue.

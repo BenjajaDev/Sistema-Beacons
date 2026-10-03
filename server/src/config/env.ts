@@ -43,6 +43,12 @@ const serverEnvSchema = z
         "ADMIN_PATH debe tener entre 24 y 128 caracteres: letras, números, - o _. Genera uno con: npm run secret",
       ),
     ADMIN_DIST_DIR: z.string().default("../apps/web/dist/admin"),
+    PUBLIC_DIST_DIR: z.string().default("../apps/web/dist/public"),
+    // URL pública del sitio (https://...) para el sitemap, el canonical y Open Graph.
+    // Sin ella se usa el host de cada petición.
+    SITE_URL: z
+      .url("SITE_URL debe ser una URL completa, por ejemplo https://signal.cl.")
+      .optional(),
     JWT_SECRET: secreto("JWT_SECRET"),
     CSRF_SECRET: secreto("CSRF_SECRET"),
     SESSION_TTL_HOURS: z.coerce.number().min(0.25).max(72).default(8),
@@ -94,6 +100,7 @@ type ParsedEnv = z.infer<typeof serverEnvSchema>;
 export type ServerEnv = ParsedEnv & {
   isProduction: boolean;
   adminDistDir: string;
+  publicDistDir: string;
   backupDir: string;
   beaconSnapshotPath: string;
   // Valor listo para app.set("trust proxy", ...).
@@ -125,6 +132,7 @@ export function loadServerEnv(source: NodeJS.ProcessEnv = process.env): ServerEn
     ...env,
     isProduction: env.NODE_ENV === "production",
     adminDistDir: path.resolve(SERVER_ROOT, env.ADMIN_DIST_DIR),
+    publicDistDir: path.resolve(SERVER_ROOT, env.PUBLIC_DIST_DIR),
     backupDir: path.resolve(SERVER_ROOT, env.BACKUP_DIR),
     beaconSnapshotPath: path.resolve(SERVER_ROOT, env.BEACON_SNAPSHOT_PATH),
     trustProxy: parseTrustProxy(env.TRUST_PROXY),

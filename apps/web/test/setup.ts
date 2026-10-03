@@ -4,9 +4,9 @@ import { afterEach } from "vitest";
 
 // Node 25 trae un localStorage global propio que, sin --localstorage-file, no
 // tiene métodos y tapa el de jsdom. En ese caso se usa uno en memoria.
-if (typeof globalThis.localStorage?.clear !== "function") {
+function almacenamientoEnMemoria(): Storage {
   const datos = new Map<string, string>();
-  const almacenamiento: Storage = {
+  return {
     get length() {
       return datos.size;
     },
@@ -16,12 +16,20 @@ if (typeof globalThis.localStorage?.clear !== "function") {
     removeItem: (k) => void datos.delete(k),
     setItem: (k, v) => void datos.set(k, String(v)),
   };
-  Object.defineProperty(globalThis, "localStorage", { value: almacenamiento, configurable: true });
+}
+for (const nombre of ["localStorage", "sessionStorage"] as const) {
+  if (typeof globalThis[nombre]?.clear !== "function") {
+    Object.defineProperty(globalThis, nombre, {
+      value: almacenamientoEnMemoria(),
+      configurable: true,
+    });
+  }
 }
 
 afterEach(() => {
   cleanup();
   localStorage.clear();
+  sessionStorage.clear();
   document.documentElement.removeAttribute("data-theme");
   document.documentElement.style.fontSize = "";
 });

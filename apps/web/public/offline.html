@@ -1,0 +1,78 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="robots" content="noindex" />
+    <title>Sin conexión · SIGNAL</title>
+    <link rel="icon" href="/icons/favicon-48.png" />
+    <style>
+      :root {
+        color-scheme: light dark;
+        --fondo: #ffffff;
+        --texto: #0d1b3e;
+        --suave: #3b4a6b;
+        --primario: #1a56db;
+        --sobre-primario: #ffffff;
+      }
+      @media (prefers-color-scheme: dark) {
+        :root {
+          --fondo: #0a1530;
+          --texto: #eef3ff;
+          --suave: #b8c7ea;
+          --primario: #5b8eff;
+          --sobre-primario: #0a1530;
+        }
+      }
+      body {
+        margin: 0;
+        min-height: 100vh;
+        display: grid;
+        place-items: center;
+        padding: 1.5rem;
+        background: var(--fondo);
+        color: var(--texto);
+        font-family: system-ui, sans-serif;
+        font-size: 1.0625rem;
+        line-height: 1.6;
+      }
+      main {
+        max-width: 32rem;
+      }
+      h1 {
+        font-size: 1.75rem;
+        line-height: 1.2;
+      }
+      p {
+        color: var(--suave);
+      }
+      a {
+        display: inline-flex;
+        align-items: center;
+        min-height: 2.75rem;
+        padding: 0.5rem 1.5rem;
+        border-radius: 999px;
+        background: var(--primario);
+        color: var(--sobre-primario);
+        font-weight: 600;
+        text-decoration: none;
+      }
+      a:focus-visible {
+        outline: 3px solid var(--primario);
+        outline-offset: 3px;
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <h1>Estás sin conexión</h1>
+      <p>
+        Esta página todavía no está guardada en tu dispositivo. Revisa tu conexión a internet y
+        vuelve a intentarlo. Las páginas y noticias que ya visitaste siguen disponibles sin
+        conexión.
+      </p>
+      <!-- href vacío: recarga la misma dirección. -->
+      <a href="">Reintentar</a>
+    </main>
+  </body>
+</html>
