@@ -1,0 +1,61 @@
+flowchart LR
+    classDef componente fill:#FFE86D,stroke:#A28E26,color:#574900
+    classDef externo fill:#DDDDD8,stroke:#8A8A7E,color:#434339
+    classDef seguridad fill:#9CE6FF,stroke:#2C97BB,color:#1C4657
+
+    subgraph fisico["Espacio físico"]
+        beacon["Beacon iBeacon<br/>UUID, major, minor, txPower"]:::externo
+    end
+
+    subgraph android["App Android: Kotlin y Jetpack Compose"]
+        scanner["BeaconScanner<br/>escaneo BLE de baja latencia<br/>y lectura del paquete iBeacon"]:::componente
+        tracker["BeaconDistanceTracker<br/>ventana de RSSI de 4 s sin extremos<br/>modelo log-distancia a metros"]:::componente
+        vm["BeaconViewModel<br/>decide cada 250 ms por votos:<br/>entrar, permanecer o cambiar"]:::componente
+        ajustes["SettingsRepository<br/>umbral de activación 1,5 m<br/>calibración a 1 m"]:::componente
+        repo["BeaconRepository y Retrofit<br/>timeout 5 s, caché en memoria<br/>y respaldo local"]:::componente
+        salida["Salida accesible<br/>TextToSpeech, vibración<br/>e historial"]:::componente
+    end
+
+    subgraph navegador["Navegador: React y Vite, dos builds separados"]
+        landing["Landing y PWA<br/>dist/public, service worker"]:::componente
+        panelweb["Panel<br/>dist/admin, solo bajo /ADMIN_PATH"]:::componente
+    end
+
+    subgraph servidor["Servidor Node.js: Express 5"]
+        mw["Helmet y CSP, compresión,<br/>CORS cerrado, control de origen"]:::seguridad
+        legacy["GET /beacons/:major/:minor<br/>contrato de la app, puerto 3000"]:::componente
+        publica["/api/public<br/>contenido del sitio y contacto"]:::componente
+        admin["/api/admin<br/>sesión JWT en cookie __Host-,<br/>CSRF, roles, límite de intentos"]:::seguridad
+        render["Landing con datos iniciales<br/>en el HTML"]:::componente
+        servicios["Servicios: bitácora, imágenes sin EXIF,<br/>respaldos y snapshot de beacons"]:::componente
+    end
+
+    subgraph datos["Datos"]
+        prisma["Prisma 7"]:::componente
+        pg[("PostgreSQL en Supabase<br/>beacons, users, news,<br/>sections, media, audit_logs")]:::externo
+        snapshot[("beacons.snapshot.json<br/>y respaldos locales")]:::externo
+        storage[("Supabase Storage<br/>o carpeta uploads")]:::externo
+    end
+
+    beacon -->|"anuncio BLE"| scanner
+    scanner --> tracker
+    tracker --> vm
+    ajustes --> vm
+    vm --> repo
+    vm --> salida
+    repo -->|"HTTP JSON"| mw
+    landing -->|HTTPS| mw
+    panelweb -->|HTTPS| mw
+    mw --> legacy
+    mw --> publica
+    mw --> admin
+    mw --> render
+    admin --> servicios
+    legacy --> prisma
+    legacy -.->|"si la base no responde"| snapshot
+    publica --> prisma
+    admin --> prisma
+    render --> prisma
+    prisma --> pg
+    servicios --> snapshot
+    servicios --> storage

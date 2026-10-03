@@ -1,0 +1,27 @@
+flowchart LR
+    classDef persona fill:#B3E65F,stroke:#6E9A24,color:#2F440B
+    classDef componente fill:#FFE86D,stroke:#A28E26,color:#574900
+    classDef externo fill:#DDDDD8,stroke:#8A8A7E,color:#434339
+
+    usuaria(["Persona con discapacidad visual"]):::persona
+    visitante(["Público del sitio"]):::persona
+    equipo(["Equipo SIGNAL<br/>ADMIN y EDITOR"]):::persona
+
+    beacon["Beacons BLE<br/>iBeacon en el edificio"]:::externo
+    app["App Android SIGNAL<br/>detecta, decide y habla"]:::componente
+    web["Sitio web y PWA<br/>landing pública"]:::componente
+    panel["Panel de administración<br/>ruta oculta"]:::componente
+    servidor["Servidor SIGNAL<br/>Node.js, Express 5, Prisma 7"]:::componente
+    datos[("PostgreSQL<br/>Supabase")]:::externo
+    archivos[("Imágenes<br/>Supabase Storage")]:::externo
+
+    beacon -->|"anuncio BLE: UUID, major, minor, potencia"| app
+    usuaria -->|"lleva el teléfono"| app
+    app -->|"voz y vibración"| usuaria
+    app -->|"GET /beacons/major/minor"| servidor
+    visitante -->|HTTPS| web
+    equipo -->|HTTPS| panel
+    web -->|"/api/public"| servidor
+    panel -->|"/api/admin"| servidor
+    servidor --> datos
+    servidor --> archivos

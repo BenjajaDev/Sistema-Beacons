@@ -8,7 +8,7 @@ Navegación interior con beacons BLE para personas con discapacidad visual.
 | `BeaconsAndroid/` | App Android (Kotlin + Compose). Consume `GET /beacons/:major/:minor`.                                                         |
 | `apps/web/`       | Frontend: landing pública y panel, en dos builds de Vite separados.                                                           |
 | `e2e/`            | Pruebas de punta a punta con Playwright y axe, y el servidor de pruebas que comparten con Lighthouse CI.                      |
-| `docs/`           | Guías: redacción de audiodescripciones y revisión manual con lector de pantalla.                                              |
+| `docs/`           | Guías (audiodescripciones, revisión con lector de pantalla) y [diagramas](docs/diagramas/README.md) de arquitectura y flujo.  |
 
 ## Requisitos
 
