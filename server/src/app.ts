@@ -47,6 +47,9 @@ export function createApp(deps: AppDeps) {
           method: req.method,
           url: req.url.replace(`/${env.ADMIN_PATH}`, "/<panel>"),
         }),
+        // Solo el código: las cabeceras de respuesta incluyen Set-Cookie con el JWT
+        // de sesión, que no debe quedar en los logs.
+        res: (res: { statusCode: number }) => ({ statusCode: res.statusCode }),
       },
     }),
   );

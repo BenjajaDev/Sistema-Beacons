@@ -1,3 +1,5 @@
+import { Writable } from "node:stream";
+import { pino } from "pino";
 import request from "supertest";
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
 import type { Db } from "../../src/lib/prisma.js";
@@ -235,6 +237,24 @@ describe.skipIf(!hasTestDb)("autenticación", () => {
           .status,
       ).toBe(401);
     });
+  });
+
+  it("el JWT de sesión no queda en los logs de acceso", async () => {
+    let logs = "";
+    const destino = new Writable({
+      write(chunk, _enc, cb) {
+        logs += chunk.toString();
+        cb();
+      },
+    });
+    const conLogs = buildTestApp({ db, logger: pino({ level: "info" }, destino) });
+    const res = await request(conLogs)
+      .post("/api/admin/auth/login")
+      .send({ email: ADMIN, password: CLAVE });
+    const jwt = cookieHeader(res.headers["set-cookie"]).match(/__Host-signal_session=([^;]+)/)![1]!;
+    expect(logs).toContain('"statusCode":200');
+    expect(logs).not.toContain(jwt);
+    expect(logs).not.toMatch(/set-cookie/i);
   });
 
   it("la bitácora registra quién hizo qué, filtrable por acción", async () => {

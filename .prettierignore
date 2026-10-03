@@ -4,7 +4,7 @@ coverage
 server/src/generated
 server/prisma/migrations
 BeaconsAndroid
-cms
 package-lock.json
 docs
 apps/web/src/shared/styles/theme-default.css
+server/prisma/data

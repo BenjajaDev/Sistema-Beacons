@@ -10,10 +10,7 @@ import { buildTestApp } from "./helpers/app.js";
 // Contrato con la app Android: GET /beacons/:major/:minor debe responder
 // exactamente lo mismo que el servidor anterior, que servía beacons.json tal cual.
 
-const ARCHIVO_HISTORICO = path.resolve(
-  import.meta.dirname,
-  "../../BeaconsAndroid/server/beacons.json",
-);
+const ARCHIVO_HISTORICO = path.resolve(import.meta.dirname, "../prisma/data/beacons.json");
 const historico = JSON.parse(readFileSync(ARCHIVO_HISTORICO, "utf-8")) as Record<string, unknown>;
 const { beacons } = parseLegacyBeacons(historico);
 

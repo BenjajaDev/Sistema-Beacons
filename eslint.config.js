@@ -6,13 +6,7 @@ import tseslint from "typescript-eslint";
 
 export default tseslint.config(
   {
-    ignores: [
-      "**/node_modules/**",
-      "**/dist/**",
-      "**/src/generated/**",
-      "cms/**",
-      "BeaconsAndroid/**",
-    ],
+    ignores: ["**/node_modules/**", "**/dist/**", "**/src/generated/**", "BeaconsAndroid/**"],
   },
   js.configs.recommended,
   ...tseslint.configs.recommended,

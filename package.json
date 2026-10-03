@@ -28,10 +28,15 @@
     "format:check": "prettier --check .",
     "secret": "npm run secret -w server",
     "dev:web": "npm run dev -w apps/web",
-    "dev:admin": "npm run dev:admin -w apps/web"
+    "dev:admin": "npm run dev:admin -w apps/web",
+    "e2e": "playwright test",
+    "lighthouse": "lhci autorun"
   },
   "devDependencies": {
+    "@axe-core/playwright": "^4.13.0",
     "@eslint/js": "^9.39.5",
+    "@lhci/cli": "^0.15.1",
+    "@playwright/test": "^1.63.0",
     "eslint": "^9.39.5",
     "eslint-plugin-jsx-a11y": "^6.10.2",
     "eslint-plugin-react-hooks": "^7.1.1",

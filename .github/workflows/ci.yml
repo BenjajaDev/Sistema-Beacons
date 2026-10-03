@@ -1,15 +1,22 @@
 name: CI
 
-# Un solo job: lint, tipos, tests (con PostgreSQL), build del frontend y la
-# verificación de que el bundle público no contiene nada del panel.
+# 1. chequeos: lint, tipos, formato, tests del servidor (con PostgreSQL) y del
+#    frontend, build y verificación de que el bundle público no contiene el panel.
+# 2. e2e: Playwright en Chromium con axe (landing y panel, claro y oscuro, 320 px,
+#    flujos por rol, PWA instalable y offline).
+# 3. lighthouse: rendimiento ≥ 90 y accesibilidad ≥ 95 en móvil.
 
 on:
   push:
     branches: [main, develop]
   pull_request:
 
+env:
+  TEST_DATABASE_URL: postgresql://postgres:postgres@localhost:5432/signal_test
+  DATABASE_URL: postgresql://postgres:postgres@localhost:5432/signal_test
+
 jobs:
-  server:
+  chequeos:
     runs-on: ubuntu-latest
     services:
       postgres:
@@ -22,9 +29,6 @@ jobs:
         options: >-
           --health-cmd "pg_isready -U postgres"
           --health-interval 5s --health-timeout 5s --health-retries 10
-    env:
-      DATABASE_URL: postgresql://postgres:postgres@localhost:5432/signal_test
-      TEST_DATABASE_URL: postgresql://postgres:postgres@localhost:5432/signal_test
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -41,3 +45,70 @@ jobs:
         env:
           # Valor de prueba: el chequeo verifica que no aparezca en dist/public.
           ADMIN_PATH: ci-ruta-secreta-de-prueba-0123456789
+
+  e2e:
+    needs: chequeos
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: signal_test
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 5s --health-timeout 5s --health-retries 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - run: npm run db:deploy
+        env:
+          DIRECT_URL: ${{ env.TEST_DATABASE_URL }}
+      - run: npm run build -w apps/web
+      - run: npx playwright install --with-deps chromium
+      - run: npm run e2e
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: informe-playwright
+          path: playwright-report/
+          retention-days: 14
+
+  lighthouse:
+    needs: chequeos
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: signal_test
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 5s --health-timeout 5s --health-retries 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - run: npm run db:deploy
+        env:
+          DIRECT_URL: ${{ env.TEST_DATABASE_URL }}
+      - run: npm run build -w apps/web
+      - run: npm run lighthouse
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: informes-lighthouse
+          path: .lighthouseci/
+          retention-days: 14

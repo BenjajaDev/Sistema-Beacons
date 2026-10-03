@@ -1,6 +1,6 @@
 // Importa un beacons.json (formato histórico) a la base de datos.
 //
-//   npm run import:beacons                          → BeaconsAndroid/server/beacons.json
+//   npm run import:beacons                          → server/prisma/data/beacons.json
 //   npm run import:beacons -- ruta/al/archivo.json
 //   npm run import:beacons -- --sobrescribir        → también actualiza los que ya existen
 //
@@ -22,7 +22,7 @@ const { values, positionals } = parseArgs({
 
 const env = loadScriptEnv();
 const archivo = path.resolve(
-  positionals[0] ?? path.join(SERVER_ROOT, "..", "BeaconsAndroid", "server", "beacons.json"),
+  positionals[0] ?? path.join(SERVER_ROOT, "prisma", "data", "beacons.json"),
 );
 const db = createPrisma(env.DATABASE_URL);
 

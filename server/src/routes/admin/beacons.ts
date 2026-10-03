@@ -6,7 +6,7 @@ import type { AdminDeps } from "./deps.js";
 import { changedFields, idParam, textoOpcional } from "./helpers.js";
 import { ADMIN_ONLY, type AdminRoute } from "./registry.js";
 
-// CMS de beacons (antes en cms/, sin autenticación). Solo administración.
+// CMS de beacons (antes una app aparte, cms/, sin autenticación). Solo administración.
 // Lo que se guarda aquí es lo que la app Android lee y anuncia por voz.
 
 const idBeacon = (campo: string) =>

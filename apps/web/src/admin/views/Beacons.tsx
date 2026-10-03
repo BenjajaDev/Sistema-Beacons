@@ -10,7 +10,7 @@ import { useToast } from "@shared/ui/Toast";
 import { adminFetch, type Beacon } from "../api";
 import { AvisoCambiosSinGuardar, Cabecera, formatoFecha, usePanelPage } from "../ui";
 
-// CMS de beacons (antes en cms/). Lo que se guarda aquí es lo que la app Android
+// CMS de beacons (antes una app aparte, cms/). Lo que se guarda aquí es lo que la app Android
 // muestra y lee en voz alta al detectar cada beacon.
 
 interface Resumen {

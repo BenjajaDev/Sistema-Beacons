@@ -1,7 +1,7 @@
 # Estrategia de redacción para mensajes de audiodescripción
 
 Guía para quien escriba o edite el campo **Descripción** de un beacon en el
-CMS (`cms/src/components/BeaconForm.jsx`). Ese texto es el mensaje que la app
+panel de administración (vista **Beacons**, `apps/web/src/admin/views/Beacons.tsx`). Ese texto es el mensaje que la app
 SIGNAL convierte en voz cuando una persona con discapacidad visual se acerca
 a un punto. Escribirlo bien no es un detalle de redacción: es la única
 información que esa persona va a recibir sobre dónde está.
@@ -23,7 +23,7 @@ título". Si el lugar tiene un nombre, ese nombre va dentro de la
 Descripción, con sus propias palabras — no basta con que esté en el campo
 Título.
 
-> Ejemplo real ya cargado en `BeaconsAndroid/server/beacons.json` (beacon
+> Ejemplo real ya cargado en `server/prisma/data/beacons.json` (beacon
 > `1-1`): el Título dice *"Oficina de reuniones"*, pero la Descripción dice
 > *"Estás en el cuarto piso, en la oficina del living lab..."* sin nombrarla.
 > Una persona vidente ve igual el título arriba de la tarjeta. Una persona

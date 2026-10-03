@@ -2,14 +2,13 @@
 
 Navegación interior con beacons BLE para personas con discapacidad visual.
 
-| Carpeta                  | Qué es                                                                                                                                    |
-| ------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------- |
-| `server/`                | API en Express + Prisma (PostgreSQL / Supabase). Sirve la ficha de cada beacon a la app, y más adelante la API de la landing y del panel. |
-| `BeaconsAndroid/`        | App Android (Kotlin + Compose). Consume `GET /beacons/:major/:minor`.                                                                     |
-| `apps/web/`              | Frontend: landing pública y panel, en dos builds de Vite separados.                                                                       |
-| `cms/`                   | CMS de beacons anterior (React + Vite). Se integrará al panel y luego se eliminará.                                                       |
-| `BeaconsAndroid/server/` | Servidor anterior basado en `beacons.json`. **Obsoleto**; se conserva hasta terminar la migración.                                        |
-| `docs/`                  | Guías de contenido (redacción de audiodescripciones).                                                                                     |
+| Carpeta           | Qué es                                                                                                                        |
+| ----------------- | ----------------------------------------------------------------------------------------------------------------------------- |
+| `server/`         | API en Express + Prisma (PostgreSQL / Supabase): ficha de cada beacon para la app, API pública de la landing y API del panel. |
+| `BeaconsAndroid/` | App Android (Kotlin + Compose). Consume `GET /beacons/:major/:minor`.                                                         |
+| `apps/web/`       | Frontend: landing pública y panel, en dos builds de Vite separados.                                                           |
+| `e2e/`            | Pruebas de punta a punta con Playwright y axe, y el servidor de pruebas que comparten con Lighthouse CI.                      |
+| `docs/`           | Guías: redacción de audiodescripciones y revisión manual con lector de pantalla.                                              |
 
 ## Requisitos
 
@@ -26,7 +25,7 @@ cp server/.env.example server/.env
 
 npm run db:local                  # en otra terminal: PostgreSQL local en el puerto 5433
 npm run db:deploy                 # aplica las migraciones
-npm run import:beacons            # importa BeaconsAndroid/server/beacons.json
+npm run import:beacons            # importa server/prisma/data/beacons.json
 npm run seed                      # crea las cuentas, la configuración y las secciones
 npm run dev                       # servidor en http://localhost:3000
 npm run dev:web                   # en otra terminal: landing en http://localhost:5173
@@ -194,18 +193,73 @@ El servidor también hace un respaldo cada `BACKUP_INTERVAL_HOURS` horas. Los re
 
 - **No se puede cambiar** sin actualizar la app. `test/legacy-beacons.test.ts` comprueba que cada entrada del `beacons.json` original se responde de forma idéntica.
 - Si la base de datos no responde, el servidor contesta desde el snapshot local (`BEACON_SNAPSHOT_PATH`), que se actualiza al arrancar, al importar y en cada respaldo.
-- El listado (`GET /beacons`) y la escritura sin autenticación (`POST` y `DELETE`) se eliminaron. La edición pasará al panel, en `/api/admin/beacons`, solo para administradores.
+- El listado (`GET /beacons`) y la escritura sin autenticación (`POST` y `DELETE`) se eliminaron. La edición está en el panel (vista Beacons, `/api/admin/beacons`), solo para administradores.
+- El servidor anterior (`BeaconsAndroid/server/`) y el CMS anterior (`cms/`) se eliminaron. Los datos históricos quedan en `server/prisma/data/beacons.json`.
 
 ## Tests y calidad
 
 ```bash
-npm test          # unitarios + integración (si TEST_DATABASE_URL está definida)
+npm test                 # unitarios + integración del servidor (con TEST_DATABASE_URL) y del frontend
 npm run typecheck
 npm run lint
 npm run format:check
+npm run build -w apps/web   # incluye la verificación de que el bundle público no contiene el panel
+npm run e2e              # Playwright + axe (requiere el build y TEST_DATABASE_URL)
+npm run lighthouse       # Lighthouse CI móvil (requiere el build y TEST_DATABASE_URL)
 ```
 
-El CI (`.github/workflows/ci.yml`) ejecuta todo lo anterior contra un PostgreSQL 17.
+- **`npm run e2e`** levanta un servidor de pruebas (`e2e/servidor.mjs`, puerto 3100, base `signal_test` vaciada y cargada en cada corrida) y prueba en Chromium:
+  - la landing: un solo h1, axe en tema claro y oscuro, 320 px y texto al 200 %, enlace «Saltar al contenido», foco al navegar, preferencias recordadas y formulario de contacto;
+  - que el panel no existe para el público (404, robots, sitemap, manifest y service worker);
+  - los flujos del panel por rol;
+  - la PWA: instalable y sin conexión.
+
+  Para usar el Chrome instalado en vez de descargar Chromium: `PW_CANAL=chrome npm run e2e`.
+
+- **`npm run lighthouse`** exige, en la mediana de 3 corridas por página en perfil móvil, rendimiento ≥ 90, accesibilidad ≥ 95, y buenas prácticas y SEO ≥ 90. Última medición local: rendimiento 95–96 y 100 en las otras tres categorías, en Inicio, Nosotros, Noticias y Contacto.
+- **Revisión manual con lector de pantalla:** [`docs/revision-lector-pantalla.md`](docs/revision-lector-pantalla.md) es la lista para NVDA y TalkBack. Ninguna herramienta automática la reemplaza.
+
+El CI (`.github/workflows/ci.yml`) tiene tres jobs: chequeos y tests (con PostgreSQL 17), pruebas de punta a punta y Lighthouse. Los informes quedan como artefactos.
+
+## Despliegue
+
+**Requisitos:** un proyecto de Supabase, un servidor con Node.js 22.12 o superior (VPS, Render, Railway, Fly…) y **HTTPS**, porque las cookies de sesión son `Secure`. Debe correr **una sola instancia**: los límites de intentos viven en memoria.
+
+1. **Supabase:** copia las cadenas de conexión (ver [Supabase](#supabase)) y crea un bucket **público** de Storage para las imágenes (por defecto `media`).
+2. **Variables de producción** en `server/.env` o en el panel de la plataforma:
+   - `NODE_ENV=production` y `COOKIE_SECURE=true` (el servidor no arranca sin ella en producción);
+   - `ADMIN_PATH`, `JWT_SECRET` y `CSRF_SECRET` **nuevos**, generados con `npm run secret` (nunca los de desarrollo);
+   - `DATABASE_URL` y `DIRECT_URL` de Supabase, y `STORAGE_DRIVER=supabase` con `SUPABASE_URL` y `SUPABASE_SERVICE_ROLE_KEY`;
+   - `SITE_URL=https://tu-dominio`, y `TRUST_PROXY=1` si hay un proxy o balanceador delante (casi siempre);
+   - `SEED_*` con los correos reales y contraseñas temporales.
+3. **Build y base de datos:**
+   ```bash
+   npm ci
+   npm run build            # frontends + verificación del bundle + servidor (server/dist)
+   npm run db:deploy        # migraciones (usa DIRECT_URL)
+   npm run import:beacons   # solo la primera vez
+   npm run seed             # idempotente
+   npm start                # node server/dist/index.js
+   ```
+   Usa un gestor de procesos (systemd, pm2 o el de la plataforma) que reinicie el servidor si se cae.
+4. **HTTPS:** si usas un VPS, pon Nginx o Caddy delante con un certificado de Let's Encrypt, reenviando a `127.0.0.1:3000` con la cabecera `X-Forwarded-Proto`. Las plataformas como Render o Railway ya entregan HTTPS.
+5. **App Android:** el contrato no cambia, pero su `BASE_URL` (`RetrofitClient.kt`) hoy apunta a una IP de la red local por HTTP. Para usar el servidor desplegado hay que cambiarla a `https://tu-dominio/` y recompilar la app. Con HTTPS ya no hace falta la excepción de `network_security_config.xml`.
+6. **Después de desplegar:**
+   - entra en `https://tu-dominio/<ADMIN_PATH>` con cada cuenta del seed y crea la contraseña definitiva;
+   - comprueba que `/admin` responde 404 y que `https://tu-dominio/beacons/1/1` responde la ficha;
+   - copia `server/backups/` fuera del servidor periódicamente (Supabase tiene además sus propios respaldos).
+7. **Actualizar:** `git pull && npm ci && npm run build && npm run db:deploy` y reinicia el proceso.
+
+## Criterios de aceptación
+
+| Criterio                                                                                                                    | Cómo se verifica                                                                                                                           |
+| --------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------ |
+| Un visitante nunca encuentra referencias al panel en el HTML, el JS, el sitemap ni el service worker                        | `apps/web/scripts/check-public-bundle.mjs` (en cada build) y `e2e/landing.spec.ts` sobre HTML, robots, sitemap, manifest y `sw.js`         |
+| `/<ADMIN_PATH>` muestra el login; otras rutas de admin dan 404; `/api/admin/*` da 401 sin sesión y 403 con rol insuficiente | `server/test/admin-panel.test.ts`, `server/test/integration/permissions.test.ts` (recorre todas las rutas) y `e2e/panel.spec.ts`           |
+| El editor no puede publicar ni entrar a Beacons, Identidad visual ni Usuarios, ni por la interfaz ni por la API             | Política de roles en `permissions.test.ts`, flujo en `news.test.ts` y `e2e/panel.spec.ts`                                                  |
+| La app Android sigue funcionando sin cambios con `GET /beacons/:major/:minor`                                               | `server/test/legacy-beacons.test.ts` (paridad con el `beacons.json` histórico) y `e2e/panel.spec.ts` (un beacon del panel llega a la ruta) |
+| Lighthouse: PWA instalable, accesibilidad ≥ 95 y rendimiento ≥ 90 en móvil                                                  | `lighthouserc.cjs` (umbrales) y `e2e/pwa.spec.ts` (instalabilidad con la comprobación de Chrome; Lighthouse ya no tiene categoría PWA)     |
+| README con instalación, variables de entorno, seed y despliegue                                                             | Este archivo                                                                                                                               |
 
 ## Estado
 
@@ -216,4 +270,11 @@ El CI (`.github/workflows/ci.yml`) ejecuta todo lo anterior contra un PostgreSQL
 - [x] **Fase 4:** base del frontend (dos builds de Vite, tokens y kit de UI).
 - [x] **Fase 5:** landing y PWA.
 - [x] **Fase 6:** panel de administración.
-- [ ] **Fase 7:** QA, accesibilidad en CI, Lighthouse y despliegue.
+- [x] **Fase 7:** pruebas de punta a punta y Lighthouse en CI, revisión con lector de pantalla, despliegue y limpieza.
+
+**Pendiente fuera del código:**
+
+- ajustar el diseño cuando llegue la propuesta visual;
+- un ícono cuadrado de la PWA;
+- la revisión con NVDA y TalkBack;
+- conectar Supabase en producción.
