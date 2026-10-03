@@ -35,6 +35,11 @@ export default tseslint.config(
     ...jsxA11y.flatConfigs.strict,
   },
   {
+    // Pruebas de punta a punta: código de Node con funciones que se ejecutan en el navegador.
+    files: ["e2e/**/*.mjs"],
+    languageOptions: { globals: { ...globals.node, ...globals.browser } },
+  },
+  {
     files: ["apps/web/src/shared/theme/theme-init.js"],
     languageOptions: { globals: { ...globals.browser } },
   },
@@ -50,7 +55,7 @@ export default tseslint.config(
         {
           patterns: [
             {
-              group: ["**/admin", "**/admin/**", "@server-theme"],
+              group: ["**/admin", "**/admin/**", "@server-theme", "@server-rich-text"],
               message:
                 "La landing y src/shared no pueden importar código del panel ni del servidor: terminaría en el bundle público.",
             },

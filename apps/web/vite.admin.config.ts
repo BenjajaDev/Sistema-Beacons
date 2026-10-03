@@ -29,6 +29,11 @@ export default defineConfig({
       ...shared.resolve.alias,
       // Paleta, contraste y fuentes: misma fuente de verdad que el servidor.
       "@server-theme": path.resolve(import.meta.dirname, "../../server/src/content/theme.ts"),
+      // Vista previa de textos enriquecidos con el mismo renderizado que el servidor.
+      "@server-rich-text": path.resolve(
+        import.meta.dirname,
+        "../../server/src/content/rich-text.ts",
+      ),
     },
   },
   server: { ...shared.server, port: 5174, open: "/admin.html" },

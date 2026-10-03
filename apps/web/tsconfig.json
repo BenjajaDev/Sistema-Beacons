@@ -17,7 +17,8 @@
     "types": ["vite/client", "@testing-library/jest-dom/vitest"],
     "paths": {
       "@shared/*": ["./src/shared/*"],
-      "@server-theme": ["../../server/src/content/theme.ts"]
+      "@server-theme": ["../../server/src/content/theme.ts"],
+      "@server-rich-text": ["../../server/src/content/rich-text.ts"]
     }
   },
   "include": ["src", "test", "*.config.ts", "vite.shared.ts"]

@@ -27,3 +27,5 @@ test-results/
 Thumbs.db
 .vscode/*
 !.vscode/extensions.json
+server/.e2e-uploads/
+server/.e2e-snapshot.json

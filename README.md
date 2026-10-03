@@ -141,6 +141,36 @@ Express sirve la landing en sus rutas: `/`, `/nosotros`, `/noticias`, `/noticias
   - el service worker solo atiende una lista de rutas de la landing, así que la del panel nunca pasa por él.
 - **Medición** (Lighthouse 13, perfil móvil, servidor local con compresión): rendimiento 96–97 y accesibilidad, buenas prácticas y SEO en 100, en Inicio, Nosotros, Noticias y Contacto.
 
+## Panel de administración
+
+Se abre en `/<ADMIN_PATH>` (en desarrollo: `npm run dev:admin`, en http://localhost:5174/admin.html, con el servidor corriendo). El menú lateral muestra solo lo que permite el rol y en el teléfono pasa a un cajón modal.
+
+| Vista                                                            | Editor                                                           | Administrador                                                           |
+| ---------------------------------------------------------------- | ---------------------------------------------------------------- | ----------------------------------------------------------------------- |
+| Resumen                                                          | Sus borradores y notas en revisión                               | Notas por revisar, secciones pendientes, mensajes y beacons incompletos |
+| Noticias                                                         | Escribe, guarda y envía a revisión                               | Además publica, devuelve con observaciones, despublica y borra          |
+| Secciones                                                        | Edita borradores con vista previa en vivo y los envía a revisión | Además publica, muestra u oculta y reordena                             |
+| Equipo, Identidad visual, Contacto, Beacons, Usuarios y Bitácora | — (verá «sin acceso» si entra por URL)                           | Todo                                                                    |
+
+- **Editor de texto enriquecido** (TipTap):
+  - solo ofrece lo que acepta el servidor; `apps/web/test/editor.test.ts` valida su salida contra el esquema del servidor;
+  - barra `role="toolbar"` que se recorre con las flechas, botones con `aria-pressed` y atajos;
+  - diálogos de enlace e imagen con validación, y la imagen exige texto alternativo;
+  - al pegar desde Word se limpia el formato y un H1 pasa a H2.
+- **No se pierde lo escrito:** las noticias guardan una copia local mientras se editan (y ofrecen recuperarla) y el panel avisa antes de salir con cambios sin guardar.
+- **Revisión de accesibilidad** en cada nota: lo que impide publicar y las recomendaciones. La vista previa usa los mismos componentes que la landing.
+- **Identidad visual:** paleta clara y oscura con verificación de contraste WCAG en vivo y vista previa de ambos temas. Una paleta que no cumple no se guarda.
+- **Beacons:** el CMS anterior integrado como módulo, con fichas completas e incompletas, conteo por ubicación, búsqueda, cambio de major/minor en un solo paso y botón para escuchar la descripción como la leerá la app.
+- **Usuarios:** cuentas con contraseña temporal que se muestra una sola vez; desactivar o restablecer la contraseña cierra las sesiones de esa persona.
+
+**Prueba de punta a punta** (`e2e/panel.mjs`, en Chrome real con axe-core, hasta que pase a Playwright en la fase 7):
+
+- **Flujo editorial:** el editor escribe una nota y la envía a revisión; la administradora la publica y aparece en la API pública.
+- **Permisos:** el editor no entra a Beacons ni por URL.
+- **App Android:** un beacon creado en el panel llega a `GET /beacons/:major/:minor`.
+- **Accesibilidad:** axe sin violaciones críticas ni graves en todas las vistas del panel y de la landing, en tema claro y oscuro.
+- **Móvil:** cajón operable con teclado y sin scroll horizontal a 320 px.
+
 ## Cuentas y seed
 
 - No hay registro público. `npm run seed` crea una cuenta de administrador y una de editor con los datos de `server/.env`.
@@ -185,5 +215,5 @@ El CI (`.github/workflows/ci.yml`) ejecuta todo lo anterior contra un PostgreSQL
 - [x] **Fase 3:** API de administración y API pública.
 - [x] **Fase 4:** base del frontend (dos builds de Vite, tokens y kit de UI).
 - [x] **Fase 5:** landing y PWA.
-- [ ] **Fase 6:** panel de administración.
+- [x] **Fase 6:** panel de administración.
 - [ ] **Fase 7:** QA, accesibilidad en CI, Lighthouse y despliegue.
