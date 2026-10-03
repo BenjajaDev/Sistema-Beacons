@@ -29,8 +29,21 @@ if (!existsSync(path.join(RAIZ, "apps/web/dist/public/index.html"))) {
   process.exit(1);
 }
 
+if (!new URL(url).pathname.endsWith("_test")) {
+  console.error("TEST_DATABASE_URL debe apuntar a una base cuyo nombre termine en _test.");
+  process.exit(1);
+}
+
 const env = { ...process.env, ...entornoServidor(url) };
 delete env.SITE_URL;
+
+// Migraciones pendientes (idempotente). DIRECT_URL se fija a la base de pruebas
+// para que nunca se use la de server/.env (Supabase en producción).
+execSync("npx prisma migrate deploy", {
+  cwd: SERVIDOR,
+  env: { ...env, DIRECT_URL: url },
+  stdio: "inherit",
+});
 
 // La base se vacía y se carga con el contenido inicial y dos cuentas de prueba.
 execSync("npx tsx scripts/e2e-preparar.ts", { cwd: SERVIDOR, env, stdio: "inherit" });

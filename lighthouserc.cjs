@@ -1,5 +1,5 @@
 // Lighthouse CI: rendimiento y accesibilidad de la landing en perfil móvil.
-//   npm run build -w apps/web && npm run lighthouse
+//   npm run build -w apps/web && npm run lighthouse && node e2e/resumen-lighthouse.mjs
 // Umbrales del proyecto: rendimiento ≥ 90 y accesibilidad ≥ 95.
 // (La instalabilidad de la PWA se verifica en e2e/pwa.spec.ts: Lighthouse ya no
 // tiene categoría PWA.)

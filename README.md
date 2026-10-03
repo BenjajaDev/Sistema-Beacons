@@ -208,7 +208,7 @@ npm run e2e              # Playwright + axe (requiere el build y TEST_DATABASE_U
 npm run lighthouse       # Lighthouse CI móvil (requiere el build y TEST_DATABASE_URL)
 ```
 
-- **`npm run e2e`** levanta un servidor de pruebas (`e2e/servidor.mjs`, puerto 3100, base `signal_test` vaciada y cargada en cada corrida) y prueba en Chromium:
+- **`npm run e2e`** levanta un servidor de pruebas (`e2e/servidor.mjs`, puerto 3100, base `signal_test` migrada, vaciada y cargada en cada corrida) y prueba en Chromium:
   - la landing: un solo h1, axe en tema claro y oscuro, 320 px y texto al 200 %, enlace «Saltar al contenido», foco al navegar, preferencias recordadas y formulario de contacto;
   - que el panel no existe para el público (404, robots, sitemap, manifest y service worker);
   - los flujos del panel por rol;
@@ -216,10 +216,10 @@ npm run lighthouse       # Lighthouse CI móvil (requiere el build y TEST_DATABA
 
   Para usar el Chrome instalado en vez de descargar Chromium: `PW_CANAL=chrome npm run e2e`.
 
-- **`npm run lighthouse`** exige, en la mediana de 3 corridas por página en perfil móvil, rendimiento ≥ 90, accesibilidad ≥ 95, y buenas prácticas y SEO ≥ 90. Última medición local: rendimiento 95–96 y 100 en las otras tres categorías, en Inicio, Nosotros, Noticias y Contacto.
+- **`npm run lighthouse`** exige, en la mediana de 3 corridas por página en perfil móvil, rendimiento ≥ 90, accesibilidad ≥ 95, y buenas prácticas y SEO ≥ 90. Última medición local: rendimiento 93–97 (Inicio es la más justa) y 100 en las otras tres categorías, en Inicio, Nosotros, Noticias y Contacto. `node e2e/resumen-lighthouse.mjs` muestra los puntajes de la corrida mediana con su margen sobre cada umbral.
 - **Revisión manual con lector de pantalla:** [`docs/revision-lector-pantalla.md`](docs/revision-lector-pantalla.md) es la lista para NVDA y TalkBack. Ninguna herramienta automática la reemplaza.
 
-El CI (`.github/workflows/ci.yml`) tiene tres jobs: chequeos y tests (con PostgreSQL 17), pruebas de punta a punta y Lighthouse. Los informes quedan como artefactos.
+El CI (`.github/workflows/ci.yml`) tiene tres jobs: chequeos y tests (con PostgreSQL 17), pruebas de punta a punta y Lighthouse. Los informes quedan como artefactos y los puntajes de Lighthouse, con su margen, en el resumen del job.
 
 ## Despliegue
 

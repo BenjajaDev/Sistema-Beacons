@@ -30,8 +30,8 @@ jobs:
           --health-cmd "pg_isready -U postgres"
           --health-interval 5s --health-timeout 5s --health-retries 10
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
         with:
           node-version: 24
           cache: npm
@@ -61,8 +61,8 @@ jobs:
           --health-cmd "pg_isready -U postgres"
           --health-interval 5s --health-timeout 5s --health-retries 10
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
         with:
           node-version: 24
           cache: npm
@@ -73,7 +73,7 @@ jobs:
       - run: npm run build -w apps/web
       - run: npx playwright install --with-deps chromium
       - run: npm run e2e
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         if: failure()
         with:
           name: informe-playwright
@@ -95,8 +95,8 @@ jobs:
           --health-cmd "pg_isready -U postgres"
           --health-interval 5s --health-timeout 5s --health-retries 10
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
         with:
           node-version: 24
           cache: npm
@@ -106,9 +106,14 @@ jobs:
           DIRECT_URL: ${{ env.TEST_DATABASE_URL }}
       - run: npm run build -w apps/web
       - run: npm run lighthouse
-      - uses: actions/upload-artifact@v4
+      - name: Puntajes en el resumen del job
+        if: ${{ !cancelled() }}
+        run: node e2e/resumen-lighthouse.mjs
+      - uses: actions/upload-artifact@v7
         if: always()
         with:
           name: informes-lighthouse
           path: .lighthouseci/
+          # .lighthouseci es una carpeta oculta: sin esto no se sube nada.
+          include-hidden-files: true
           retention-days: 14
