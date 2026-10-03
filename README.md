@@ -17,6 +17,8 @@ Navegación interior con beacons BLE para personas con discapacidad visual.
 
 ## Puesta en marcha (desarrollo)
 
+Guía detallada, variable por variable: [`docs/configurar-env.md`](docs/configurar-env.md). Para conectar Supabase: [`docs/supabase.md`](docs/supabase.md).
+
 ```bash
 npm install                       # instala todo y genera el cliente de Prisma
 cp server/.env.example server/.env
@@ -60,6 +62,8 @@ Todas están documentadas en [`server/.env.example`](server/.env.example). `serv
 | `TEST_DATABASE_URL`                                  | Base para pruebas de integración. Se borra en cada ejecución; su nombre debe terminar en `_test`.          |
 
 ## Supabase
+
+Guía completa, paso a paso y con solución de problemas: [`docs/supabase.md`](docs/supabase.md). En resumen:
 
 1. En Supabase, **Project Settings → Database → Connection string**, copia la URL del pooler en modo transacción en `DATABASE_URL` y la de sesión en `DIRECT_URL`.
 2. Ejecuta `npm run db:deploy`, `npm run import:beacons` y `npm run seed`.
