@@ -151,6 +151,19 @@ describe.skipIf(!hasTestDb)("administración de contenido", () => {
       });
     });
 
+    it("el panel recibe el tema guardado inyectado en su HTML", async () => {
+      const nueva = {
+        ...DEFAULT_PALETTE,
+        light: { ...DEFAULT_PALETTE.light, primario: "#0B4BC4" },
+      };
+      await as(app, admin, "put", "/api/admin/settings/identity").send({
+        ...identidad,
+        palette: nueva,
+      });
+      const html = await request(app).get(`/${env.ADMIN_PATH}`);
+      expect(html.text).toMatch(/<style id="tema">[^<]*--color-primary:#0B4BC4/);
+    });
+
     it("guarda el contacto y valida correo y redes", async () => {
       const mala = await as(app, admin, "put", "/api/admin/settings/contact").send({
         contactEmail: "no-es-correo",

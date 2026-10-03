@@ -1,0 +1,9 @@
+/* Fuentes autoalojadas (sin Google Fonts: funciona offline y no filtra visitas). */
+@import "@fontsource-variable/atkinson-hyperlegible-next/wght.css";
+@import "@fontsource-variable/atkinson-hyperlegible-next/wght-italic.css";
+@import "@fontsource-variable/bricolage-grotesque/wght.css";
+
+@import "./theme-default.css";
+@import "./tokens.css";
+@import "./base.css";
+@import "./ui.css";

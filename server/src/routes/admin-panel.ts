@@ -7,7 +7,16 @@ import express, { Router } from "express";
 // build funciona con cualquier ADMIN_PATH.
 //
 // Fuera de esa ruta el panel no existe: /admin, /login, /panel... responden 404.
-export function adminPanel({ adminPath, distDir }: { adminPath: string; distDir: string }) {
+export function adminPanel({
+  adminPath,
+  distDir,
+  getThemeCss,
+}: {
+  adminPath: string;
+  distDir: string;
+  // CSS de Identidad visual (colores y fuentes) para inyectar antes del primer pintado.
+  getThemeCss?: () => Promise<string | null>;
+}) {
   const base = `/${adminPath}`;
   // Sensible a mayúsculas: /<ADMIN_PATH> en otra capitalización es otra ruta (404).
   const router = Router({ caseSensitive: true, strict: false });
@@ -28,7 +37,11 @@ export function adminPanel({ adminPath, distDir }: { adminPath: string; distDir:
         .send("El panel no está compilado. Ejecuta `npm run build` y reinicia el servidor.");
       return;
     }
-    const cabecera = `<base href="${base}/">` + '<meta name="robots" content="noindex, nofollow">';
+    const tema = (await getThemeCss?.()) ?? "";
+    const cabecera =
+      `<base href="${base}/">` +
+      '<meta name="robots" content="noindex, nofollow">' +
+      (tema ? `<style id="tema">${tema}</style>` : "");
     res
       .setHeader("Cache-Control", "no-store")
       .type("html")

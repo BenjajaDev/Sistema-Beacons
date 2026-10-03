@@ -13,6 +13,7 @@ import { adminPanel } from "./routes/admin-panel.js";
 import { adminApi } from "./routes/admin/index.js";
 import { legacyBeaconsRouter } from "./routes/legacy-beacons.js";
 import { writeBeaconSnapshot } from "./beacons/snapshot.js";
+import { themeCss } from "./content/theme.js";
 import { publicApi } from "./routes/public.js";
 import { createAudit } from "./services/audit.js";
 import { createMediaStorage, type MediaStorage } from "./services/media-storage.js";
@@ -109,7 +110,20 @@ export function createApp(deps: AppDeps) {
   }
 
   // --- Panel (ruta oculta) ---
-  app.use(adminPanel({ adminPath: env.ADMIN_PATH, distDir: env.adminDistDir }));
+  // El tema guardado se inyecta en el HTML. Si la base falla, quedan los valores por defecto.
+  const getThemeCss = async () => {
+    try {
+      const s = await db.siteSettings.findUnique({
+        where: { id: 1 },
+        select: { palette: true, fonts: true },
+      });
+      return s ? themeCss(s) : null;
+    } catch (err) {
+      logger.warn({ err }, "No se pudo leer el tema; se usan los colores por defecto");
+      return null;
+    }
+  };
+  app.use(adminPanel({ adminPath: env.ADMIN_PATH, distDir: env.adminDistDir, getThemeCss }));
 
   // Cualquier otra ruta: 404, nunca una redirección al login.
   app.use(() => {

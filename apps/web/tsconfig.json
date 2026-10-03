@@ -1,0 +1,24 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "lib": ["ES2023", "DOM", "DOM.Iterable"],
+    "module": "ESNext",
+    "moduleResolution": "Bundler",
+    "jsx": "react-jsx",
+    "strict": true,
+    "noUncheckedIndexedAccess": true,
+    "noFallthroughCasesInSwitch": true,
+    "skipLibCheck": true,
+    "isolatedModules": true,
+    "verbatimModuleSyntax": true,
+    "resolveJsonModule": true,
+    "noEmit": true,
+    "allowImportingTsExtensions": true,
+    "types": ["vite/client", "@testing-library/jest-dom/vitest"],
+    "paths": {
+      "@shared/*": ["./src/shared/*"],
+      "@server-theme": ["../../server/src/content/theme.ts"]
+    }
+  },
+  "include": ["src", "test", "*.config.ts", "vite.shared.ts"]
+}

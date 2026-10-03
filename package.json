@@ -4,14 +4,15 @@
   "type": "module",
   "description": "SIGNAL: navegación interior con beacons BLE. Sitio público, panel de administración y API.",
   "workspaces": [
-    "server"
+    "server",
+    "apps/web"
   ],
   "engines": {
     "node": ">=22.12"
   },
   "scripts": {
     "dev": "npm run dev -w server",
-    "build": "npm run build -w server",
+    "build": "npm run build -w apps/web && npm run build -w server",
     "start": "npm run start -w server",
     "db:local": "npm run db:local -w server",
     "db:migrate": "npm run db:migrate -w server",
@@ -25,11 +26,15 @@
     "lint": "eslint .",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
-    "secret": "npm run secret -w server"
+    "secret": "npm run secret -w server",
+    "dev:web": "npm run dev -w apps/web",
+    "dev:admin": "npm run dev:admin -w apps/web"
   },
   "devDependencies": {
-    "@eslint/js": "^10.0.0",
-    "eslint": "^10.11.0",
+    "@eslint/js": "^9.39.5",
+    "eslint": "^9.39.5",
+    "eslint-plugin-jsx-a11y": "^6.10.2",
+    "eslint-plugin-react-hooks": "^7.1.1",
     "globals": "^16.0.0",
     "prettier": "^3.9.9",
     "typescript": "~6.0.3",

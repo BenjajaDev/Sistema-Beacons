@@ -1,5 +1,8 @@
 name: CI
 
+# Un solo job: lint, tipos, tests (con PostgreSQL), build del frontend y la
+# verificación de que el bundle público no contiene nada del panel.
+
 on:
   push:
     branches: [main, develop]
@@ -33,3 +36,8 @@ jobs:
       - run: npm run lint
       - run: npm run format:check
       - run: npm test
+      - name: Build del frontend y verificación del bundle público
+        run: npm run build -w apps/web
+        env:
+          # Valor de prueba: el chequeo verifica que no aparezca en dist/public.
+          ADMIN_PATH: ci-ruta-secreta-de-prueba-0123456789

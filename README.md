@@ -6,6 +6,7 @@ Navegación interior con beacons BLE para personas con discapacidad visual.
 | ------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------- |
 | `server/`                | API en Express + Prisma (PostgreSQL / Supabase). Sirve la ficha de cada beacon a la app, y más adelante la API de la landing y del panel. |
 | `BeaconsAndroid/`        | App Android (Kotlin + Compose). Consume `GET /beacons/:major/:minor`.                                                                     |
+| `apps/web/`              | Frontend: landing pública y panel, en dos builds de Vite separados.                                                                       |
 | `cms/`                   | CMS de beacons anterior (React + Vite). Se integrará al panel y luego se eliminará.                                                       |
 | `BeaconsAndroid/server/` | Servidor anterior basado en `beacons.json`. **Obsoleto**; se conserva hasta terminar la migración.                                        |
 | `docs/`                  | Guías de contenido (redacción de audiodescripciones).                                                                                     |
@@ -28,7 +29,11 @@ npm run db:deploy                 # aplica las migraciones
 npm run import:beacons            # importa BeaconsAndroid/server/beacons.json
 npm run seed                      # crea las cuentas, la configuración y las secciones
 npm run dev                       # servidor en http://localhost:3000
+npm run dev:web                   # en otra terminal: landing en http://localhost:5173
+npm run dev:admin                 # en otra terminal: panel en http://localhost:5174/admin.html
 ```
+
+Para producción, `npm run build` compila los dos frontends, verifica el bundle público y compila el servidor. Express sirve el panel desde `apps/web/dist/admin`.
 
 Prueba: <http://localhost:3000/beacons/1/1>. El panel queda en `http://localhost:3000/<ADMIN_PATH>`.
 
@@ -98,6 +103,23 @@ Garantías que impone el servidor, no solo la interfaz:
 - **Usuarios:** nadie puede desactivarse ni quitarse el rol de administrador a sí mismo, y el sitio nunca queda sin una cuenta administradora activa, ni siquiera si dos admins se quitan el rol al mismo tiempo.
 - **Beacons:** cambiar major/minor es una sola operación atómica, y cada cambio actualiza el snapshot que usa la app si la base de datos no responde.
 
+## Frontend
+
+`apps/web` tiene **dos entradas y dos builds de Vite independientes**:
+
+| Entrada                     | Build         | Se sirve en                  |
+| --------------------------- | ------------- | ---------------------------- |
+| `index.html` → `src/public` | `dist/public` | `/` (landing)                |
+| `admin.html` → `src/admin`  | `dist/admin`  | solo `/<ADMIN_PATH>` (panel) |
+
+- **Nada del panel llega al bundle público.** ESLint prohíbe que `src/public` y `src/shared` importen código de `src/admin`, y `scripts/check-public-bundle.mjs` (corre en cada build y en CI) falla si `dist/public` contiene el marcador del panel, `/api/admin`, la ruta secreta o source maps.
+- **La ruta secreta no está en ningún build:** el del panel usa rutas relativas y Express inyecta `<base href>` al servirlo.
+- **Tema:** los colores y las fuentes son variables CSS. El servidor inyecta los de Identidad visual en el HTML antes del primer pintado. `theme-default.css` es el respaldo, generado desde el servidor con `npm run gen:theme -w server`, y un test verifica que esté sincronizado.
+- **Preferencias de la persona:** tema claro, oscuro o del sistema, y tamaño de texto (A−/A+ de 87,5 % a 150 %). Se guardan en el navegador y se aplican antes de pintar con `theme-init.js`, un script externo porque la CSP no permite scripts inline.
+- **Componentes accesibles** en `src/shared/ui`: botones con estado de carga, campos con label y error asociados, resumen de errores, avisos con regiones `aria-live`, diálogo de confirmación sobre `<dialog>` nativo, y estados de carga, vacío y error. Cada uno tiene tests con axe-core.
+- **Animaciones** de 150 a 300 ms. Con `prefers-reduced-motion` se desactivan todas.
+- **Fuentes autoalojadas** (Atkinson Hyperlegible Next y Bricolage Grotesque): sin dependencia de Google Fonts y disponibles offline.
+
 ## Cuentas y seed
 
 - No hay registro público. `npm run seed` crea una cuenta de administrador y una de editor con los datos de `server/.env`.
@@ -140,7 +162,7 @@ El CI (`.github/workflows/ci.yml`) ejecuta todo lo anterior contra un PostgreSQL
 - [x] **Fase 1:** modelo de datos, migraciones con RLS, importación de beacons, seed idempotente, respaldos y paridad con la app Android.
 - [x] **Fase 2:** autenticación, roles, CSRF, rate limit, bitácora y ruta oculta del panel.
 - [x] **Fase 3:** API de administración y API pública.
-- [ ] **Fase 4:** base del frontend (dos builds de Vite, tokens y kit de UI).
+- [x] **Fase 4:** base del frontend (dos builds de Vite, tokens y kit de UI).
 - [ ] **Fase 5:** landing y PWA.
 - [ ] **Fase 6:** panel de administración.
 - [ ] **Fase 7:** QA, accesibilidad en CI, Lighthouse y despliegue.

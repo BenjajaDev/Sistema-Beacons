@@ -73,3 +73,21 @@ describe("parseLegacyBeacons", () => {
     expect(errores).toHaveLength(3);
   });
 });
+
+describe("CSS del tema", () => {
+  it("el CSS por defecto del frontend está sincronizado con la paleta del servidor", async () => {
+    const { readFileSync } = await import("node:fs");
+    const { THEME_DEFAULT_CSS_PATH, themeDefaultCss } = await import("../scripts/gen-theme-css.js");
+    // Si falla: ejecuta `npm run gen:theme -w server` y commitea el archivo.
+    expect(readFileSync(THEME_DEFAULT_CSS_PATH, "utf-8").replaceAll("\r\n", "\n")).toBe(
+      themeDefaultCss(),
+    );
+  });
+
+  it("themeCss usa los valores por defecto si lo guardado no es válido", async () => {
+    const { themeCss, paletteToCss } = await import("../src/content/theme.js");
+    expect(themeCss({ palette: { roto: true }, fonts: null })).toContain(
+      paletteToCss(DEFAULT_PALETTE),
+    );
+  });
+});

@@ -18,7 +18,8 @@
     "restore": "tsx --env-file-if-exists=.env scripts/restore.ts",
     "test": "vitest run",
     "typecheck": "tsc --noEmit",
-    "secret": "tsx scripts/secret.ts"
+    "secret": "tsx scripts/secret.ts",
+    "gen:theme": "tsx scripts/gen-theme-css.ts"
   },
   "dependencies": {
     "@node-rs/argon2": "^2.2.1",

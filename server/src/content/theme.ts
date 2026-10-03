@@ -67,11 +67,13 @@ export const DEFAULT_PALETTE: Palette = {
 export const FONT_OPTIONS = {
   "atkinson-hyperlegible-next": {
     nombre: "Atkinson Hyperlegible Next",
-    stack: '"Atkinson Hyperlegible Next", system-ui, sans-serif',
+    // Nombre con que la registra @fontsource-variable (autoalojada en el build).
+    stack:
+      '"Atkinson Hyperlegible Next Variable", "Atkinson Hyperlegible Next", system-ui, sans-serif',
   },
   "bricolage-grotesque": {
     nombre: "Bricolage Grotesque",
-    stack: '"Bricolage Grotesque", system-ui, sans-serif',
+    stack: '"Bricolage Grotesque Variable", "Bricolage Grotesque", system-ui, sans-serif',
   },
   sistema: {
     nombre: "Fuente del sistema",
@@ -151,4 +153,56 @@ export function checkPaletteContrast(palette: Palette): ContrastFailure[] {
     }
   }
   return fallas;
+}
+
+// --- CSS del tema -------------------------------------------------------------
+// El servidor inyecta este CSS en el HTML de la landing y del panel, así los
+// colores y fuentes editados en Identidad visual se aplican antes del primer
+// pintado y sin redeploy. apps/web/src/shared/styles/palette-default.css es su
+// versión con los valores por defecto (un test verifica que coincidan).
+
+const VARIABLES: Record<ColorToken, string> = {
+  fondo: "--color-bg",
+  superficie: "--color-surface",
+  texto: "--color-text",
+  textoSuave: "--color-text-muted",
+  primario: "--color-primary",
+  textoSobrePrimario: "--color-on-primary",
+  enlace: "--color-link",
+  borde: "--color-border",
+  bordeControl: "--color-border-control",
+  foco: "--color-focus",
+  acento: "--color-accent",
+};
+
+function declaraciones(modo: PaletteMode): string {
+  return (Object.keys(VARIABLES) as ColorToken[])
+    .map((token) => `${VARIABLES[token]}:${modo[token]};`)
+    .join("");
+}
+
+// Claro por defecto; oscuro si la persona lo elige (data-theme="dark") o si su
+// sistema está en oscuro y no eligió claro.
+export function paletteToCss(palette: Palette): string {
+  return [
+    `:root{color-scheme:light;${declaraciones(palette.light)}}`,
+    `:root[data-theme="dark"]{color-scheme:dark;${declaraciones(palette.dark)}}`,
+    `@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){color-scheme:dark;${declaraciones(palette.dark)}}}`,
+  ].join("\n");
+}
+
+export function fontsToCss(fonts: Fonts): string {
+  return `:root{--font-body:${FONT_OPTIONS[fonts.cuerpo].stack};--font-heading:${FONT_OPTIONS[fonts.titulos].stack};}`;
+}
+
+// CSS completo del tema a partir de lo guardado en la base. Si los datos no son
+// válidos (no debería pasar), se usan los valores por defecto.
+export function themeCss(settings: { palette: unknown; fonts: unknown }): string {
+  const palette = paletteSchema.safeParse(settings.palette);
+  const fonts = fontsSchema.safeParse(settings.fonts);
+  return (
+    paletteToCss(palette.success ? palette.data : DEFAULT_PALETTE) +
+    "\n" +
+    fontsToCss(fonts.success ? fonts.data : DEFAULT_FONTS)
+  );
 }
