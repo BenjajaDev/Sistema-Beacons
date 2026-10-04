@@ -8,3 +8,5 @@ package-lock.json
 docs
 apps/web/src/shared/styles/theme-default.css
 server/prisma/data
+# Skills de terceros: se copian sin modificar
+.claude/skills/*/
