@@ -49,7 +49,13 @@ export default tseslint.config(
         {
           patterns: [
             {
-              group: ["**/admin", "**/admin/**", "@server-theme", "@server-rich-text"],
+              group: [
+                "**/admin",
+                "**/admin/**",
+                "@server-theme",
+                "@server-rich-text",
+                "@server-footer",
+              ],
               message:
                 "La landing y src/shared no pueden importar código del panel ni del servidor: terminaría en el bundle público.",
             },

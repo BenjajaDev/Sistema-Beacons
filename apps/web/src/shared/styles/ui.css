@@ -1,8 +1,14 @@
 /* Componentes compartidos por la landing y el panel. */
 
-/* --- Botones --- */
+/* --- Botones ---
+   Cada variante tiene su gesto, todos tomados de la señal del beacon:
+   primario: se eleva y emite un anillo; secundario: se llena con un barrido;
+   fantasma: una ficha tenue que se intensifica; peligro: sólido y sin adornos.
+   El movimiento solo con puntero fino y sin «reducir movimiento» (WCAG 2.3.3). */
 
 .btn {
+  position: relative;
+  isolation: isolate;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -12,17 +18,16 @@
   padding: var(--space-2) var(--space-5);
   border: 2px solid transparent;
   border-radius: var(--radius-pill);
-  font-weight: var(--peso-medio);
+  font-weight: var(--peso-fuerte);
   line-height: 1.2;
   text-decoration: none;
   cursor: pointer;
+  overflow: visible;
   transition:
-    background-color var(--dur-rapida) var(--curva),
-    border-color var(--dur-rapida) var(--curva),
+    background-color var(--dur-rapida) ease,
+    border-color var(--dur-rapida) ease,
+    color var(--dur-rapida) ease,
     transform var(--dur-rapida) var(--curva);
-}
-.btn:active:not([aria-disabled="true"]) {
-  transform: scale(0.97);
 }
 .btn[aria-disabled="true"] {
   cursor: not-allowed;
@@ -33,27 +38,85 @@
   background: var(--color-primary);
   color: var(--color-on-primary);
 }
-.btn--primario:hover:not([aria-disabled="true"]) {
-  background: color-mix(in srgb, var(--color-primary) 88%, var(--color-text));
+/* El anillo de la señal: aparece alrededor del botón al apuntarlo. */
+.btn--primario::after {
+  content: "";
+  position: absolute;
+  inset: -6px;
+  z-index: -1;
+  border: 2px solid var(--color-primary);
+  border-radius: inherit;
+  opacity: 0;
+  transform: scale(0.94);
+  transition:
+    opacity var(--dur) ease,
+    transform var(--dur) var(--curva);
+  pointer-events: none;
 }
+.btn--primario:hover:not([aria-disabled="true"]) {
+  background: color-mix(in srgb, var(--color-primary) 86%, var(--color-text));
+}
+
 .btn--secundario {
   background: transparent;
   border-color: var(--color-border-control);
   color: var(--color-text);
+  overflow: hidden;
+}
+/* Barrido desde la izquierda con el tono pálido del primario. */
+.btn--secundario::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background: color-mix(in srgb, var(--color-primary) 14%, transparent);
+  transform: scaleX(0);
+  transform-origin: left center;
+  transition: transform var(--dur) var(--curva);
 }
 .btn--secundario:hover:not([aria-disabled="true"]) {
-  background: var(--color-surface);
+  border-color: var(--color-primary);
 }
+
+/* Fantasma: sigue pareciendo un botón (ficha tenue), no un enlace suelto. */
 .btn--fantasma {
-  background: transparent;
+  background: color-mix(in srgb, var(--color-primary) 8%, transparent);
   color: var(--color-link);
+  padding-inline: var(--space-4);
 }
 .btn--fantasma:hover:not([aria-disabled="true"]) {
-  background: var(--color-surface);
+  background: color-mix(in srgb, var(--color-primary) 16%, transparent);
 }
+
 .btn--peligro {
   background: var(--color-error);
   color: var(--color-bg);
+}
+.btn--peligro:hover:not([aria-disabled="true"]) {
+  background: color-mix(in srgb, var(--color-error) 85%, var(--color-text));
+}
+
+@media (hover: hover) and (pointer: fine) and (prefers-reduced-motion: no-preference) {
+  .btn--primario:hover:not([aria-disabled="true"]) {
+    transform: translateY(-2px);
+  }
+  .btn--primario:hover:not([aria-disabled="true"])::after {
+    opacity: 0.35;
+    transform: scale(1);
+  }
+  .btn--secundario:hover:not([aria-disabled="true"])::before {
+    transform: scaleX(1);
+  }
+}
+@media (hover: hover) and (pointer: fine) and (prefers-reduced-motion: reduce) {
+  /* Sin movimiento: el barrido se muestra completo, sin animarse. */
+  .btn--secundario:hover:not([aria-disabled="true"])::before {
+    transform: scaleX(1);
+  }
+}
+/* Al presionar, un hundimiento breve (100–160 ms). */
+.btn:active:not([aria-disabled="true"]) {
+  transform: scale(0.97);
 }
 
 .btn__spinner {
@@ -81,10 +144,15 @@
   background: transparent;
   color: var(--color-text);
   cursor: pointer;
-  transition: background-color var(--dur-rapida) var(--curva);
+  transition:
+    background-color var(--dur-rapida) ease,
+    transform var(--dur-rapida) var(--curva);
 }
 .icon-btn:hover {
-  background: var(--color-surface);
+  background: color-mix(in srgb, var(--color-primary) 12%, transparent);
+}
+.icon-btn:active {
+  transform: scale(0.94);
 }
 .icon-btn svg {
   width: 1.375rem;

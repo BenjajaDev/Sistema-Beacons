@@ -129,7 +129,7 @@ Garantías que impone el servidor, no solo la interfaz:
 Express sirve la landing en sus rutas: `/`, `/nosotros`, `/noticias`, `/noticias/:slug` y `/contacto`.
 
 - **Datos incluidos en el HTML:** cada página sale con su `<title>`, meta description, Open Graph, canonical, el tema de Identidad visual y los datos iniciales en `<script type="application/json" id="datos-iniciales">`. El primer render no espera a la API, y el JSON va escapado para que ningún texto pueda cerrar el `<script>`.
-- **Sin contenido fijo en el código:** secciones, textos, noticias, equipo, colaboradores, logos, colores y contacto salen de la base de datos. Lo publicado en el panel se ve al recargar, sin redeploy.
+- **Sin contenido fijo en el código:** secciones (incluida «Nosotros» en el inicio, con fotos del equipo), textos, noticias, equipo, colaboradores, logos, colores, pie de página y contacto salen de la base de datos. Lo publicado en el panel se ve al recargar, sin redeploy.
 - **404 real:** cualquier otra ruta (incluidas `/admin` o `/login`) responde 404 con la página «no encontrada», también cuando la base de datos no responde. Una noticia en borrador o inexistente también es 404.
 - **SEO:** `/robots.txt` y `/sitemap.xml` se generan en el servidor. Solo listan lo publicado y no mencionan el panel.
 - **Accesibilidad:**
@@ -142,18 +142,25 @@ Express sirve la landing en sus rutas: `/`, `/nosotros`, `/noticias`, `/noticias
   - service worker que precarga la landing y guarda en caché las páginas visitadas, el contenido, las noticias publicadas y las imágenes;
   - sin conexión, las páginas ya visitadas cargan completas y las demás muestran `offline.html`;
   - el service worker solo atiende una lista de rutas de la landing, así que la del panel nunca pasa por él.
-- **Medición** (Lighthouse 13, perfil móvil, servidor local con compresión): rendimiento 96–97 y accesibilidad, buenas prácticas y SEO en 100, en Inicio, Nosotros, Noticias y Contacto.
+- **Lenguaje visual:** todo sale de la señal del beacon. Los botones primarios emiten un anillo, los secundarios se llenan con un barrido, la navegación y las tarjetas tienen barras que se mueven y las ondas de las tarjetas giran. El hero dibuja la señal con una sola entrada al cargar. El movimiento al apuntar solo existe con puntero fino y sin «reducir movimiento»; los enlaces del texto se marcan con una barra inferior, no solo con color.
+- **Medición** (Lighthouse 13, perfil móvil, servidor local con compresión): rendimiento 94–98 y accesibilidad, buenas prácticas y SEO en 100, en Inicio, Nosotros, Noticias y Contacto.
 
 ## Panel de administración
 
-Se abre en `/<ADMIN_PATH>` (en desarrollo: `npm run dev:admin`, en http://localhost:5174/admin.html, con el servidor corriendo). El menú lateral muestra solo lo que permite el rol y en el teléfono pasa a un cajón modal.
+Se abre en `/<ADMIN_PATH>` (en desarrollo: `npm run dev:admin`, en http://localhost:5174/admin.html, con el servidor corriendo). El menú lateral se ordena en cinco secciones (**Resumen, Contenido, CMS, Usuarios y Bitácora**), muestra solo lo que permite el rol y en el teléfono pasa a un cajón modal.
 
-| Vista                                                            | Editor                                                           | Administrador                                                           |
-| ---------------------------------------------------------------- | ---------------------------------------------------------------- | ----------------------------------------------------------------------- |
-| Resumen                                                          | Sus borradores y notas en revisión                               | Notas por revisar, secciones pendientes, mensajes y beacons incompletos |
-| Noticias                                                         | Escribe, guarda y envía a revisión                               | Además publica, devuelve con observaciones, despublica y borra          |
-| Secciones                                                        | Edita borradores con vista previa en vivo y los envía a revisión | Además publica, muestra u oculta y reordena                             |
-| Equipo, Identidad visual, Contacto, Beacons, Usuarios y Bitácora | — (verá «sin acceso» si entra por URL)                           | Todo                                                                    |
+| Sección   | Vista                                               | Editor                                                           | Administrador                                                           |
+| --------- | --------------------------------------------------- | ---------------------------------------------------------------- | ----------------------------------------------------------------------- |
+| Resumen   | Resumen                                             | Sus borradores y notas en revisión                               | Notas por revisar, secciones pendientes, mensajes y beacons incompletos |
+| Contenido | Secciones                                           | Edita borradores con vista previa en vivo y los envía a revisión | Además publica, muestra u oculta y reordena                             |
+| Contenido | Noticias                                            | Escribe, guarda y envía a revisión                               | Además publica, devuelve con observaciones, despublica y borra          |
+| Contenido | Equipo y colaboradores                              | —                                                                | Todo                                                                    |
+| CMS       | Identidad visual, Pie de página, Mensajes y Beacons | —                                                                | Todo                                                                    |
+| Usuarios  | Usuarios                                            | —                                                                | Crea, edita, desactiva, restablece contraseñas y elimina cuentas        |
+| Bitácora  | Bitácora                                            | —                                                                | Todo, filtrable por área (sesiones, contenido, CMS, usuarios)           |
+| (todas)   | Mi perfil (chip con el nombre, arriba a la derecha) | Cambia su nombre y su contraseña                                 | Además, accesos para configurar el sitio                                |
+
+Las vistas de administración muestran «sin acceso» si un editor entra por URL, y la API responde 403.
 
 - **Editor de texto enriquecido** (TipTap):
   - solo ofrece lo que acepta el servidor; `apps/web/test/editor.test.ts` valida su salida contra el esquema del servidor;
@@ -163,8 +170,10 @@ Se abre en `/<ADMIN_PATH>` (en desarrollo: `npm run dev:admin`, en http://localh
 - **No se pierde lo escrito:** las noticias guardan una copia local mientras se editan (y ofrecen recuperarla) y el panel avisa antes de salir con cambios sin guardar.
 - **Revisión de accesibilidad** en cada nota: lo que impide publicar y las recomendaciones. La vista previa usa los mismos componentes que la landing.
 - **Identidad visual:** paleta clara y oscura con verificación de contraste WCAG en vivo y vista previa de ambos temas. Una paleta que no cumple no se guarda.
+- **Pie de página:** descripción, hasta 3 columnas de enlaces, qué bloques se muestran (contacto, redes, accesibilidad), texto legal, y los datos de contacto y redes. Cada red se muestra con su ícono (Instagram, Facebook, X, LinkedIn, YouTube, TikTok, WhatsApp, GitHub, Telegram; el resto, uno de web).
+- **Encuadre de imágenes:** la foto del equipo (cuadrada) y la portada de las noticias (16:9) se pueden encuadrar en su marco. Se abre sola si la imagen no calza; se arrastra o se ajusta con controles deslizantes (alternativa sin arrastre, WCAG 2.5.7). El servidor recorta con `sharp` y crea una imagen nueva: la original queda en la biblioteca.
 - **Beacons:** el CMS anterior integrado como módulo, con fichas completas e incompletas, conteo por ubicación, búsqueda, cambio de major/minor en un solo paso y botón para escuchar la descripción como la leerá la app.
-- **Usuarios:** cuentas con contraseña temporal que se muestra una sola vez; desactivar o restablecer la contraseña cierra las sesiones de esa persona.
+- **Usuarios:** cuentas con contraseña temporal que se muestra una sola vez; desactivar o restablecer la contraseña cierra las sesiones de esa persona. Solo administración gestiona cuentas. Eliminar se permite si la cuenta no tiene noticias, borradores, imágenes ni beacons a su nombre (si los tiene, se desactiva para conservar la autoría), nunca la propia ni la última administradora.
 
 **Prueba de punta a punta** (`e2e/panel.mjs`, en Chrome real con axe-core, hasta que pase a Playwright en la fase 7):
 

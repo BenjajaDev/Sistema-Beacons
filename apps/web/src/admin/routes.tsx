@@ -9,6 +9,7 @@ import Bitacora from "./views/Bitacora";
 import Contacto from "./views/Contacto";
 import Equipo from "./views/Equipo";
 import Noticias from "./views/Noticias";
+import Perfil from "./views/Perfil";
 import Resumen from "./views/Resumen";
 import Secciones from "./views/Secciones";
 import Usuarios from "./views/Usuarios";
@@ -88,6 +89,13 @@ export function crearRouter() {
                 }),
               },
               { path: "contacto", element: soloAdmin(Contacto) },
+              {
+                path: "pie",
+                lazy: async () => ({
+                  element: soloAdmin((await import("./views/Pie")).default),
+                }),
+              },
+              { path: "perfil", Component: Perfil },
               {
                 path: "beacons",
                 lazy: async () => ({

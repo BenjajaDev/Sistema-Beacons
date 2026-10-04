@@ -3,6 +3,7 @@ import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { createMemoryRouter, RouterProvider } from "react-router";
 import { afterEach, describe, expect, it, vi } from "vitest";
+import { detectarRed } from "../src/public/IconosRedes";
 import { Layout } from "../src/public/Layout";
 import Contacto from "../src/public/pages/Contacto";
 import Inicio from "../src/public/pages/Inicio";
@@ -16,7 +17,12 @@ const sitio = {
   tagline: "Navegación interior accesible",
   logos: { claro: null, oscuro: null },
   favicon: null,
-  contacto: { telefono: "+56 9 1234 5678", correo: "hola@signal.cl", direccion: null, redes: [] },
+  contacto: {
+    telefono: "+56 9 1234 5678",
+    correo: "hola@signal.cl",
+    direccion: null,
+    redes: [{ red: "Instagram", url: "https://instagram.com/signal" }],
+  },
   accesibilidad: "Este sitio busca cumplir WCAG 2.1 AA.",
 };
 
@@ -88,7 +94,11 @@ describe("Inicio", () => {
     expect(screen.getAllByRole("heading", { level: 1 })).toHaveLength(1);
     expect(screen.getByRole("heading", { level: 1 })).toHaveTextContent("Orientarse con voz");
     expect(screen.getByRole("heading", { level: 2, name: "Qué es SIGNAL" })).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: "Inicio" })).toHaveAttribute("aria-current", "page");
+    const principal = screen.getByRole("navigation", { name: "Principal" });
+    expect(within(principal).getByRole("link", { name: "Inicio" })).toHaveAttribute(
+      "aria-current",
+      "page",
+    );
     expect(screen.getByRole("main")).toBeInTheDocument();
     expect(screen.getByRole("banner")).toBeInTheDocument();
     expect(screen.getByRole("contentinfo")).toHaveTextContent(
@@ -109,6 +119,61 @@ describe("Inicio", () => {
       [["pagina", "inicio"], { secciones: [] }],
     ]);
     expect(screen.getByRole("heading", { level: 1 })).toHaveTextContent("SIGNAL");
+  });
+});
+
+describe("pie de página", () => {
+  it("usa el pie por defecto si los datos no lo traen y muestra las redes con nombre", () => {
+    montar("/", [
+      [["site"], sitio],
+      [["pagina", "inicio"], { secciones: [] }],
+    ]);
+    const pie = screen.getByRole("contentinfo");
+    expect(within(pie).getByRole("heading", { name: "Explora" })).toBeInTheDocument();
+    expect(within(pie).getByRole("link", { name: "Nosotros" })).toHaveAttribute(
+      "href",
+      "/nosotros",
+    );
+    // El ícono es decorativo: el nombre accesible es el de la red.
+    const red = within(pie).getByRole("link", { name: "Instagram" });
+    expect(red.querySelector("svg")).toHaveAttribute("aria-hidden", "true");
+  });
+
+  it("respeta lo editado: columnas, bloques ocultos y texto legal", () => {
+    montar("/", [
+      [
+        ["site"],
+        {
+          ...sitio,
+          pie: {
+            descripcion: "Orientación con voz.",
+            columnas: [{ titulo: "Proyecto", enlaces: [{ texto: "Equipo", href: "/nosotros" }] }],
+            mostrarContacto: false,
+            mostrarRedes: false,
+            mostrarAccesibilidad: false,
+            textoLegal: "Proyecto académico.",
+          },
+        },
+      ],
+      [["pagina", "inicio"], { secciones: [] }],
+    ]);
+    const pie = screen.getByRole("contentinfo");
+    expect(within(pie).getByRole("heading", { name: "Proyecto" })).toBeInTheDocument();
+    expect(within(pie).queryByRole("heading", { name: "Contacto" })).toBeNull();
+    expect(within(pie).queryByRole("heading", { name: "Accesibilidad" })).toBeNull();
+    expect(within(pie).queryByRole("link", { name: "Instagram" })).toBeNull();
+    expect(pie).toHaveTextContent("Proyecto académico.");
+  });
+});
+
+describe("íconos de redes", () => {
+  it("reconoce la red por el nombre o por el dominio", () => {
+    expect(detectarRed("Instagram", "https://example.com")).toBe("instagram");
+    expect(detectarRed("Mi perfil", "https://www.linkedin.com/in/x")).toBe("linkedin");
+    expect(detectarRed("X", "https://x.com/signal")).toBe("x");
+    expect(detectarRed("Twitter", "https://twitter.com/signal")).toBe("x");
+    expect(detectarRed("Chat", "https://wa.me/56912345678")).toBe("whatsapp");
+    expect(detectarRed("Sitio", "https://signal.cl")).toBe("web");
   });
 });
 

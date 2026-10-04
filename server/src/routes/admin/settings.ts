@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { footerSchema, parseFooter } from "../../content/footer.js";
 import { checkPaletteContrast, fontsSchema, paletteSchema } from "../../content/theme.js";
 import { ApiError, parseOrThrow } from "../../http/errors.js";
 import { asJson } from "../../lib/json.js";
@@ -159,6 +160,25 @@ export function settingsRoutes({ db, audit }: AdminDeps): AdminRoute[] {
         });
         await audit(req, {
           action: "SETTINGS_CONTACT_UPDATE",
+          entity: "SiteSettings",
+          meta: { campos: changedFields(antes, d) },
+        });
+        res.json({ settings: await actual() });
+      },
+    },
+    {
+      roles: ADMIN_ONLY,
+      method: "put",
+      path: "/settings/footer",
+      handler: async (req, res) => {
+        const antes = parseFooter((await actual()).footer);
+        const d = parseOrThrow(footerSchema, req.body);
+        await db.siteSettings.update({
+          where: { id: 1 },
+          data: { footer: asJson(d), updatedById: req.user!.id },
+        });
+        await audit(req, {
+          action: "SETTINGS_FOOTER_UPDATE",
           entity: "SiteSettings",
           meta: { campos: changedFields(antes, d) },
         });

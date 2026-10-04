@@ -36,6 +36,7 @@ export const sectionSchemas = {
   }),
   objetivos: z.object({ ...encabezado, items: z.array(item).min(1).max(8) }),
   proyecciones: z.object({ ...encabezado, items: z.array(item).min(1).max(8) }),
+  "nosotros-inicio": z.object({ titulo: texto(120), texto: texto(600), accion: enlace }),
   "noticias-recientes": z.object({ ...encabezado, textoVerTodas: texto(40) }),
   "quienes-somos": z.object({ titulo: texto(120), cuerpo: richTextSchema }),
   equipo: z.object(encabezado),
@@ -139,9 +140,20 @@ export const SECTION_DEFINITIONS: { [K in SectionKey]: SectionDefinition<K> } = 
       ],
     },
   },
-  "noticias-recientes": {
+  "nosotros-inicio": {
     page: "INICIO",
     order: 5,
+    nombre: "Nosotros (en el inicio)",
+    contenidoInicial: {
+      titulo: "Quiénes hacen SIGNAL",
+      texto:
+        "Somos un equipo que diseña la orientación en interiores junto a personas con discapacidad visual: probamos cada mensaje en terreno y lo ajustamos con quienes lo usan.",
+      accion: { texto: "Conoce al equipo", href: "/nosotros" },
+    },
+  },
+  "noticias-recientes": {
+    page: "INICIO",
+    order: 6,
     nombre: "Últimas noticias",
     contenidoInicial: { titulo: "Últimas noticias", textoVerTodas: "Ver todas las noticias" },
   },

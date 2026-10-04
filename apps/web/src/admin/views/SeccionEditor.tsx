@@ -81,6 +81,18 @@ const CAMPOS: Record<string, Campo[]> = {
       max: 8,
     },
   ],
+  "nosotros-inicio": [
+    titulo,
+    {
+      tipo: "texto",
+      clave: "texto",
+      etiqueta: "Texto",
+      max: 600,
+      multilinea: true,
+      ayuda: "Presenta al equipo en pocas líneas. Al lado se muestran las fotos del equipo.",
+    },
+    { tipo: "enlace", clave: "accion", etiqueta: "Botón" },
+  ],
   "noticias-recientes": [
     titulo,
     intro,

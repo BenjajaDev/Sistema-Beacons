@@ -84,6 +84,7 @@ export default function Usuarios() {
   const [temporal, setTemporal] = useState<{ nombre: string; clave: string } | null>(null);
   const [restablecer, setRestablecer] = useState<CuentaUsuario | null>(null);
   const [desactivar, setDesactivar] = useState<CuentaUsuario | null>(null);
+  const [eliminar, setEliminar] = useState<CuentaUsuario | null>(null);
 
   const { data, isPending, error, refetch } = useQuery({
     queryKey: ["admin", "usuarios"],
@@ -212,6 +213,10 @@ export default function Usuarios() {
                               Restablecer contraseña
                               <span className="visually-hidden"> de {u.name}</span>
                             </Button>
+                            <Button variante="peligro" onClick={() => setEliminar(u)}>
+                              Eliminar
+                              <span className="visually-hidden"> la cuenta de {u.name}</span>
+                            </Button>
                           </>
                         )}
                       </div>
@@ -309,6 +314,22 @@ export default function Usuarios() {
         mensaje="No podrá entrar al panel y sus sesiones abiertas se cerrarán. Puedes volver a activarla cuando quieras."
         textoConfirmar="Desactivar cuenta"
         onConfirmar={() => cambiarActiva(desactivar!, false)}
+      />
+      <ConfirmDialog
+        abierto={eliminar !== null}
+        onCerrar={() => setEliminar(null)}
+        titulo={`¿Eliminar la cuenta de ${eliminar?.name}?`}
+        mensaje="La cuenta desaparece del panel y no se puede recuperar. Si tiene noticias, imágenes o beacons a su nombre, te pediremos desactivarla en su lugar."
+        textoConfirmar="Eliminar cuenta"
+        onConfirmar={async () => {
+          try {
+            await adminFetch(`/users/${eliminar!.id}`, { method: "DELETE" });
+            toast.exito(`Cuenta de ${eliminar!.name} eliminada.`);
+            invalidar();
+          } catch (err) {
+            toast.error(mensajeDeError(err));
+          }
+        }}
       />
     </div>
   );

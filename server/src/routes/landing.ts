@@ -88,6 +88,10 @@ export function landing(deps: {
     if (ruta === "/") {
       const inicio = await getPage(db, "INICIO");
       const consultas: Consulta[] = [...base, [["pagina", "inicio"], inicio]];
+      // La sección «Nosotros» del inicio muestra las fotos del equipo.
+      if (inicio.secciones.some((s) => s.key === "nosotros-inicio")) {
+        consultas.push([["equipo"], await getTeam(db)]);
+      }
       if (inicio.secciones.some((s) => s.key === "noticias-recientes")) {
         const q = { pagina: 1, porPagina: NOTICIAS_EN_INICIO };
         consultas.push([["noticias", q], await getNewsList(db, q)]);

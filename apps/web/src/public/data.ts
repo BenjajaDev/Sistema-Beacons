@@ -30,6 +30,42 @@ export interface Sitio {
     redes: RedSocial[];
   };
   accesibilidad: string;
+  // Puede faltar en datos guardados por el service worker antes del pie editable.
+  pie?: Pie;
+}
+
+export interface EnlacePie {
+  texto: string;
+  href: string;
+}
+
+// Pie por defecto si los datos no lo traen (respuesta antigua en caché offline).
+// Debe coincidir en espíritu con DEFAULT_FOOTER de server/src/content/footer.ts.
+export const PIE_POR_DEFECTO: Pie = {
+  columnas: [
+    {
+      titulo: "Explora",
+      enlaces: [
+        { texto: "Inicio", href: "/" },
+        { texto: "Nosotros", href: "/nosotros" },
+        { texto: "Noticias", href: "/noticias" },
+        { texto: "Contacto", href: "/contacto" },
+      ],
+    },
+  ],
+  mostrarContacto: true,
+  mostrarRedes: true,
+  mostrarAccesibilidad: true,
+};
+
+// Ver server/src/content/footer.ts.
+export interface Pie {
+  descripcion?: string;
+  columnas: { titulo: string; enlaces: EnlacePie[] }[];
+  mostrarContacto: boolean;
+  mostrarRedes: boolean;
+  mostrarAccesibilidad: boolean;
+  textoLegal?: string;
 }
 
 export interface Seccion {

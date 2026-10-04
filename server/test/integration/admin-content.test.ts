@@ -87,6 +87,39 @@ describe.skipIf(!hasTestDb)("administración de contenido", () => {
       expect(res.body.code).toBe("FILE_TOO_LARGE");
     });
 
+    it("recorta una imagen como una nueva, sin tocar la original", async () => {
+      const subida = await as(app, editor, "post", "/api/admin/media").attach(
+        "archivo",
+        await png(),
+        "foto.png",
+      );
+      const original = subida.body.media;
+      const recorte = await as(app, editor, "post", `/api/admin/media/${original.id}/crop`).send({
+        x: 5,
+        y: 0,
+        width: 30,
+        height: 30,
+      });
+      expect(recorte.status).toBe(201);
+      expect(recorte.body.media).toMatchObject({
+        width: 30,
+        height: 30,
+        mimeType: "image/png",
+        originalName: "foto.png (recorte)",
+      });
+      expect(recorte.body.media.id).not.toBe(original.id);
+      const archivo = path.join(env.uploadDir, recorte.body.media.storageKey);
+      expect((await sharp(readFileSync(archivo)).metadata()).width).toBe(30);
+
+      const fuera = await as(app, editor, "post", `/api/admin/media/${original.id}/crop`).send({
+        x: 20,
+        y: 0,
+        width: 30,
+        height: 30,
+      });
+      expect(fuera.status).toBe(400);
+    });
+
     it("no deja borrar una imagen en uso", async () => {
       const { body } = await subir(admin, await png());
       await as(app, admin, "post", "/api/admin/team").send({
@@ -184,6 +217,35 @@ describe.skipIf(!hasTestDb)("administración de contenido", () => {
         "hola@signal.cl",
       );
     });
+
+    it("guarda el pie de página, valida sus enlaces y lo publica", async () => {
+      const inicial = (await request(app).get("/api/public/site")).body.pie;
+      expect(inicial.mostrarContacto).toBe(true);
+      expect(inicial.columnas[0].enlaces.length).toBeGreaterThan(0);
+
+      const pie = {
+        descripcion: "Orientación con voz.",
+        columnas: [{ titulo: "Proyecto", enlaces: [{ texto: "Equipo", href: "/nosotros" }] }],
+        mostrarContacto: false,
+        mostrarRedes: true,
+        mostrarAccesibilidad: true,
+        textoLegal: "Proyecto académico.",
+      };
+      const mala = await as(app, admin, "put", "/api/admin/settings/footer").send({
+        ...pie,
+        columnas: [{ titulo: "Proyecto", enlaces: [{ texto: "Equipo", href: "javascript:x" }] }],
+      });
+      expect(mala.status).toBe(400);
+      expect(Object.keys(mala.body.campos)).toEqual(["columnas.0.enlaces.0.href"]);
+
+      expect((await as(app, editor, "put", "/api/admin/settings/footer").send(pie)).status).toBe(
+        403,
+      );
+      expect((await as(app, admin, "put", "/api/admin/settings/footer").send(pie)).status).toBe(
+        200,
+      );
+      expect((await request(app).get("/api/public/site")).body.pie).toEqual(pie);
+    });
   });
 
   describe("equipo y colaboradores", () => {
@@ -255,6 +317,30 @@ describe.skipIf(!hasTestDb)("administración de contenido", () => {
       });
       expect(dup.status).toBe(409);
       expect(dup.body.campos.email).toBeDefined();
+    });
+
+    it("elimina cuentas sin contenido y pide desactivar las que tienen autoría", async () => {
+      const yo = await db.user.findUniqueOrThrow({ where: { email: "admin@signal.test" } });
+      expect((await as(app, admin, "delete", `/api/admin/users/${yo.id}`)).body.code).toBe(
+        "SELF_DELETE",
+      );
+
+      const nueva = await as(app, admin, "post", "/api/admin/users").send({
+        email: "temporal@signal.test",
+        name: "Temporal",
+        role: "EDITOR",
+      });
+      const id = nueva.body.user.id;
+      expect((await as(app, editor, "delete", `/api/admin/users/${id}`)).status).toBe(403);
+      expect((await as(app, admin, "delete", `/api/admin/users/${id}`)).status).toBe(204);
+      expect(await db.user.findUnique({ where: { id } })).toBeNull();
+
+      // El editor sube una imagen: su cuenta ya tiene autoría.
+      await as(app, editor, "post", "/api/admin/media").attach("archivo", await png(), "a.png");
+      const ed = await db.user.findUniqueOrThrow({ where: { email: "editor@signal.test" } });
+      const conAutoria = await as(app, admin, "delete", `/api/admin/users/${ed.id}`);
+      expect(conAutoria.status).toBe(409);
+      expect(conAutoria.body.code).toBe("USER_HAS_CONTENT");
     });
 
     it("impide desactivarse o quitarse el rol a sí mismo", async () => {

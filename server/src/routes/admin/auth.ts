@@ -36,6 +36,12 @@ const changePasswordSchema = z
     message: "La nueva contraseña debe ser distinta de la actual.",
   });
 
+// Lo que cada persona puede cambiar de su propia cuenta. El correo y el rol los
+// cambia solo la administración (en Usuarios).
+const profileSchema = z.object({
+  name: z.string("Escribe tu nombre.").trim().min(1, "Escribe tu nombre.").max(80),
+});
+
 const INVALID_CREDENTIALS = () =>
   new ApiError(
     401,
@@ -162,6 +168,22 @@ export function authRoutes(deps: AdminDeps): AdminRoute[] {
       path: "/auth/me",
       handler: (req, res) => {
         res.json({ user: req.user });
+      },
+    },
+    {
+      roles: ANY_ROLE,
+      method: "patch",
+      path: "/auth/me",
+      handler: async (req, res) => {
+        const { name } = parseOrThrow(profileSchema, req.body);
+        const actualizado = await db.user.update({ where: { id: req.user!.id }, data: { name } });
+        await audit(req, {
+          action: "PROFILE_UPDATE",
+          entity: "User",
+          entityId: actualizado.id,
+          meta: { campos: ["name"] },
+        });
+        res.json({ user: publicUser(actualizado) });
       },
     },
     {

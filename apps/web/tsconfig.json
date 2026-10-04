@@ -18,7 +18,8 @@
     "paths": {
       "@shared/*": ["./src/shared/*"],
       "@server-theme": ["../../server/src/content/theme.ts"],
-      "@server-rich-text": ["../../server/src/content/rich-text.ts"]
+      "@server-rich-text": ["../../server/src/content/rich-text.ts"],
+      "@server-footer": ["../../server/src/content/footer.ts"]
     }
   },
   "include": ["src", "test", "*.config.ts", "vite.shared.ts"]

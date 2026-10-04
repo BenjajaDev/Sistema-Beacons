@@ -1,6 +1,7 @@
 import type { ReactNode, Ref } from "react";
 import { Link } from "react-router";
 import type { Imagen, NoticiaResumen, RedSocial, Sitio } from "./data";
+import { detectarRed, IconoRed } from "./IconosRedes";
 
 // --- Títulos ----------------------------------------------------------------
 
@@ -33,6 +34,37 @@ export function Titulo({
     <h2 className={className} id={id}>
       {children}
     </h2>
+  );
+}
+
+// --- Enlaces editables ----------------------------------------------------------
+
+// Destinos que se editan en el panel: rutas internas con el router; anclas y
+// enlaces externos con <a> (los https se abren con rel seguro).
+export function EnlaceEditable({
+  href,
+  className,
+  children,
+}: {
+  href: string;
+  className?: string;
+  children: ReactNode;
+}) {
+  if (href.startsWith("/")) {
+    return (
+      <Link to={href} className={className}>
+        {children}
+      </Link>
+    );
+  }
+  return (
+    <a
+      href={href}
+      className={className}
+      rel={href.startsWith("http") ? "noopener noreferrer" : undefined}
+    >
+      {children}
+    </a>
   );
 }
 
@@ -132,17 +164,35 @@ export function Paginacion({ pagina, totalPaginas }: { pagina: number; totalPagi
 
 // --- Redes y logo -------------------------------------------------------------
 
-export function Redes({ redes, etiqueta }: { redes: RedSocial[]; etiqueta: string }) {
+// Enlaces a redes con el ícono de cada una. «iconos»: botones redondos con el
+// nombre solo para lectores (pie); «chips»: ícono y nombre visibles.
+export function Redes({
+  redes,
+  etiqueta,
+  variante = "chips",
+}: {
+  redes: RedSocial[];
+  etiqueta: string;
+  variante?: "iconos" | "chips";
+}) {
   if (!redes.length) return null;
   return (
-    <ul className="redes" aria-label={etiqueta}>
-      {redes.map((r) => (
-        <li key={r.url}>
-          <a href={r.url} rel="noopener noreferrer">
-            {r.etiqueta || r.red}
-          </a>
-        </li>
-      ))}
+    <ul className={`redes redes--${variante}`} aria-label={etiqueta}>
+      {redes.map((r) => {
+        const nombre = r.etiqueta || r.red;
+        return (
+          <li key={r.url}>
+            <a href={r.url} rel="noopener noreferrer" className="red">
+              <IconoRed red={detectarRed(r.red, r.url)} className="red__icono" />
+              {variante === "iconos" ? (
+                <span className="visually-hidden">{nombre}</span>
+              ) : (
+                <span className="red__nombre">{nombre}</span>
+              )}
+            </a>
+          </li>
+        );
+      })}
     </ul>
   );
 }

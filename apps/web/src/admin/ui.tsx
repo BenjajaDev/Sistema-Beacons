@@ -8,6 +8,7 @@ import { ConfirmDialog, Dialog } from "@shared/ui/Dialog";
 import { TextArea } from "@shared/ui/Field";
 import { Cargando, EmptyState, ErrorState, Skeleton } from "@shared/ui/States";
 import { useToast } from "@shared/ui/Toast";
+import { RecorteImagen } from "./Recorte";
 import { adminFetch, type MediaItem, type Pagina } from "./api";
 
 // --- Página y cabecera ------------------------------------------------------
@@ -195,6 +196,7 @@ export function SelectorImagen({
   errorAlt,
   ayudaAlt = "Describe lo que muestra la imagen, como se lo contarías a alguien por teléfono. Ejemplo: «Persona con bastón usando la app frente a una puerta».",
   sinAlt = false,
+  marco,
 }: {
   etiqueta: string;
   imagen: ImagenElegida | null;
@@ -205,13 +207,23 @@ export function SelectorImagen({
   ayudaAlt?: string;
   // El favicon es decorativo: no lleva texto alternativo.
   sinAlt?: boolean;
+  // Marco en que se muestra la imagen en el sitio. Si la imagen no calza, se ofrece
+  // encuadrarla (recortarla) con esa proporción.
+  marco?: { proporcion: number; nombre: string };
 }) {
   const id = useId();
   const archivo = useRef<HTMLInputElement>(null);
   const [subiendo, setSubiendo] = useState(false);
   const [biblioteca, setBiblioteca] = useState(false);
+  const [encuadrar, setEncuadrar] = useState<ImagenElegida | null>(null);
   const toast = useToast();
   const queryClient = useQueryClient();
+
+  // Abre el encuadre si la proporción difiere más de un 2 % de la del marco.
+  const revisarMarco = (m: MediaItem) => {
+    if (!marco || !m.width || !m.height) return;
+    if (Math.abs(m.width / m.height / marco.proporcion - 1) > 0.02) setEncuadrar(m);
+  };
 
   async function subir(file: File) {
     setSubiendo(true);
@@ -225,6 +237,7 @@ export function SelectorImagen({
       onCambiar({ id: media.id, url: media.url }, alt);
       queryClient.invalidateQueries({ queryKey: ["admin", "media"] });
       toast.exito("Imagen subida. No olvides escribir su descripción.");
+      revisarMarco(media);
     } catch (err) {
       toast.error(`No se pudo subir la imagen. ${mensajeDeError(err)}`);
     } finally {
@@ -237,7 +250,12 @@ export function SelectorImagen({
     <fieldset className="selector-imagen">
       <legend>{etiqueta}</legend>
       {imagen ? (
-        <img src={imagen.url} alt="" className="selector-imagen__vista" />
+        <img
+          src={imagen.url}
+          alt=""
+          className="selector-imagen__vista"
+          style={marco ? { aspectRatio: String(marco.proporcion), objectFit: "cover" } : undefined}
+        />
       ) : (
         <p className="selector-imagen__vacio">Sin imagen.</p>
       )}
@@ -265,6 +283,11 @@ export function SelectorImagen({
         <Button variante="secundario" onClick={() => setBiblioteca(true)}>
           Elegir de las subidas
         </Button>
+        {imagen && marco && (
+          <Button variante="secundario" onClick={() => setEncuadrar(imagen)}>
+            Encuadrar imagen
+          </Button>
+        )}
         {imagen && (
           <Button variante="fantasma" onClick={() => onCambiar(null, "")}>
             Quitar imagen
@@ -278,6 +301,7 @@ export function SelectorImagen({
       )}
       <p className="campo__ayuda">
         JPG, PNG, WebP o AVIF. Se quitan los datos de ubicación de las fotos.
+        {marco && ` En el sitio se muestra en un marco ${marco.nombre}.`}
       </p>
       {imagen && !sinAlt && (
         <TextArea
@@ -296,8 +320,21 @@ export function SelectorImagen({
         onElegir={(m) => {
           onCambiar({ id: m.id, url: m.url }, alt);
           setBiblioteca(false);
+          revisarMarco(m);
         }}
       />
+      {marco && (
+        <RecorteImagen
+          imagen={encuadrar}
+          proporcion={marco.proporcion}
+          nombreMarco={marco.nombre}
+          onCerrar={() => setEncuadrar(null)}
+          onRecortada={(m) => {
+            onCambiar({ id: m.id, url: m.url }, alt);
+            queryClient.invalidateQueries({ queryKey: ["admin", "media"] });
+          }}
+        />
+      )}
     </fieldset>
   );
 }
