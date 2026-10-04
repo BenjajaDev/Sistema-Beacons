@@ -85,7 +85,7 @@ export function RecorteImagen({
         },
       });
       onRecortada(media);
-      toast.exito("Imagen recortada.");
+      toast.exito("Imagen recortada. Guarda los cambios para que se vea en el sitio.");
       cerrar();
     } catch (err) {
       toast.error(`No se pudo recortar. ${mensajeDeError(err)}`);

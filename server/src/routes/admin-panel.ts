@@ -38,14 +38,19 @@ export function adminPanel({
       return;
     }
     const tema = (await getThemeCss?.()) ?? "";
-    const cabecera =
-      `<base href="${base}/">` +
-      '<meta name="robots" content="noindex, nofollow">' +
-      (tema ? `<style id="tema">${tema}</style>` : "");
+    // <base> al inicio: las rutas relativas de los assets dependen de él. El tema al
+    // final: tiene que ir después del CSS del build, que trae los colores por defecto
+    // con los mismos selectores; si va antes, los de Identidad visual nunca se aplican.
+    const cabecera = `<base href="${base}/"><meta name="robots" content="noindex, nofollow">`;
+    const estilos = tema ? `<style id="tema">${tema}</style>` : "";
     res
       .setHeader("Cache-Control", "no-store")
       .type("html")
-      .send(html.replace(/<head(\s[^>]*)?>/i, (m) => m + cabecera));
+      .send(
+        html
+          .replace(/<head(\s[^>]*)?>/i, (m) => m + cabecera)
+          .replace(/<\/head>/i, (m) => estilos + m),
+      );
   }
 
   // El HTML (y cualquier ruta del SPA sin extensión) siempre pasa por servirHtml.

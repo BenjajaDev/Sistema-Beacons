@@ -18,9 +18,11 @@ import type { Db } from "../lib/prisma.js";
 // visibles, noticias en estado PUBLISHED, miembros y colaboradores visibles.
 // Los cambios que se publican en el panel se ven aquí sin redeploy.
 
-// Caché corta: un cambio publicado tarda como máximo un minuto en verse.
+// Sin caché a ciegas: el navegador pregunta siempre y, si nada cambió, recibe un 304
+// vacío gracias al ETag de Express. Así lo que se guarda en el panel se ve con una
+// recarga normal; con max-age, un F5 mostraba la versión anterior.
 const cachePublico: RequestHandler = (_req, res, next) => {
-  res.setHeader("Cache-Control", "public, max-age=60, stale-while-revalidate=600");
+  res.setHeader("Cache-Control", "no-cache");
   next();
 };
 
