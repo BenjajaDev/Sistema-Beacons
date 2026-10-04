@@ -10,19 +10,23 @@
    ===================================================================== */
 
 :root {
-  /* --- Marca (referencia; la interfaz usa los --color-* editables) --- */
-  --marca-marino: #0d1b3e;
-  --marca-azul: #1a56db;
-  --marca-azul-claro: #5b8eff;
-  --marca-azul-palido: #eef3ff;
-  --marca-borde: #c0d0f5;
-  --marca-fondo-oscuro: #0a1530;
-  --marca-superficie-oscura: #152044;
+  /* --- Marca (referencia; la interfaz usa los --color-* editables) ---
+     Misma paleta que la app Android: BeaconsAndroid/.../SignalColors.kt. */
+  --marca-azul: #004aad;
+  --marca-azul-claro: #9dc2f7;
+  --marca-azul-palido: #ebf1f8;
+  --marca-ciruela: #3d1534;
+  --marca-crema: #f6e0b6;
+  --marca-fondo: #fff4eb;
+  --marca-borde: #ecdcc4;
+  --marca-fondo-oscuro: #150c14;
+  --marca-superficie-oscura: #221521;
 
-  /* --- Estados (contraste ≥ 4,5:1 sobre fondo claro y oscuro) --- */
+  /* --- Estados (contraste ≥ 4,5:1 sobre fondo claro y oscuro).
+     El rojo de error es el de la app Android. --- */
   --color-ok: #146c2e;
   --color-ok-bg: #e6f4ea;
-  --color-error: #b3261e;
+  --color-error: #c0392b;
   --color-error-bg: #fdecea;
   --color-aviso: #7a4f01;
   --color-aviso-bg: #fff4d6;
@@ -61,8 +65,8 @@
   --radius-pill: 999px;
   /* Objetivo táctil mínimo: 44 × 44 px (WCAG 2.5.5). */
   --target: 2.75rem;
-  --sombra: 0 1px 2px rgb(13 27 62 / 0.08), 0 4px 12px rgb(13 27 62 / 0.08);
-  --sombra-alta: 0 8px 28px rgb(13 27 62 / 0.18);
+  --sombra: 0 1px 2px rgb(61 21 52 / 0.08), 0 4px 12px rgb(61 21 52 / 0.08);
+  --sombra-alta: 0 8px 28px rgb(61 21 52 / 0.18);
 
   /* --- Movimiento (150–300 ms; en 0 con prefers-reduced-motion) --- */
   --dur-rapida: 150ms;
@@ -78,7 +82,7 @@
 :root[data-theme="dark"] {
   --color-ok: #7dd89a;
   --color-ok-bg: #12321e;
-  --color-error: #ffb4ab;
+  --color-error: #f0796a;
   --color-error-bg: #3c1512;
   --color-aviso: #ffd479;
   --color-aviso-bg: #3a2b05;
@@ -90,7 +94,7 @@
   :root:not([data-theme="light"]) {
     --color-ok: #7dd89a;
     --color-ok-bg: #12321e;
-    --color-error: #ffb4ab;
+    --color-error: #f0796a;
     --color-error-bg: #3c1512;
     --color-aviso: #ffd479;
     --color-aviso-bg: #3a2b05;

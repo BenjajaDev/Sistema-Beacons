@@ -252,12 +252,12 @@ textarea.campo__control {
   padding: var(--space-5);
   border: 0;
   border-radius: var(--radius-lg);
-  background: var(--color-bg);
+  background: var(--color-surface);
   color: var(--color-text);
   box-shadow: var(--sombra-alta);
 }
 .dialogo::backdrop {
-  background: rgb(10 21 48 / 0.6);
+  background: rgb(21 12 20 / 0.6);
 }
 .dialogo[open] {
   animation: dialogo-entra var(--dur) var(--curva);

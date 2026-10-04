@@ -6,7 +6,7 @@ import { z } from "zod";
 
 const hex = z
   .string()
-  .regex(/^#[0-9a-fA-F]{6}$/, "Usa un color hexadecimal de 6 dígitos, por ejemplo #1A56DB.");
+  .regex(/^#[0-9a-fA-F]{6}$/, "Usa un color hexadecimal de 6 dígitos, por ejemplo #004AAD.");
 
 export const paletteModeSchema = z.object({
   fondo: hex,
@@ -31,33 +31,37 @@ export type PaletteMode = z.infer<typeof paletteModeSchema>;
 export type Palette = z.infer<typeof paletteSchema>;
 type ColorToken = keyof PaletteMode;
 
+// La misma paleta que la app Android (BeaconsAndroid/.../SignalColors.kt): azul de
+// marca #004AAD, tinta ciruela y fondo crema cálido; en oscuro, fondo ciruela
+// profundo con texto crema y azul claro #9DC2F7. Si cambia allá, cambia aquí
+// (y al revés), y después: npm run gen:theme -w server.
 export const DEFAULT_PALETTE: Palette = {
   light: {
-    fondo: "#FFFFFF",
-    superficie: "#EEF3FF",
-    texto: "#0D1B3E",
-    textoSuave: "#3B4A6B",
-    primario: "#1A56DB",
+    fondo: "#FFF4EB", // SurfaceLight
+    superficie: "#FFFFFF", // CardLight
+    texto: "#3D1534", // TextPrimaryL
+    textoSuave: "#6B4F63", // TextSecondaryL
+    primario: "#004AAD", // Blue
     textoSobrePrimario: "#FFFFFF",
-    enlace: "#1A56DB",
-    borde: "#C0D0F5",
-    bordeControl: "#5A6B8C",
-    foco: "#1A56DB",
-    acento: "#5B8EFF",
+    enlace: "#004AAD", // Blue
+    borde: "#ECDCC4", // BlueBorder
+    bordeControl: "#8A7D84", // TextMutedL
+    foco: "#004AAD", // Blue
+    acento: "#9DC2F7", // BlueLight
   },
   dark: {
-    fondo: "#0A1530",
-    superficie: "#152044",
-    texto: "#EEF3FF",
-    textoSuave: "#B8C7EA",
-    // #1A56DB no llega a 4,5:1 sobre #0A1530, así que en oscuro el primario es el azul claro.
-    primario: "#5B8EFF",
-    textoSobrePrimario: "#0A1530",
-    enlace: "#5B8EFF",
-    borde: "#2A3B6E",
-    bordeControl: "#7F93C6",
-    foco: "#8FB1FF",
-    acento: "#1A56DB",
+    fondo: "#150C14", // SurfaceDark
+    superficie: "#221521", // CardDark
+    texto: "#F2E6DC", // TextPrimaryD
+    textoSuave: "#D3C1CC", // TextSecondaryD
+    // #004AAD no llega a 4,5:1 sobre #150C14: en oscuro el primario es el azul claro, como en la app.
+    primario: "#9DC2F7", // BlueLight
+    textoSobrePrimario: "#150C14", // NavyDark
+    enlace: "#9DC2F7", // BlueLight
+    borde: "#3D2A39", // BorderDark
+    bordeControl: "#A6919E", // TextMutedD
+    foco: "#9DC2F7", // BlueLight
+    acento: "#004AAD", // Blue
   },
 };
 

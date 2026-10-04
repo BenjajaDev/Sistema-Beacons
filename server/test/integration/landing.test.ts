@@ -54,7 +54,7 @@ describe.skipIf(!hasTestDb)("landing servida por Express", () => {
     expect(res.headers["content-type"]).toMatch(/text\/html/);
     expect(res.text).toContain("<title>SIGNAL · Navegación interior accesible</title>");
     expect(res.text).toContain('<meta name="description" content="Navegación interior accesible">');
-    expect(res.text).toMatch(/<style id="tema">[^<]*--color-primary:#1A56DB/);
+    expect(res.text).toMatch(/<style id="tema">[^<]*--color-primary:#004AAD/);
     expect(res.text).toContain('<link rel="canonical"');
 
     const claves = datosIniciales(res.text).consultas.map(([k]) => JSON.stringify(k));

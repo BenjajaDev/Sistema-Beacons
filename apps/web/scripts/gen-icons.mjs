@@ -3,7 +3,7 @@
 //   node scripts/gen-icons.mjs
 //
 // El ícono es un dibujo vectorial cuadrado basado en el isotipo (scripts/isotipo.png,
-// que es horizontal): el beacon con su luz azul emitiendo ondas, sobre azul marino.
+// que es horizontal): el beacon con su luz azul emitiendo ondas, sobre el azul de marca.
 // Al ser vectorial queda nítido en todos los tamaños, también en el favicon.
 //
 // - icon-*: esquinas redondeadas y fondo transparente fuera de ellas.
@@ -17,11 +17,11 @@ import sharp from "sharp";
 
 const DESTINO = path.resolve(import.meta.dirname, "../public/icons");
 
-// Colores del brief.
-const MARINO = "#0D1B3E";
-const AZUL = "#1A56DB";
-const AZUL_CLARO = "#5B8EFF";
-const BORDE = "#C0D0F5";
+// Colores de la app Android (BeaconsAndroid/.../SignalColors.kt).
+const FONDO = "#004AAD"; // Blue
+const LUZ = "#004AAD"; // Blue
+const ONDAS = "#9DC2F7"; // BlueLight
+const FACETAS = "#ECDCC4"; // BlueBorder
 
 // Arco de onda centrado en (cx, cy), abierto hacia la derecha.
 function arco(cx, cy, r, grados) {
@@ -37,16 +37,16 @@ function arco(cx, cy, r, grados) {
 function svg({ escala, radio = 0, facetas = true }) {
   const piedra = "M160 190 L205 196 L228 240 L225 304 L195 336 L148 334 L123 300 L125 233 Z";
   return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
-  <rect width="512" height="512" rx="${radio}" fill="${MARINO}"/>
+  <rect width="512" height="512" rx="${radio}" fill="${FONDO}"/>
   <g transform="translate(256 256) scale(${escala}) translate(-251 -262)">
     <path d="${piedra}" fill="#FFFFFF" stroke="#FFFFFF" stroke-width="18" stroke-linejoin="round"/>
     ${
       facetas
-        ? `<path d="M172 252 L125 233 M172 252 L228 240 M172 252 L195 336" fill="none" stroke="${BORDE}" stroke-width="3" stroke-linecap="round"/>`
+        ? `<path d="M172 252 L125 233 M172 252 L228 240 M172 252 L195 336" fill="none" stroke="${FACETAS}" stroke-width="3" stroke-linecap="round"/>`
         : ""
     }
-    <circle cx="203" cy="222" r="12" fill="${AZUL}"/>
-    <g fill="none" stroke="${AZUL_CLARO}" stroke-width="24" stroke-linecap="round">
+    <circle cx="203" cy="222" r="12" fill="${LUZ}"/>
+    <g fill="none" stroke="${ONDAS}" stroke-width="24" stroke-linecap="round">
       <path d="${arco(236, 262, 60, 38)}"/>
       <path d="${arco(236, 262, 100, 40)}"/>
       <path d="${arco(236, 262, 140, 42)}"/>

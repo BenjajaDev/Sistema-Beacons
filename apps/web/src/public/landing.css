@@ -200,7 +200,7 @@ main:focus {
   padding: var(--space-5);
   border: 1px solid var(--color-border);
   border-radius: var(--radius);
-  background: var(--color-bg);
+  background: var(--color-surface);
 }
 .seccion--hero + .seccion .pasos__item,
 .pasos__item {
@@ -240,7 +240,7 @@ main:focus {
   overflow: hidden;
   border: 1px solid var(--color-border);
   border-radius: var(--radius);
-  background: var(--color-bg);
+  background: var(--color-surface);
   transition:
     box-shadow var(--dur) var(--curva),
     transform var(--dur) var(--curva);

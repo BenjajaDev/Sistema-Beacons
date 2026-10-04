@@ -179,7 +179,7 @@ function Formulario({ ajustes }: { ajustes: Ajustes }) {
       for (const t of Object.keys(NOMBRES) as Token[]) {
         if (!/^#[0-9A-F]{6}$/i.test(form.palette[modo][t])) {
           locales[`color-${modo}-${t}`] =
-            `${texto}: «${NOMBRES[t]}» debe ser un color de 6 dígitos, por ejemplo #1A56DB.`;
+            `${texto}: «${NOMBRES[t]}» debe ser un color de 6 dígitos, por ejemplo #004AAD.`;
         }
       }
     }
