@@ -1,4 +1,4 @@
-import { mkdir, rm, writeFile } from "node:fs/promises";
+import { mkdir, readFile, rm, writeFile } from "node:fs/promises";
 import path from "node:path";
 import type { ServerEnv } from "../config/env.js";
 
@@ -7,6 +7,8 @@ import type { ServerEnv } from "../config/env.js";
 
 export interface MediaStorage {
   put(key: string, data: Buffer, contentType: string): Promise<{ url: string }>;
+  // Lee un archivo ya guardado (por ejemplo, para recortarlo).
+  get(key: string): Promise<Buffer>;
   remove(key: string): Promise<void>;
 }
 
@@ -17,6 +19,9 @@ export function localStorage(dir: string): MediaStorage {
       await mkdir(path.dirname(destino), { recursive: true });
       await writeFile(destino, data, { flag: "wx" });
       return { url: `/uploads/${key}` };
+    },
+    async get(key) {
+      return readFile(path.join(dir, key));
     },
     async remove(key) {
       await rm(path.join(dir, key), { force: true });
@@ -51,6 +56,13 @@ export function supabaseStorage(
         throw new Error(`Supabase Storage respondió ${res.status}: ${await res.text()}`);
       }
       return { url: `${base}/storage/v1/object/public/${config.bucket}/${key}` };
+    },
+    async get(key) {
+      const res = await fetchFn(`${base}/storage/v1/object/${config.bucket}/${key}`, { headers });
+      if (!res.ok) {
+        throw new Error(`Supabase Storage respondió ${res.status} al leer: ${await res.text()}`);
+      }
+      return Buffer.from(await res.arrayBuffer());
     },
     async remove(key) {
       const res = await fetchFn(`${base}/storage/v1/object/${config.bucket}`, {

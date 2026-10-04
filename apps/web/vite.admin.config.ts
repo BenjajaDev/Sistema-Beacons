@@ -29,6 +29,8 @@ export default defineConfig({
       ...shared.resolve.alias,
       // Paleta, contraste y fuentes: misma fuente de verdad que el servidor.
       "@server-theme": path.resolve(import.meta.dirname, "../../server/src/content/theme.ts"),
+      // Esquema y valores por defecto del pie de página.
+      "@server-footer": path.resolve(import.meta.dirname, "../../server/src/content/footer.ts"),
       // Vista previa de textos enriquecidos con el mismo renderizado que el servidor.
       "@server-rich-text": path.resolve(
         import.meta.dirname,

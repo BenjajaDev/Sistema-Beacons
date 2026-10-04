@@ -72,7 +72,10 @@
   --dur-rapida: 150ms;
   --dur: 200ms;
   --dur-lenta: 300ms;
-  --curva: cubic-bezier(0.2, 0.8, 0.2, 1);
+  /* Salida fuerte para respuestas de la interfaz; la de movimiento, para lo que se
+     desplaza en pantalla (curvas de .claude/skills/review-animations/STANDARDS.md). */
+  --curva: cubic-bezier(0.23, 1, 0.32, 1);
+  --curva-movimiento: cubic-bezier(0.77, 0, 0.175, 1);
 
   /* --- Foco --- */
   --foco-ancho: 3px;

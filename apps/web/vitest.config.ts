@@ -8,6 +8,7 @@ export default defineConfig({
     alias: {
       "@shared": path.resolve(import.meta.dirname, "src/shared"),
       "@server-theme": path.resolve(import.meta.dirname, "../../server/src/content/theme.ts"),
+      "@server-footer": path.resolve(import.meta.dirname, "../../server/src/content/footer.ts"),
       // Solo para tests: validar la salida del editor con el esquema del servidor.
       "@server-rich-text": path.resolve(
         import.meta.dirname,

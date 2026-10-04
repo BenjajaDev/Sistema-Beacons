@@ -252,6 +252,7 @@ function CamposPersona({
       />
       <SelectorImagen
         etiqueta="Foto (opcional)"
+        marco={{ proporcion: 1, nombre: "cuadrado" }}
         imagen={form.photo}
         alt={form.photoAlt}
         onCambiar={(photo, photoAlt) => set({ ...form, photo, photoAlt })}

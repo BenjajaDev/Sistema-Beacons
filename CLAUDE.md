@@ -39,6 +39,13 @@ La fuente de verdad es la app Android: `BeaconsAndroid/app/src/main/java/com/exa
 - `apps/web/public/offline.html`, `index.html` (`theme-color`), el manifest de `vite.public.config.ts` y `apps/web/scripts/gen-icons.mjs` tienen colores fijos: mantenlos alineados.
 - Las tipografías son Atkinson Hyperlegible Next (cuerpo) y Bricolage Grotesque (títulos), autoalojadas. No se cambian sin pedirlo.
 
+## Lenguaje visual y movimiento
+
+- El motivo es **la señal del beacon**: punto de luz, ondas concéntricas, barras que barren. Un componente nuevo usa ese vocabulario antes que inventar otro.
+- Movimiento al apuntar: siempre dentro de `@media (hover: hover) and (pointer: fine) and (prefers-reduced-motion: no-preference)`, solo `transform` y `opacity`, curva `--curva` y duración `--dur-*` (≤ 300 ms). Presionar: `scale(0.97)`.
+- Lo único que se mueve solo es la entrada de las ondas del hero, una vez. El panel es sobrio: se usa a diario.
+- Nada de texto subrayado plano ni acciones que parezcan texto: los enlaces del texto llevan la barra inferior de `base.css` y las acciones son botones (`.btn--fantasma` es una ficha, no un enlace).
+
 ## Skills de diseño, UX y animación
 
 Están instaladas en [`.claude/skills/`](.claude/skills/README.md). Son copias de repositorios externos: **no las edites**; para actualizarlas, vuelve a copiarlas desde su origen.

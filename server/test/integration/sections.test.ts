@@ -100,12 +100,20 @@ describe.skipIf(!hasTestDb)("secciones de la landing", () => {
       "hero",
       "que-es",
       "proyecciones",
+      "nosotros-inicio",
       "noticias-recientes",
     ]);
   });
 
   it("reordena las secciones de una página", async () => {
-    const keys = ["proyecciones", "hero", "que-es", "objetivos", "noticias-recientes"];
+    const keys = [
+      "proyecciones",
+      "hero",
+      "que-es",
+      "nosotros-inicio",
+      "objetivos",
+      "noticias-recientes",
+    ];
     expect(
       (await as(app, admin, "put", "/api/admin/sections/order").send({ page: "INICIO", keys }))
         .status,

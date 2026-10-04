@@ -61,6 +61,7 @@ describe.skipIf(!hasTestDb)("landing servida por Express", () => {
     expect(claves).toEqual([
       '["site"]',
       '["pagina","inicio"]',
+      '["equipo"]',
       '["noticias",{"pagina":1,"porPagina":3}]',
     ]);
   });
@@ -70,7 +71,9 @@ describe.skipIf(!hasTestDb)("landing servida por Express", () => {
     const bloque = res.text.match(/id="datos-iniciales">(.*?)<\/script>/s)![1]!;
     expect(bloque).not.toContain("</script>");
     expect(bloque).toContain("\\u003c/script>");
-    const noticias = datosIniciales(res.text).consultas[2]![1] as { items: { title: string }[] };
+    const noticias = datosIniciales(res.text).consultas.find(([k]) => k[0] === "noticias")![1] as {
+      items: { title: string }[];
+    };
     expect(noticias.items[0]!.title).toContain("</script>");
   });
 

@@ -19,6 +19,8 @@ const ACCIONES: Record<string, string> = {
   USER_UPDATE: "Editó una cuenta",
   USER_DEACTIVATE: "Desactivó una cuenta",
   USER_PASSWORD_RESET: "Restableció una contraseña",
+  USER_DELETE: "Eliminó una cuenta",
+  PROFILE_UPDATE: "Editó su perfil",
   NEWS_CREATE: "Creó una noticia",
   NEWS_UPDATE: "Editó una noticia",
   NEWS_SUBMIT: "Envió una noticia a revisión",
@@ -36,6 +38,7 @@ const ACCIONES: Record<string, string> = {
   SECTION_REORDER: "Reordenó secciones",
   SETTINGS_IDENTITY_UPDATE: "Cambió la identidad visual",
   SETTINGS_CONTACT_UPDATE: "Cambió los datos de contacto",
+  SETTINGS_FOOTER_UPDATE: "Cambió el pie de página",
   MEDIA_UPLOAD: "Subió una imagen",
   MEDIA_DELETE: "Borró una imagen",
   BEACON_CREATE: "Registró un beacon",
@@ -45,11 +48,22 @@ const ACCIONES: Record<string, string> = {
   TEAM_MEMBER_CREATE: "Agregó una persona al equipo",
   TEAM_MEMBER_UPDATE: "Editó a una persona del equipo",
   TEAM_MEMBER_DELETE: "Quitó a una persona del equipo",
+  TEAM_MEMBER_REORDER: "Reordenó el equipo",
   COLLABORATOR_CREATE: "Agregó un colaborador",
   COLLABORATOR_UPDATE: "Editó un colaborador",
   COLLABORATOR_DELETE: "Quitó un colaborador",
+  COLLABORATOR_REORDER: "Reordenó los colaboradores",
   MESSAGE_DELETE: "Borró un mensaje",
 };
+
+// Mismas áreas que el servidor (AUDIT_AREAS en server/src/routes/admin/audit-log.ts).
+const AREAS = [
+  { valor: "", texto: "Todo" },
+  { valor: "sesiones", texto: "Sesiones" },
+  { valor: "contenido", texto: "Contenido" },
+  { valor: "cms", texto: "CMS" },
+  { valor: "usuarios", texto: "Usuarios" },
+] as const;
 
 function detalle(e: EntradaBitacora) {
   const meta = (e.meta ?? {}) as Record<string, unknown>;
@@ -66,12 +80,13 @@ function detalle(e: EntradaBitacora) {
 export default function Bitacora() {
   const h1 = usePanelPage("Bitácora");
   const [accion, setAccion] = useState("");
+  const [area, setArea] = useState("");
   const consulta = useInfiniteQuery({
-    queryKey: ["admin", "bitacora", accion],
+    queryKey: ["admin", "bitacora", accion, area],
     initialPageParam: null as string | null,
     queryFn: ({ pageParam }) =>
       adminFetch<{ items: EntradaBitacora[]; nextCursor: string | null }>(
-        `/audit?limit=50${accion ? `&action=${accion}` : ""}${pageParam ? `&cursor=${pageParam}` : ""}`,
+        `/audit?limit=50${accion ? `&action=${accion}` : ""}${area ? `&area=${area}` : ""}${pageParam ? `&cursor=${pageParam}` : ""}`,
       ),
     getNextPageParam: (u) => u.nextCursor,
   });
@@ -80,6 +95,21 @@ export default function Bitacora() {
   return (
     <div className="vista-contenido">
       <Cabecera refH1={h1} titulo="Bitácora" descripcion="Quién hizo qué y cuándo en el panel." />
+      <fieldset className="segmentado segmentado--texto">
+        <legend>Área del panel</legend>
+        {AREAS.map((a) => (
+          <label key={a.valor}>
+            <input
+              type="radio"
+              name="area-bitacora"
+              value={a.valor}
+              checked={area === a.valor}
+              onChange={() => setArea(a.valor)}
+            />
+            {a.texto}
+          </label>
+        ))}
+      </fieldset>
       <SelectField
         label="Filtrar por acción"
         opcional
@@ -105,7 +135,7 @@ export default function Bitacora() {
       ) : items.length === 0 ? (
         <EmptyState
           titulo="No hay registros"
-          texto={accion ? "Prueba con otra acción." : undefined}
+          texto={accion || area ? "Prueba con otra acción o área." : undefined}
         />
       ) : (
         <>

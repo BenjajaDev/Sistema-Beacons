@@ -4,8 +4,8 @@ import { NavLink, Outlet, ScrollRestoration, useLocation } from "react-router";
 import { TextSizeControl, ThemeSwitcher } from "@shared/theme/Controls";
 import { IconoCerrar, IconoMenu } from "@shared/ui/Icons";
 import { ToastProvider } from "@shared/ui/Toast";
-import { Logo, Redes } from "./components";
-import { consultas } from "./data";
+import { EnlaceEditable, Logo, Redes } from "./components";
+import { consultas, PIE_POR_DEFECTO } from "./data";
 
 const NAVEGACION = [
   { to: "/", texto: "Inicio", end: true },
@@ -94,43 +94,72 @@ function Encabezado() {
   );
 }
 
+// El pie se edita en el panel (Pie de página): descripción, columnas de enlaces,
+// bloques visibles y texto legal. Cada bloque lleva su título, sin ser región.
 function Pie() {
   const { data: sitio } = useQuery(consultas.sitio());
   if (!sitio) return null;
   const { telefono, correo, direccion, redes } = sitio.contacto;
+  const pie = sitio.pie ?? PIE_POR_DEFECTO;
+  const hayContacto = pie.mostrarContacto && Boolean(telefono || correo || direccion);
+  const hayRedes = pie.mostrarRedes && redes.length > 0;
   return (
     <footer className="pie">
       <div className="container pie__rejilla">
-        {/* Bloques con título, sin ser regiones: «Contacto» ya es una región en su página. */}
-        <div>
-          <h2 id="pie-contacto" className="pie__titulo">
-            Contacto
-          </h2>
-          <ul className="pie__lista">
-            {telefono && (
-              <li>
-                <a href={`tel:${telefono.replace(/[^\d+]/g, "")}`}>{telefono}</a>
-              </li>
-            )}
-            {correo && (
-              <li>
-                <a href={`mailto:${correo}`}>{correo}</a>
-              </li>
-            )}
-            {direccion && <li>{direccion}</li>}
-          </ul>
-          <Redes redes={redes} etiqueta="Redes sociales" />
+        <div className="pie__marca">
+          <p className="pie__nombre">{sitio.siteName}</p>
+          {pie.descripcion && <p className="pie__descripcion">{pie.descripcion}</p>}
+          {hayRedes && <Redes redes={redes} etiqueta="Redes sociales" variante="iconos" />}
         </div>
-        <div>
-          <h2 id="pie-accesibilidad" className="pie__titulo">
-            Accesibilidad
-          </h2>
-          <p>{sitio.accesibilidad}</p>
-        </div>
+        {pie.columnas.map((col, i) => (
+          <div key={i} className="pie__columna">
+            <h2 className="pie__titulo">{col.titulo}</h2>
+            <ul className="pie__enlaces">
+              {col.enlaces.map((e, j) => (
+                <li key={j}>
+                  <EnlaceEditable href={e.href} className="pie__enlace">
+                    {e.texto}
+                  </EnlaceEditable>
+                </li>
+              ))}
+            </ul>
+          </div>
+        ))}
+        {hayContacto && (
+          <div className="pie__columna">
+            <h2 className="pie__titulo">Contacto</h2>
+            <ul className="pie__enlaces">
+              {telefono && (
+                <li>
+                  <a href={`tel:${telefono.replace(/[^\d+]/g, "")}`} className="pie__enlace">
+                    {telefono}
+                  </a>
+                </li>
+              )}
+              {correo && (
+                <li>
+                  <a href={`mailto:${correo}`} className="pie__enlace">
+                    {correo}
+                  </a>
+                </li>
+              )}
+              {direccion && <li className="pie__dato">{direccion}</li>}
+            </ul>
+          </div>
+        )}
+        {pie.mostrarAccesibilidad && (
+          <div className="pie__columna pie__columna--ancha">
+            <h2 className="pie__titulo">Accesibilidad</h2>
+            <p className="pie__descripcion">{sitio.accesibilidad}</p>
+          </div>
+        )}
       </div>
-      <p className="container pie__legal">
-        © {new Date().getFullYear()} {sitio.siteName}
-      </p>
+      <div className="container pie__legal">
+        <p>
+          © {new Date().getFullYear()} {sitio.siteName}
+          {pie.textoLegal && <>. {pie.textoLegal}</>}
+        </p>
+      </div>
     </footer>
   );
 }

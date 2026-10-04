@@ -395,6 +395,7 @@ function Editor({ noticia }: { noticia: Noticia | null }) {
           {puedeEditar ? (
             <SelectorImagen
               etiqueta="Imagen de portada (opcional)"
+              marco={{ proporcion: 16 / 9, nombre: "horizontal (16:9)" }}
               imagen={form.cover}
               alt={form.coverAlt}
               onCambiar={(img, alt) => setForm((f) => ({ ...f, cover: img, coverAlt: alt }))}

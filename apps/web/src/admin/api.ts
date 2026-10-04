@@ -182,6 +182,8 @@ export interface Ajustes {
   contactAddress: string | null;
   socials: Enlace[];
   accessibilityStatement: string;
+  // Lo guardado puede venir vacío ({}) en bases anteriores al pie editable.
+  footer: Partial<import("@server-footer").Footer>;
 }
 
 export interface Beacon {

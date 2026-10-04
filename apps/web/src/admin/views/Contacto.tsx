@@ -1,4 +1,4 @@
-import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useInfiniteQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useMemo, useState } from "react";
 import { ApiError, mensajeDeError } from "@shared/api";
 import { Button } from "@shared/ui/Button";
@@ -26,7 +26,7 @@ const desde = (a: Ajustes): FormContacto => ({
   accessibilityStatement: a.accessibilityStatement,
 });
 
-function DatosContacto({ ajustes }: { ajustes: Ajustes }) {
+export function DatosContacto({ ajustes }: { ajustes: Ajustes }) {
   const toast = useToast();
   const queryClient = useQueryClient();
   const inicial = useMemo(() => desde(ajustes), [ajustes]);
@@ -307,28 +307,16 @@ function Mensajes() {
   );
 }
 
+// Los datos de contacto se editan en «Pie de página» (DatosContacto se usa allí).
 export default function Contacto() {
-  const h1 = usePanelPage("Contacto");
-  const { data, isPending, error, refetch } = useQuery({
-    queryKey: ["admin", "ajustes"],
-    queryFn: () => adminFetch<{ settings: Ajustes }>("/settings"),
-  });
+  const h1 = usePanelPage("Mensajes");
   return (
     <div className="vista-contenido">
       <Cabecera
         refH1={h1}
-        titulo="Contacto"
-        descripcion="Datos de contacto del sitio y mensajes recibidos por el formulario."
+        titulo="Mensajes"
+        descripcion="Lo que llega por el formulario de la página Contacto. Teléfono, correo y redes se editan en «Pie de página»."
       />
-      {isPending ? (
-        <Cargando>
-          <Skeleton alto="12rem" />
-        </Cargando>
-      ) : error ? (
-        <ErrorState mensaje={mensajeDeError(error)} onReintentar={() => refetch()} />
-      ) : (
-        <DatosContacto ajustes={data.settings} />
-      )}
       <Mensajes />
     </div>
   );

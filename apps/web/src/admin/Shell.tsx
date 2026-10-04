@@ -17,16 +17,37 @@ interface ItemMenu {
   end?: boolean;
 }
 
-export const MENU: ItemMenu[] = [
-  { to: "/", texto: "Resumen", roles: ["ADMIN", "EDITOR"], end: true },
-  { to: "/noticias", texto: "Noticias", roles: ["ADMIN", "EDITOR"] },
-  { to: "/secciones", texto: "Secciones", roles: ["ADMIN", "EDITOR"] },
-  { to: "/equipo", texto: "Equipo", roles: ["ADMIN"] },
-  { to: "/identidad", texto: "Identidad visual", roles: ["ADMIN"] },
-  { to: "/contacto", texto: "Contacto", roles: ["ADMIN"] },
-  { to: "/beacons", texto: "Beacons", roles: ["ADMIN"] },
-  { to: "/usuarios", texto: "Usuarios", roles: ["ADMIN"] },
-  { to: "/bitacora", texto: "Bitácora", roles: ["ADMIN"] },
+interface GrupoMenu {
+  titulo: string;
+  items: ItemMenu[];
+}
+
+const TODOS: Rol[] = ["ADMIN", "EDITOR"];
+const ADMIN: Rol[] = ["ADMIN"];
+
+// El panel se ordena en cinco secciones. Un grupo de un solo enlace se muestra
+// como enlace directo; los demás, con su título y su lista.
+export const MENU: GrupoMenu[] = [
+  { titulo: "Resumen", items: [{ to: "/", texto: "Resumen", roles: TODOS, end: true }] },
+  {
+    titulo: "Contenido",
+    items: [
+      { to: "/secciones", texto: "Secciones", roles: TODOS },
+      { to: "/noticias", texto: "Noticias", roles: TODOS },
+      { to: "/equipo", texto: "Equipo y colaboradores", roles: ADMIN },
+    ],
+  },
+  {
+    titulo: "CMS",
+    items: [
+      { to: "/identidad", texto: "Identidad visual", roles: ADMIN },
+      { to: "/pie", texto: "Pie de página", roles: ADMIN },
+      { to: "/contacto", texto: "Mensajes", roles: ADMIN },
+      { to: "/beacons", texto: "Beacons", roles: ADMIN },
+    ],
+  },
+  { titulo: "Usuarios", items: [{ to: "/usuarios", texto: "Usuarios", roles: ADMIN }] },
+  { titulo: "Bitácora", items: [{ to: "/bitacora", texto: "Bitácora", roles: ADMIN }] },
 ];
 
 const ESCRITORIO = "(min-width: 64rem)";
@@ -50,22 +71,38 @@ function Navegacion() {
     enabled: tiene("ADMIN"),
     staleTime: 60_000,
   });
+  const enlace = (m: ItemMenu) => (
+    <NavLink to={m.to} end={m.end} className="panel-nav__enlace">
+      {m.texto}
+      {m.to === "/contacto" && data && data.noLeidos > 0 && (
+        <span className="contador">
+          {data.noLeidos}
+          <span className="visually-hidden"> mensajes sin leer</span>
+        </span>
+      )}
+    </NavLink>
+  );
   return (
     <nav aria-label="Panel" className="panel-nav">
       <ul>
-        {MENU.filter((m) => tiene(...m.roles)).map((m) => (
-          <li key={m.to}>
-            <NavLink to={m.to} end={m.end}>
-              {m.texto}
-              {m.to === "/contacto" && data && data.noLeidos > 0 && (
-                <span className="contador">
-                  {data.noLeidos}
-                  <span className="visually-hidden"> mensajes sin leer</span>
-                </span>
-              )}
-            </NavLink>
-          </li>
-        ))}
+        {MENU.map((g) => {
+          const items = g.items.filter((m) => tiene(...m.roles));
+          if (!items.length) return null;
+          if (g.items.length === 1) return <li key={g.titulo}>{enlace(items[0]!)}</li>;
+          const idGrupo = `menu-${g.titulo.toLowerCase()}`;
+          return (
+            <li key={g.titulo} className="panel-nav__grupo">
+              <span id={idGrupo} className="panel-nav__titulo">
+                {g.titulo}
+              </span>
+              <ul aria-labelledby={idGrupo}>
+                {items.map((m) => (
+                  <li key={m.to}>{enlace(m)}</li>
+                ))}
+              </ul>
+            </li>
+          );
+        })}
       </ul>
     </nav>
   );
@@ -111,7 +148,7 @@ function BarraSuperior({ onAbrirMenu }: { onAbrirMenu?: () => void }) {
           <IconoMenu />
         </IconButton>
       )}
-      <a href="/" className="panel-barra__sitio" target="_blank" rel="noopener">
+      <a href="/" className="btn btn--fantasma panel-barra__sitio" target="_blank" rel="noopener">
         Ver el sitio<span className="visually-hidden"> (se abre en otra pestaña)</span>
       </a>
       <div className="panel-barra__ajustes">
@@ -119,13 +156,18 @@ function BarraSuperior({ onAbrirMenu }: { onAbrirMenu?: () => void }) {
         <ThemeSwitcher />
       </div>
       <div className="panel-barra__cuenta">
-        <span>
-          {usuario?.name}{" "}
-          <span className="insignia">
-            {usuario?.role === "ADMIN" ? "Administración" : "Edición"}
+        <Link to="/perfil" className="perfil-chip">
+          <span className="perfil-chip__inicial" aria-hidden="true">
+            {usuario?.name.trim().charAt(0).toUpperCase()}
           </span>
-        </span>
-        <Link to="/cambiar-contrasena">Cambiar contraseña</Link>
+          <span className="perfil-chip__texto">
+            <span className="perfil-chip__nombre">{usuario?.name}</span>
+            <span className="perfil-chip__rol">
+              {usuario?.role === "ADMIN" ? "Administración" : "Edición"}
+            </span>
+          </span>
+          <span className="visually-hidden">: ver mi perfil</span>
+        </Link>
         <Button
           variante="secundario"
           onClick={() =>

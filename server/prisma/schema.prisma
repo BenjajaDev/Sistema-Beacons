@@ -91,6 +91,8 @@ model SiteSettings {
   // [{ red, url, etiqueta }]
   socials                Json     @default("[]")
   accessibilityStatement String
+  // Textos, columnas de enlaces y bloques visibles del pie. Ver src/content/footer.ts.
+  footer                 Json     @default("{}")
   updatedAt              DateTime @updatedAt
   updatedById            String?
 

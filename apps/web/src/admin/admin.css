@@ -40,7 +40,24 @@
   display: grid;
   gap: var(--space-1);
 }
+/* Grupos «Contenido» y «CMS»: título discreto y sus enlaces debajo. */
+.panel-nav__grupo {
+  margin-top: var(--space-3);
+}
+.panel-nav__titulo {
+  display: block;
+  padding: var(--space-2) var(--space-3) var(--space-1);
+  color: var(--color-text-muted);
+  font-size: var(--text-sm);
+  font-weight: var(--peso-fuerte);
+}
+.panel-nav__grupo ul {
+  margin-inline-start: var(--space-2);
+  padding-inline-start: var(--space-2);
+  border-inline-start: 2px solid var(--color-border);
+}
 .panel-nav a {
+  position: relative;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -55,11 +72,26 @@
 .panel-nav a:hover {
   background: color-mix(in srgb, var(--color-primary) 10%, transparent);
 }
-/* La sección actual: fondo y barra lateral, no solo color de texto. */
+/* Indicador de la sección actual: una barra que crece desde el centro. Marca con
+   forma y fondo, no solo con color (WCAG 1.4.1). */
+.panel-nav a::before {
+  content: "";
+  position: absolute;
+  inset-block: var(--space-2);
+  inset-inline-start: 0;
+  width: 4px;
+  border-radius: var(--radius-pill);
+  background: var(--color-primary);
+  transform: scaleY(0);
+  transition: transform var(--dur) var(--curva);
+}
 .panel-nav a[aria-current="page"] {
-  background: var(--color-bg);
-  box-shadow: inset 4px 0 0 var(--color-primary);
+  background: color-mix(in srgb, var(--color-primary) 12%, var(--color-surface));
   color: var(--color-link);
+  font-weight: var(--peso-fuerte);
+}
+.panel-nav a[aria-current="page"]::before {
+  transform: scaleY(1);
 }
 
 .contador {
@@ -139,8 +171,10 @@
 }
 
 /* Transición suave al cambiar de vista (sin movimiento si se prefiere reducido). */
+/* Cambio de vista: se repite decenas de veces al día, así que solo un fundido
+   corto (150 ms), sin desplazamiento. */
 .vista {
-  animation: vista-entra var(--dur-lenta) var(--curva);
+  animation: vista-entra var(--dur-rapida) ease;
 }
 .vista:focus {
   outline: none;
@@ -148,7 +182,6 @@
 @keyframes vista-entra {
   from {
     opacity: 0;
-    transform: translateY(0.5rem);
   }
 }
 
@@ -187,11 +220,24 @@
   margin-bottom: var(--space-5);
   padding: var(--space-5);
   border: 1px solid var(--color-border);
-  border-radius: var(--radius);
+  border-radius: var(--radius-lg);
   background: var(--color-surface);
+  box-shadow: 0 1px 0 color-mix(in srgb, var(--color-border) 60%, transparent);
 }
+/* Título de tarjeta con el punto de luz del beacon. */
 .tarjeta-panel h2 {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
   font-size: var(--text-lg);
+}
+.tarjeta-panel h2::before {
+  content: "";
+  width: 0.5rem;
+  height: 0.5rem;
+  flex: none;
+  border-radius: 50%;
+  background: var(--color-primary);
 }
 .tarjeta-panel h3 {
   font-size: var(--text-base);
@@ -311,15 +357,23 @@
 .btn--ancho {
   width: 100%;
 }
+/* Antes era texto subrayado: ahora es una ficha, como los botones fantasma. */
 .enlace-boton {
-  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--target);
+  padding: 0 var(--space-4);
   border: 0;
-  background: none;
+  border-radius: var(--radius-pill);
+  background: color-mix(in srgb, var(--color-primary) 8%, transparent);
   color: var(--color-link);
   font: inherit;
-  text-decoration: underline;
+  font-weight: var(--peso-fuerte);
   cursor: pointer;
-  min-height: var(--target);
+  transition: background-color var(--dur-rapida) ease;
+}
+.enlace-boton:hover {
+  background: color-mix(in srgb, var(--color-primary) 16%, transparent);
 }
 
 .sin-borde {
@@ -433,6 +487,9 @@
   border-radius: var(--radius-pill);
   color: var(--color-text);
   text-decoration: none;
+}
+.filtros a:hover {
+  border-color: var(--color-primary);
 }
 .filtros a[aria-current="page"] {
   background: var(--color-primary);
@@ -626,7 +683,7 @@
   cursor: pointer;
 }
 .editor__boton:hover {
-  background: var(--color-bg);
+  background: color-mix(in srgb, var(--color-primary) 12%, transparent);
 }
 .editor__boton[aria-pressed="true"] {
   border-color: var(--color-primary);
@@ -770,7 +827,7 @@
 }
 .color {
   display: grid;
-  grid-template-columns: var(--target) 1fr;
+  grid-template-columns: var(--target) minmax(0, 1fr);
   gap: var(--space-2);
   align-items: center;
   margin: 0;
@@ -778,9 +835,13 @@
   border: 1px solid var(--color-border);
   border-radius: var(--radius-sm);
 }
+/* La leyenda flotante es un elemento más de la rejilla: debe ocupar toda la fila,
+   o queda encajonada en la columna del selector (44 px) y se parte letra por letra. */
 .color legend {
   float: left;
+  grid-column: 1 / -1;
   width: 100%;
+  padding: 0;
   margin-bottom: var(--space-1);
   font-size: var(--text-sm);
   font-weight: var(--peso-medio);
@@ -795,6 +856,7 @@
   cursor: pointer;
 }
 .color__hex {
+  min-width: 0;
   font-family: ui-monospace, monospace;
   text-transform: uppercase;
 }
@@ -928,4 +990,252 @@
 .clave-temporal {
   font-family: ui-monospace, monospace;
   font-size: var(--text-lg);
+}
+
+/* --- Barra superior: perfil y sitio --- */
+
+.perfil-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-height: var(--target);
+  padding: var(--space-1) var(--space-3) var(--space-1) var(--space-1);
+  border: 2px solid var(--color-border);
+  border-radius: var(--radius-pill);
+  background: var(--color-surface);
+  color: var(--color-text);
+  text-decoration: none;
+  transition:
+    border-color var(--dur-rapida) ease,
+    transform var(--dur-rapida) var(--curva);
+}
+.perfil-chip:hover {
+  border-color: var(--color-primary);
+}
+.perfil-chip[aria-current="page"] {
+  border-color: var(--color-primary);
+}
+.perfil-chip__inicial {
+  display: grid;
+  place-items: center;
+  width: 2.25rem;
+  height: 2.25rem;
+  flex: none;
+  border-radius: 50%;
+  background: var(--color-primary);
+  color: var(--color-on-primary);
+  font-family: var(--font-heading);
+  font-weight: 800;
+}
+.perfil-chip__texto {
+  display: grid;
+  line-height: 1.2;
+}
+.perfil-chip__nombre {
+  font-weight: var(--peso-fuerte);
+}
+.perfil-chip__rol {
+  color: var(--color-text-muted);
+  font-size: var(--text-sm);
+}
+.perfil-chip:active {
+  transform: scale(0.97);
+}
+
+/* --- Mi perfil --- */
+
+.perfil {
+  display: grid;
+  gap: var(--space-5);
+}
+@media (min-width: 48rem) {
+  .perfil {
+    grid-template-columns: auto minmax(0, 1fr);
+    align-items: start;
+  }
+}
+.perfil__avatar {
+  display: grid;
+  place-items: center;
+  width: 6rem;
+  height: 6rem;
+  border-radius: 50%;
+  background: var(--color-primary);
+  box-shadow: 0 0 0 0.5rem color-mix(in srgb, var(--color-primary) 16%, transparent);
+  color: var(--color-on-primary);
+  font-family: var(--font-heading);
+  font-size: 2.75rem;
+  font-weight: 800;
+}
+.perfil__ficha {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-5);
+  margin: 0 0 var(--space-2);
+}
+.perfil__ficha dt {
+  color: var(--color-text-muted);
+  font-size: var(--text-sm);
+  font-weight: var(--peso-fuerte);
+}
+.perfil__ficha dd {
+  margin: 0;
+}
+.accesos {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 15rem), 1fr));
+  gap: var(--space-3);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.acceso-rapido {
+  position: relative;
+  display: grid;
+  gap: var(--space-1);
+  height: 100%;
+  padding: var(--space-4);
+  overflow: hidden;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  background: var(--color-bg);
+  color: var(--color-text);
+  text-decoration: none;
+  transition:
+    border-color var(--dur-rapida) ease,
+    transform var(--dur) var(--curva);
+}
+.acceso-rapido::after {
+  content: "";
+  position: absolute;
+  inset-inline: 0;
+  bottom: 0;
+  height: 3px;
+  background: var(--color-primary);
+  transform: scaleX(0);
+  transform-origin: left center;
+  transition: transform var(--dur) var(--curva);
+}
+.acceso-rapido:hover {
+  border-color: var(--color-primary);
+}
+.acceso-rapido:focus-visible::after {
+  transform: scaleX(1);
+}
+@media (hover: hover) and (pointer: fine) {
+  .acceso-rapido:hover::after {
+    transform: scaleX(1);
+  }
+}
+.acceso-rapido__titulo {
+  font-weight: var(--peso-fuerte);
+}
+.acceso-rapido__texto {
+  color: var(--color-text-muted);
+  font-size: var(--text-sm);
+}
+@media (hover: hover) and (pointer: fine) and (prefers-reduced-motion: no-preference) {
+  .acceso-rapido:hover {
+    transform: translateY(-2px);
+  }
+}
+
+/* --- Encuadre de imágenes --- */
+
+.dialogo:has(.recorte) {
+  width: min(40rem, calc(100vw - 2 * var(--space-4)));
+}
+.recorte {
+  display: grid;
+  gap: var(--space-4);
+}
+/* El marco no pasa de la mitad de la pantalla: así los controles quedan a la vista. */
+.recorte__marco {
+  position: relative;
+  overflow: hidden;
+  width: min(100%, calc(50dvh * var(--proporcion, 1)));
+  justify-self: center;
+  border: 2px solid var(--color-primary);
+  border-radius: var(--radius);
+  background: repeating-conic-gradient(var(--color-border) 0 25%, transparent 0 50%) 0 0 / 1.25rem
+    1.25rem;
+  cursor: grab;
+  touch-action: none;
+  user-select: none;
+}
+.recorte__marco:active {
+  cursor: grabbing;
+}
+.recorte__marco img {
+  position: absolute;
+  max-width: none;
+  height: auto;
+  pointer-events: none;
+}
+/* Guías de tercios sobre el marco. */
+.recorte__marco::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(
+      to right,
+      transparent calc(33.33% - 1px),
+      rgb(255 255 255 / 0.6) 0 calc(33.33% + 1px),
+      transparent 0 calc(66.66% - 1px),
+      rgb(255 255 255 / 0.6) 0 calc(66.66% + 1px),
+      transparent 0
+    ),
+    linear-gradient(
+      to bottom,
+      transparent calc(33.33% - 1px),
+      rgb(255 255 255 / 0.6) 0 calc(33.33% + 1px),
+      transparent 0 calc(66.66% - 1px),
+      rgb(255 255 255 / 0.6) 0 calc(66.66% + 1px),
+      transparent 0
+    );
+  pointer-events: none;
+}
+.recorte__controles {
+  display: grid;
+  gap: var(--space-2);
+}
+.recorte__control {
+  margin: 0;
+}
+.recorte__control input[type="range"] {
+  width: 100%;
+  min-height: var(--target);
+  accent-color: var(--color-primary);
+}
+
+/* --- Pie de página (editor) --- */
+
+.rejilla-panel--enlace {
+  display: grid;
+  gap: var(--space-2) var(--space-4);
+  align-items: end;
+  margin-bottom: var(--space-3);
+}
+@media (min-width: 48rem) {
+  .rejilla-panel--enlace {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1.4fr) auto;
+  }
+}
+.rejilla-panel--enlace .campo {
+  margin-bottom: 0;
+}
+
+/* --- Filtro por área (bitácora): control segmentado con texto visible --- */
+
+.segmentado--texto {
+  flex-wrap: wrap;
+  margin-bottom: var(--space-4);
+}
+.segmentado--texto label {
+  padding-inline: var(--space-4);
+  font-weight: var(--peso-medio);
+}
+.segmentado--texto label:hover:not(:has(input:checked)) {
+  background: color-mix(in srgb, var(--color-primary) 12%, transparent);
 }

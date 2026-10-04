@@ -3,7 +3,7 @@ import { useId, type ComponentType, type ReactNode, type Ref } from "react";
 import { Link } from "react-router";
 import { mensajeDeError } from "@shared/api";
 import { Cargando, EmptyState, ErrorState, Reveal, Skeleton } from "@shared/ui/States";
-import { Img, TarjetaNoticia, Titulo, type Nivel } from "./components";
+import { EnlaceEditable, Img, Redes, TarjetaNoticia, Titulo, type Nivel } from "./components";
 import {
   consultas,
   NOTICIAS_EN_INICIO,
@@ -34,24 +34,11 @@ interface PropsSeccion<C> {
   idTitulo: string;
 }
 
-// Rutas internas con el router; anclas y enlaces externos con <a>.
 function Accion({ enlace, variante }: { enlace: Enlace; variante: "primario" | "secundario" }) {
-  const clase = `btn btn--${variante}`;
-  if (enlace.href.startsWith("/")) {
-    return (
-      <Link to={enlace.href} className={clase}>
-        {enlace.texto}
-      </Link>
-    );
-  }
   return (
-    <a
-      href={enlace.href}
-      className={clase}
-      rel={enlace.href.startsWith("http") ? "noopener noreferrer" : undefined}
-    >
+    <EnlaceEditable href={enlace.href} className={`btn btn--${variante}`}>
       {enlace.texto}
-    </a>
+    </EnlaceEditable>
   );
 }
 
@@ -80,16 +67,38 @@ function Hero(
   const c = p.contenido;
   return (
     <div className="hero">
-      {c.antetitulo && <p className="hero__antetitulo">{c.antetitulo}</p>}
-      <Titulo nivel={p.nivel} refH1={p.refH1} id={p.idTitulo} className="hero__titulo">
-        {c.titulo}
-      </Titulo>
-      <p className="hero__bajada">{c.bajada}</p>
-      <div className="hero__acciones">
-        <Accion enlace={c.accionPrincipal} variante="primario" />
-        {c.accionSecundaria && <Accion enlace={c.accionSecundaria} variante="secundario" />}
+      <div className="hero__texto">
+        {c.antetitulo && <p className="hero__antetitulo">{c.antetitulo}</p>}
+        <Titulo nivel={p.nivel} refH1={p.refH1} id={p.idTitulo} className="hero__titulo">
+          {c.titulo}
+        </Titulo>
+        <p className="hero__bajada">{c.bajada}</p>
+        <div className="hero__acciones">
+          <Accion enlace={c.accionPrincipal} variante="primario" />
+          {c.accionSecundaria && <Accion enlace={c.accionSecundaria} variante="secundario" />}
+        </div>
       </div>
+      <SenalHero />
     </div>
+  );
+}
+
+// Ilustración del hero: un beacon que emite ondas hacia la persona. Decorativa.
+// Las ondas aparecen una sola vez al cargar (sin bucle) y nada se mueve con
+// «reducir movimiento».
+function SenalHero() {
+  return (
+    <svg className="hero__senal" viewBox="0 0 320 320" aria-hidden="true" focusable="false">
+      <circle className="hero__onda hero__onda--4" cx="96" cy="160" r="150" />
+      <circle className="hero__onda hero__onda--3" cx="96" cy="160" r="112" />
+      <circle className="hero__onda hero__onda--2" cx="96" cy="160" r="76" />
+      <circle className="hero__onda hero__onda--1" cx="96" cy="160" r="42" />
+      <path
+        className="hero__beacon"
+        d="M80 126 L110 130 L124 156 L122 194 L104 214 L76 212 L60 192 L62 150 Z"
+      />
+      <circle className="hero__luz" cx="104" cy="148" r="7" />
+    </svg>
   );
 }
 
@@ -195,26 +204,52 @@ function Equipo(p: PropsSeccion<Encabezado>) {
         <ul className="personas">
           {data.items.map((m) => (
             <li key={m.name} className="persona">
-              {m.photo && <Img imagen={m.photo} className="persona__foto" />}
+              <div className="persona__marco">
+                {m.photo ? (
+                  <Img imagen={m.photo} className="persona__foto" />
+                ) : (
+                  <span className="persona__inicial" aria-hidden="true">
+                    {m.name.trim().charAt(0).toUpperCase()}
+                  </span>
+                )}
+              </div>
               <h3 className="persona__nombre">{m.name}</h3>
               <p className="persona__cargo">{m.position}</p>
-              {m.bio && <p>{m.bio}</p>}
-              {m.links.length > 0 && (
-                <ul className="redes" aria-label={`Enlaces de ${m.name}`}>
-                  {m.links.map((l) => (
-                    <li key={l.url}>
-                      <a href={l.url} rel="noopener noreferrer">
-                        {l.etiqueta || l.red}
-                      </a>
-                    </li>
-                  ))}
-                </ul>
-              )}
+              {m.bio && <p className="persona__bio">{m.bio}</p>}
+              <Redes redes={m.links} etiqueta={`Enlaces de ${m.name}`} variante="iconos" />
             </li>
           ))}
         </ul>
       )}
     </>
+  );
+}
+
+// Presenta al equipo en el inicio: texto, un botón a «Nosotros» y hasta cinco
+// fotos del equipo con su nombre (los datos llegan con el HTML inicial).
+function NosotrosInicio(p: PropsSeccion<{ titulo: string; texto: string; accion: Enlace }>) {
+  const { data } = useQuery(consultas.equipo());
+  const conFoto = (data?.items ?? []).filter((m) => m.photo).slice(0, 5);
+  return (
+    <div className="nosotros-inicio">
+      <div className="nosotros-inicio__texto">
+        <Titulo nivel={p.nivel} refH1={p.refH1} id={p.idTitulo}>
+          {p.contenido.titulo}
+        </Titulo>
+        <p className="seccion__intro">{p.contenido.texto}</p>
+        <Accion enlace={p.contenido.accion} variante="primario" />
+      </div>
+      {conFoto.length > 0 && (
+        <ul className="nosotros-inicio__fotos" aria-label="Parte del equipo">
+          {conFoto.map((m) => (
+            <li key={m.name} className="nosotros-inicio__foto">
+              <Img imagen={m.photo!} />
+              <span className="nosotros-inicio__nombre">{m.name}</span>
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
   );
 }
 
@@ -229,7 +264,9 @@ function Colaboradores(p: PropsSeccion<Encabezado>) {
         </Cargando>
       ) : error ? (
         <ErrorState mensaje={mensajeDeError(error)} onReintentar={() => refetch()} />
-      ) : data.items.length === 0 ? null : (
+      ) : data.items.length === 0 ? (
+        <EmptyState titulo="Pronto presentaremos a quienes colaboran con SIGNAL" />
+      ) : (
         <ul className="colaboradores">
           {data.items.map((c) => {
             const contenido = (
@@ -265,6 +302,7 @@ export const RENDERIZADORES: Record<string, ComponentType<PropsSeccion<never>>> 
   "que-es": Pasos as ComponentType<PropsSeccion<never>>,
   objetivos: Tarjetas as ComponentType<PropsSeccion<never>>,
   proyecciones: Tarjetas as ComponentType<PropsSeccion<never>>,
+  "nosotros-inicio": NosotrosInicio as ComponentType<PropsSeccion<never>>,
   "noticias-recientes": NoticiasRecientes as ComponentType<PropsSeccion<never>>,
   "quienes-somos": QuienesSomos as ComponentType<PropsSeccion<never>>,
   equipo: Equipo as ComponentType<PropsSeccion<never>>,

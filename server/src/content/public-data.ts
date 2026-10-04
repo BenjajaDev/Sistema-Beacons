@@ -1,6 +1,7 @@
 import type { Page } from "../generated/prisma/enums.js";
 import type { Db } from "../lib/prisma.js";
 import { SLUG_REGEX } from "../lib/slug.js";
+import { parseFooter } from "./footer.js";
 import { PUBLIC_NEWS_INCLUDE, toNewsCard, toNewsDetail } from "./news-view.js";
 import { FONT_OPTIONS, type Fonts } from "./theme.js";
 
@@ -56,6 +57,7 @@ export async function getSite(db: Db) {
       redes: s.socials,
     },
     accesibilidad: s.accessibilityStatement,
+    pie: parseFooter(s.footer),
   };
 }
 

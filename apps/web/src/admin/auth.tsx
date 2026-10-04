@@ -19,6 +19,8 @@ interface Sesion {
   iniciarSesion: (email: string, password: string) => Promise<Usuario>;
   cerrarSesion: () => Promise<void>;
   cambiarContrasena: (actual: string, nueva: string) => Promise<void>;
+  // Guarda los datos del perfil propio (nombre) y actualiza la sesión.
+  actualizarPerfil: (datos: { name: string }) => Promise<void>;
   tiene: (...roles: Rol[]) => boolean;
 }
 
@@ -97,6 +99,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUsuario(user);
   }, []);
 
+  const actualizarPerfil = useCallback(async (datos: { name: string }) => {
+    const { user } = await adminFetch<{ user: Usuario }>("/auth/me", {
+      method: "PATCH",
+      body: datos,
+    });
+    setUsuario(user);
+  }, []);
+
   const valor = useMemo<Sesion>(
     () => ({
       usuario,
@@ -105,9 +115,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       iniciarSesion,
       cerrarSesion,
       cambiarContrasena,
+      actualizarPerfil,
       tiene: (...roles) => Boolean(usuario && roles.includes(usuario.role)),
     }),
-    [usuario, cargando, aviso, iniciarSesion, cerrarSesion, cambiarContrasena],
+    [usuario, cargando, aviso, iniciarSesion, cerrarSesion, cambiarContrasena, actualizarPerfil],
   );
 
   return <Contexto.Provider value={valor}>{children}</Contexto.Provider>;

@@ -273,4 +273,33 @@ describe.skipIf(!hasTestDb)("autenticación", () => {
     );
     expect(siguiente.body.items[0].user.email).toBe(EDITOR);
   });
+
+  it("la bitácora se filtra por área del panel", async () => {
+    const s = await login(app, ADMIN, CLAVE);
+    await as(app, s, "patch", "/api/admin/auth/me").send({ name: "Admin Renombrada" });
+    const usuarios = await as(app, s, "get", "/api/admin/audit?area=usuarios");
+    expect(usuarios.body.items.map((e: { action: string }) => e.action)).toEqual([
+      "PROFILE_UPDATE",
+    ]);
+    const sesiones = await as(app, s, "get", "/api/admin/audit?area=sesiones");
+    expect(
+      sesiones.body.items.every((e: { action: string }) => /^(LOGIN_|LOGOUT)/.test(e.action)),
+    ).toBe(true);
+    expect((await as(app, s, "get", "/api/admin/audit?area=otra")).status).toBe(400);
+  });
+
+  it("cada persona edita su nombre en el perfil, pero no su rol ni su correo", async () => {
+    const s = await login(app, EDITOR, CLAVE);
+    const vacio = await as(app, s, "patch", "/api/admin/auth/me").send({ name: "  " });
+    expect(vacio.status).toBe(400);
+    expect(vacio.body.campos.name).toBeTruthy();
+
+    const ok = await as(app, s, "patch", "/api/admin/auth/me").send({
+      name: "Editora Nueva",
+      role: "ADMIN",
+      email: "otro@signal.test",
+    });
+    expect(ok.status).toBe(200);
+    expect(ok.body.user).toMatchObject({ name: "Editora Nueva", role: "EDITOR", email: EDITOR });
+  });
 });

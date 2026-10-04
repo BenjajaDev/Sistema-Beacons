@@ -61,3 +61,48 @@ export async function processImage(original: Buffer): Promise<ProcessedImage> {
     height: resultado.info.height,
   };
 }
+
+export interface AreaRecorte {
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+}
+
+// Recorta una imagen ya guardada (procesada por processImage: sin EXIF y con la
+// orientación aplicada) y la devuelve como una imagen nueva del mismo formato.
+export async function cropImage(
+  guardada: Buffer,
+  mimeType: string,
+  area: AreaRecorte,
+): Promise<ProcessedImage> {
+  const imagen = sharp(guardada, { limitInputPixels: PIXELES_MAXIMOS, failOn: "error" });
+  const { width = 0, height = 0 } = await imagen.metadata();
+  if (area.x + area.width > width || area.y + area.height > height) {
+    throw new ApiError(
+      400,
+      "VALIDATION",
+      "El recorte se sale de la imagen. Vuelve a ajustarlo e inténtalo otra vez.",
+    );
+  }
+  const esPng = mimeType === "image/png";
+  const recortada = imagen.extract({
+    left: area.x,
+    top: area.y,
+    width: area.width,
+    height: area.height,
+  });
+  const { data, info } = await (
+    esPng ? recortada.png({ compressionLevel: 9 }) : recortada.webp({ quality: 82 })
+  ).toBuffer({ resolveWithObject: true });
+
+  const fecha = new Date();
+  const carpeta = `${fecha.getUTCFullYear()}/${String(fecha.getUTCMonth() + 1).padStart(2, "0")}`;
+  return {
+    key: `${carpeta}/${randomUUID()}.${esPng ? "png" : "webp"}`,
+    data,
+    mimeType: esPng ? "image/png" : "image/webp",
+    width: info.width,
+    height: info.height,
+  };
+}

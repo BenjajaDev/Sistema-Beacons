@@ -1,9 +1,19 @@
 import multer from "multer";
+import { z } from "zod";
 import { ApiError, notFound, parseOrThrow } from "../../http/errors.js";
-import { processImage } from "../../services/images.js";
+import { cropImage, processImage } from "../../services/images.js";
 import type { AdminDeps } from "./deps.js";
 import { idParam, page, paginationSchema } from "./helpers.js";
 import { ADMIN_ONLY, ANY_ROLE, type AdminRoute } from "./registry.js";
+
+const entero = (campo: string, min: number) =>
+  z.coerce.number(`Falta ${campo}.`).int().min(min, `${campo} no es válido.`);
+const cropSchema = z.object({
+  x: entero("La posición horizontal", 0),
+  y: entero("La posición vertical", 0),
+  width: entero("El ancho", 16),
+  height: entero("El alto", 16),
+});
 
 export function mediaRoutes({ db, env, audit, storage, logger }: AdminDeps): AdminRoute[] {
   const subida = multer({
@@ -43,6 +53,44 @@ export function mediaRoutes({ db, env, audit, storage, logger }: AdminDeps): Adm
           res.status(201).json({ media });
         },
       ],
+    },
+    {
+      // Recorta una imagen subida para que calce con su marco (foto cuadrada, portada
+      // 16:9). Crea una imagen nueva: la original queda en la biblioteca, intacta.
+      roles: ANY_ROLE,
+      method: "post",
+      path: "/media/:id/crop",
+      handler: async (req, res) => {
+        const id = idParam(req, "La imagen");
+        const original = await db.media.findUnique({ where: { id } });
+        if (!original) throw notFound("La imagen");
+        const area = parseOrThrow(cropSchema, req.body);
+        const imagen = await cropImage(
+          await storage.get(original.storageKey),
+          original.mimeType,
+          area,
+        );
+        const { url } = await storage.put(imagen.key, imagen.data, imagen.mimeType);
+        const media = await db.media.create({
+          data: {
+            storageKey: imagen.key,
+            url,
+            mimeType: imagen.mimeType,
+            sizeBytes: imagen.data.length,
+            width: imagen.width,
+            height: imagen.height,
+            originalName: `${original.originalName} (recorte)`.slice(0, 200),
+            uploadedById: req.user!.id,
+          },
+        });
+        await audit(req, {
+          action: "MEDIA_CROP",
+          entity: "Media",
+          entityId: media.id,
+          meta: { origen: original.id },
+        });
+        res.status(201).json({ media });
+      },
     },
     {
       roles: ANY_ROLE,
