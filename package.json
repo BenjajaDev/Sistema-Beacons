@@ -12,6 +12,7 @@
   },
   "scripts": {
     "dev": "npm run dev -w server",
+    "dev:all": "node scripts/dev-all.mjs",
     "build": "npm run build -w apps/web && npm run build -w server",
     "start": "npm run start -w server",
     "db:local": "npm run db:local -w server",

@@ -29,9 +29,15 @@ npm run db:local                  # en otra terminal: PostgreSQL local en el pue
 npm run db:deploy                 # aplica las migraciones
 npm run import:beacons            # importa server/prisma/data/beacons.json
 npm run seed                      # crea las cuentas, la configuración y las secciones
+npm run dev:all                   # API, landing y panel juntos (Ctrl+C cierra los tres)
+```
+
+`npm run dev:all` equivale a correr estos tres, cada uno en su terminal:
+
+```bash
 npm run dev                       # servidor en http://localhost:3000
-npm run dev:web                   # en otra terminal: landing en http://localhost:5173
-npm run dev:admin                 # en otra terminal: panel en http://localhost:5174/admin.html
+npm run dev:web                   # landing en http://localhost:5173
+npm run dev:admin                 # panel en http://localhost:5174/admin.html
 ```
 
 Para producción, `npm run build` compila los dos frontends, verifica el bundle público y compila el servidor. Express sirve el panel desde `apps/web/dist/admin`.

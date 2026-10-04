@@ -39,7 +39,12 @@ export const shared = {
   },
   server: {
     // En desarrollo la API y las imágenes las sirve Express (npm run dev en la raíz).
-    proxy: { "/api": API, "/uploads": API },
+    // changeOrigin en false: la forma corta ("/api": API) reescribe Host a la API, y
+    // el control de origen del servidor rechazaría el login (Origin ≠ Host).
+    proxy: {
+      "/api": { target: API, changeOrigin: false },
+      "/uploads": { target: API, changeOrigin: false },
+    },
   },
   build: {
     target: "es2022",
