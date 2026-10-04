@@ -29,3 +29,7 @@ Thumbs.db
 !.vscode/extensions.json
 server/.e2e-uploads/
 server/.e2e-snapshot.json
+
+# Caché de Python (scripts de las skills)
+__pycache__/
+*.pyc
