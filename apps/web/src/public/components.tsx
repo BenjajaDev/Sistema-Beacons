@@ -203,7 +203,11 @@ export function Logo({ sitio }: { sitio: Sitio | undefined }) {
   const nombre = sitio?.siteName ?? "SIGNAL";
   const { claro, oscuro } = sitio?.logos ?? { claro: null, oscuro: null };
   return (
-    <Link to="/" className="logo" aria-label={`${nombre}, ir al inicio`}>
+    <Link
+      to="/"
+      className={claro ? "logo logo--imagen" : "logo"}
+      aria-label={`${nombre}, ir al inicio`}
+    >
       {claro ? (
         <>
           <img

@@ -268,6 +268,7 @@ function Formulario({ ajustes }: { ajustes: Ajustes }) {
               onCambiar={(logoLight, logoLightAlt) => setForm({ ...form, logoLight, logoLightAlt })}
               errorAlt={errores["identidad-logo-claro"]}
               ayudaAlt="Normalmente basta con el nombre: «SIGNAL»."
+              recortarBordes
             />
             <SelectorImagen
               etiqueta="Logo para tema oscuro (opcional)"
@@ -276,6 +277,7 @@ function Formulario({ ajustes }: { ajustes: Ajustes }) {
               onCambiar={(logoDark, logoDarkAlt) => setForm({ ...form, logoDark, logoDarkAlt })}
               errorAlt={errores["identidad-logo-oscuro"]}
               ayudaAlt="Normalmente basta con el nombre: «SIGNAL»."
+              recortarBordes
             />
             <SelectorImagen
               etiqueta="Ícono de la pestaña (favicon, opcional)"

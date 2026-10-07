@@ -197,6 +197,7 @@ export function SelectorImagen({
   ayudaAlt = "Describe lo que muestra la imagen, como se lo contarías a alguien por teléfono. Ejemplo: «Persona con bastón usando la app frente a una puerta».",
   sinAlt = false,
   marco,
+  recortarBordes = false,
 }: {
   etiqueta: string;
   imagen: ImagenElegida | null;
@@ -210,6 +211,8 @@ export function SelectorImagen({
   // Marco en que se muestra la imagen en el sitio. Si la imagen no calza, se ofrece
   // encuadrarla (recortarla) con esa proporción.
   marco?: { proporcion: number; nombre: string };
+  // Al subir, el servidor quita el margen de color uniforme que rodea el dibujo (logos).
+  recortarBordes?: boolean;
 }) {
   const id = useId();
   const archivo = useRef<HTMLInputElement>(null);
@@ -229,6 +232,7 @@ export function SelectorImagen({
     setSubiendo(true);
     try {
       const datos = new FormData();
+      if (recortarBordes) datos.append("recortarBordes", "true");
       datos.append("archivo", file);
       const { media } = await adminFetch<{ media: MediaItem }>("/media", {
         method: "POST",

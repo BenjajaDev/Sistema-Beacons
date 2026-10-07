@@ -70,6 +70,34 @@ describe.skipIf(!hasTestDb)("administración de contenido", () => {
       expect((await sharp(guardado).metadata()).exif).toBeUndefined();
     });
 
+    it("a pedido (logos), quita el margen de color uniforme que rodea el dibujo", async () => {
+      // Lienzo blanco de 200 × 200 con un dibujo de 80 × 40 al centro.
+      const dibujo = await sharp({
+        create: { width: 80, height: 40, channels: 3, background: "#004aad" },
+      })
+        .png()
+        .toBuffer();
+      const logo = await sharp({
+        create: { width: 200, height: 200, channels: 3, background: "#fff" },
+      })
+        .composite([{ input: dibujo, left: 60, top: 80 }])
+        .png()
+        .toBuffer();
+
+      const recortado = await as(app, editor, "post", "/api/admin/media")
+        .field("recortarBordes", "true")
+        .attach("archivo", logo, "logo.png");
+      expect(recortado.status).toBe(201);
+      expect(recortado.body.media).toMatchObject({ width: 80, height: 40 });
+
+      // Sin pedirlo, la imagen queda igual; y una de un solo color no falla.
+      expect((await subir(editor, logo)).body.media).toMatchObject({ width: 200, height: 200 });
+      const lisa = await as(app, editor, "post", "/api/admin/media")
+        .field("recortarBordes", "true")
+        .attach("archivo", await png(), "lisa.png");
+      expect(lisa.status).toBe(201);
+    });
+
     it("rechaza un archivo que no es imagen aunque se llame .png", async () => {
       const res = await subir(editor, Buffer.from("<script>alert(1)</script>"), "falso.png");
       expect(res.status).toBe(415);

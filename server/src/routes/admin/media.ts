@@ -35,7 +35,10 @@ export function mediaRoutes({ db, env, audit, storage, logger }: AdminDeps): Adm
               campos: { archivo: "Elige una imagen para subir." },
             });
           }
-          const imagen = await processImage(req.file.buffer);
+          // Los logos piden quitar el margen de color uniforme que los rodea.
+          const imagen = await processImage(req.file.buffer, {
+            recortarBordes: req.body?.recortarBordes === "true",
+          });
           const { url } = await storage.put(imagen.key, imagen.data, imagen.mimeType);
           const media = await db.media.create({
             data: {
