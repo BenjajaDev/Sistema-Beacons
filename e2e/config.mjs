@@ -25,6 +25,9 @@ export function entornoServidor(databaseUrl) {
     LOGIN_RATE_LIMIT: "1000",
     API_RATE_LIMIT: "10000",
     BACKUP_INTERVAL_HOURS: "0",
+    // Siempre en disco: nunca subir imágenes de prueba al bucket real de Supabase,
+    // aunque server/.env tenga STORAGE_DRIVER=supabase.
+    STORAGE_DRIVER: "local",
     UPLOAD_DIR: ".e2e-uploads",
     BEACON_SNAPSHOT_PATH: ".e2e-snapshot.json",
     SITE_URL: "",

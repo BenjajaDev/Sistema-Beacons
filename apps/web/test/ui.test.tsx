@@ -3,7 +3,7 @@ import userEvent from "@testing-library/user-event";
 import { useState } from "react";
 import { describe, expect, it, vi } from "vitest";
 import { Button, IconButton } from "@shared/ui/Button";
-import { ConfirmDialog } from "@shared/ui/Dialog";
+import { ConfirmDialog, Dialog } from "@shared/ui/Dialog";
 import { ErrorSummary } from "@shared/ui/ErrorSummary";
 import { TextArea, TextField } from "@shared/ui/Field";
 import { IconoCerrar } from "@shared/ui/Icons";
@@ -189,5 +189,35 @@ describe("estados de carga, vacío y error", () => {
     await usuario.click(screen.getByRole("button", { name: "Reintentar" }));
     expect(reintentar).toHaveBeenCalled();
     await expectNoAxeViolations(container);
+  });
+});
+
+describe("diálogos anidados", () => {
+  // Regresión: el evento close de un <dialog> se propaga por el árbol de React; al
+  // cerrar un diálogo interno (encuadre, biblioteca) se cerraba también el externo
+  // (por ejemplo, «Agregar persona») y se perdía el formulario.
+  function Anidados({ alCerrarExterno }: { alCerrarExterno: () => void }) {
+    const [interno, setInterno] = useState(false);
+    return (
+      <Dialog abierto onCerrar={alCerrarExterno} titulo="Agregar persona">
+        <Button onClick={() => setInterno(true)}>Encuadrar imagen</Button>
+        <Dialog abierto={interno} onCerrar={() => setInterno(false)} titulo="Encuadrar la imagen">
+          <Button onClick={() => setInterno(false)}>Usar este encuadre</Button>
+        </Dialog>
+      </Dialog>
+    );
+  }
+
+  it("cerrar el diálogo interno no cierra el externo", async () => {
+    const usuario = userEvent.setup();
+    const alCerrarExterno = vi.fn();
+    render(<Anidados alCerrarExterno={alCerrarExterno} />);
+    const [externo, interno] = Array.from(document.querySelectorAll("dialog"));
+    await usuario.click(screen.getByRole("button", { name: "Encuadrar imagen" }));
+    expect(interno).toHaveAttribute("open");
+    await usuario.click(screen.getByRole("button", { name: "Usar este encuadre" }));
+    await waitFor(() => expect(interno).not.toHaveAttribute("open"));
+    expect(alCerrarExterno).not.toHaveBeenCalled();
+    expect(externo).toHaveAttribute("open");
   });
 });

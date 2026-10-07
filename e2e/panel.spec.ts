@@ -97,7 +97,32 @@ test("un beacon creado en el panel llega a la app Android", async ({ page }) => 
   expect((await page.request.get("/beacons/9/9")).status()).toBe(404);
 });
 
+test("agregar una persona con foto encuadrada no cierra el formulario", async ({ page }) => {
+  // Regresión: al pulsar «Usar este encuadre», el cierre del diálogo de encuadre
+  // cerraba también el de «Agregar persona» y no se podía guardar.
+  await iniciarSesion(page, "admin");
+  await page.goto(`${PANEL}/equipo`);
+  await page.getByRole("button", { name: "Agregar persona" }).first().click();
+  const formulario = page.getByRole("dialog", { name: "Agregar persona" });
+  await formulario.getByLabel("Nombre").fill("Ana Prueba");
+  await formulario.getByLabel("Cargo o rol").fill("Coordinación");
+  // Imagen apaisada (346 × 223): el marco de las fotos es cuadrado y se ofrece encuadrarla.
+  await formulario.locator("input[type=file]").setInputFiles("apps/web/scripts/isotipo.png");
+  const encuadre = page.getByRole("dialog", { name: "Encuadrar la imagen" });
+  await expect(encuadre).toBeVisible();
+  await encuadre.getByRole("button", { name: "Usar este encuadre" }).click();
+  await expect(encuadre).toBeHidden();
+
+  await expect(formulario).toBeVisible();
+  await formulario.getByLabel("Texto alternativo").fill("Ana sonriendo frente a un pizarrón");
+  await formulario.getByRole("button", { name: "Guardar" }).click();
+  await expect(page.getByText("Persona agregada.")).toBeVisible();
+  await expect(page.getByText("Ana Prueba", { exact: true }).first()).toBeVisible();
+});
+
 test("todas las vistas del panel pasan axe en claro y oscuro", async ({ page }) => {
+  // 10 vistas × 2 temas, con un análisis de axe en cada una.
+  test.setTimeout(180_000);
   await iniciarSesion(page, "admin");
   const vistas: [string, string][] = [
     ["", "Resumen"],

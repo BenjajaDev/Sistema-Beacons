@@ -38,6 +38,19 @@ export default defineConfig({
       ),
     },
   },
+  // Dependencias que solo usan las vistas que se cargan aparte (editor de texto) o los
+  // archivos del servidor importados por alias (zod). Si Vite las descubre recién al
+  // abrir esas vistas, las vuelve a empaquetar y la carga en curso falla con «Failed to
+  // fetch dynamically imported module». Incluirlas desde el arranque lo evita.
+  optimizeDeps: {
+    include: [
+      "zod",
+      "@tiptap/react",
+      "@tiptap/starter-kit",
+      "@tiptap/extension-image",
+      "@tiptap/extensions",
+    ],
+  },
   server: { ...shared.server, port: 5174, open: "/admin.html" },
   build: {
     ...shared.build,

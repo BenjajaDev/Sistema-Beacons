@@ -2,6 +2,7 @@ import type { ComponentType } from "react";
 import { createBrowserRouter, Link, Navigate, Outlet } from "react-router";
 import { ToastProvider } from "@shared/ui/Toast";
 import type { Rol } from "./api";
+import { ErrorDeRuta } from "./ErrorDeRuta";
 import { Shell, SoloRol } from "./Shell";
 import { usePanelPage } from "./ui";
 import { CambiarContrasena, Login } from "./views/Acceso";
@@ -17,8 +18,10 @@ import Usuarios from "./views/Usuarios";
 // La ruta del panel no está en el código: sale del <base href> que inyecta Express
 // (/<ADMIN_PATH>/). En desarrollo (admin.html servido por Vite) es la raíz.
 function basename() {
-  const ruta = new URL(document.baseURI).pathname;
-  return ruta.endsWith("/") ? ruta.slice(0, -1) : ruta.replace(/\/[^/]*$/, "");
+  // Sin <base> (desarrollo con Vite) el panel vive en la raíz. Calcularla desde la URL
+  // actual fallaba al recargar una ruta interna como /secciones/hero.
+  if (!document.querySelector("base[href]")) return "";
+  return new URL(document.baseURI).pathname.replace(/\/$/, "");
 }
 
 // Las vistas con el editor de texto enriquecido (el código más pesado) se cargan al entrar.
@@ -64,6 +67,7 @@ export function crearRouter() {
     [
       {
         Component: Raiz,
+        errorElement: <ErrorDeRuta />,
         children: [
           { path: "login", Component: Login },
           { path: "cambiar-contrasena", Component: CambiarContrasena },
@@ -71,40 +75,46 @@ export function crearRouter() {
           {
             Component: Shell,
             children: [
-              { index: true, Component: Resumen },
-              { path: "noticias", Component: Noticias },
-              { path: "noticias/nueva", lazy: diferida(() => import("./views/NoticiaEditor")) },
-              { path: "noticias/:id", lazy: diferida(() => import("./views/NoticiaEditor")) },
               {
-                path: "noticias/:id/vista-previa",
-                lazy: diferida(() => import("./views/NoticiaPreview")),
+                // Si una vista falla, el error se muestra dentro del panel, sin perder el menú.
+                errorElement: <ErrorDeRuta />,
+                children: [
+                  { index: true, Component: Resumen },
+                  { path: "noticias", Component: Noticias },
+                  { path: "noticias/nueva", lazy: diferida(() => import("./views/NoticiaEditor")) },
+                  { path: "noticias/:id", lazy: diferida(() => import("./views/NoticiaEditor")) },
+                  {
+                    path: "noticias/:id/vista-previa",
+                    lazy: diferida(() => import("./views/NoticiaPreview")),
+                  },
+                  { path: "secciones", Component: Secciones },
+                  { path: "secciones/:key", lazy: diferida(() => import("./views/SeccionEditor")) },
+                  { path: "equipo", element: soloAdmin(Equipo) },
+                  {
+                    path: "identidad",
+                    lazy: async () => ({
+                      element: soloAdmin((await import("./views/Identidad")).default),
+                    }),
+                  },
+                  { path: "contacto", element: soloAdmin(Contacto) },
+                  {
+                    path: "pie",
+                    lazy: async () => ({
+                      element: soloAdmin((await import("./views/Pie")).default),
+                    }),
+                  },
+                  { path: "perfil", Component: Perfil },
+                  {
+                    path: "beacons",
+                    lazy: async () => ({
+                      element: soloAdmin((await import("./views/Beacons")).default),
+                    }),
+                  },
+                  { path: "usuarios", element: soloAdmin(Usuarios) },
+                  { path: "bitacora", element: soloAdmin(Bitacora) },
+                  { path: "*", Component: NoEncontrada },
+                ],
               },
-              { path: "secciones", Component: Secciones },
-              { path: "secciones/:key", lazy: diferida(() => import("./views/SeccionEditor")) },
-              { path: "equipo", element: soloAdmin(Equipo) },
-              {
-                path: "identidad",
-                lazy: async () => ({
-                  element: soloAdmin((await import("./views/Identidad")).default),
-                }),
-              },
-              { path: "contacto", element: soloAdmin(Contacto) },
-              {
-                path: "pie",
-                lazy: async () => ({
-                  element: soloAdmin((await import("./views/Pie")).default),
-                }),
-              },
-              { path: "perfil", Component: Perfil },
-              {
-                path: "beacons",
-                lazy: async () => ({
-                  element: soloAdmin((await import("./views/Beacons")).default),
-                }),
-              },
-              { path: "usuarios", element: soloAdmin(Usuarios) },
-              { path: "bitacora", element: soloAdmin(Bitacora) },
-              { path: "*", Component: NoEncontrada },
             ],
           },
         ],

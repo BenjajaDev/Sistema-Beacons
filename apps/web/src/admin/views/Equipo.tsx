@@ -19,6 +19,8 @@ interface Config<T extends Base, F> {
   ruta: string;
   titulo: string;
   elemento: string;
+  // Aviso al crear, con el género correcto: «Persona agregada», «Colaborador agregado».
+  avisoAgregado: string;
   vacio: string;
   descripcion: (item: T) => ReactNode;
   miniatura: (item: T) => string | null;
@@ -51,7 +53,7 @@ function Coleccion<T extends Base, F>({ c }: { c: Config<T, F> }) {
         : adminFetch(`${c.ruta}/${(editando as T).id}`, { method: "PATCH", body: cuerpo });
     },
     onSuccess: () => {
-      toast.exito(editando === "nuevo" ? `${c.elemento} agregado.` : "Cambios guardados.");
+      toast.exito(editando === "nuevo" ? c.avisoAgregado : "Cambios guardados.");
       setEditando(null);
       invalidar();
     },
@@ -320,6 +322,7 @@ const equipo: Config<Persona, FormPersona> = {
   ruta: "/team",
   titulo: "Equipo",
   elemento: "Persona",
+  avisoAgregado: "Persona agregada.",
   vacio: "Aún no hay personas en el equipo",
   descripcion: (p) => p.position,
   miniatura: (p) => p.photo?.url ?? null,
@@ -404,6 +407,7 @@ const colaboradores: Config<Colaborador, FormColaborador> = {
   ruta: "/collaborators",
   titulo: "Colaboradores",
   elemento: "Colaborador",
+  avisoAgregado: "Colaborador agregado.",
   vacio: "Aún no hay colaboradores",
   descripcion: (c) => c.description ?? c.url ?? "",
   miniatura: (c) => c.logo?.url ?? null,

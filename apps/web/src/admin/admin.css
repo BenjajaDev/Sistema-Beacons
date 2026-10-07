@@ -1239,3 +1239,13 @@
 .segmentado--texto label:hover:not(:has(input:checked)) {
   background: color-mix(in srgb, var(--color-primary) 12%, transparent);
 }
+
+.detalle-error {
+  max-width: 100%;
+  padding: var(--space-3);
+  border-radius: var(--radius-sm);
+  background: var(--color-surface);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  font-size: var(--text-sm);
+}
