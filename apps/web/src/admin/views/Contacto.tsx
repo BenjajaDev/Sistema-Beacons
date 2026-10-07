@@ -180,6 +180,22 @@ export function DatosContacto({ ajustes }: { ajustes: Ajustes }) {
   );
 }
 
+// Cuenta desde la que se responden los mensajes. Gmail abre la redacción en ella si
+// está iniciada en el navegador; si no, pide entrar con esa cuenta.
+const CORREO_RESPUESTAS = "proyectosignal.ua@gmail.com";
+
+// La respuesta se redacta en Gmail (en el navegador), con destinatario y asunto listos.
+function respuestaEnGmail(m: Mensaje) {
+  const params = new URLSearchParams({
+    authuser: CORREO_RESPUESTAS,
+    view: "cm",
+    fs: "1",
+    to: m.email,
+    su: `Re: ${m.subject || "Tu mensaje a SIGNAL"}`,
+  });
+  return `https://mail.google.com/mail/?${params}`;
+}
+
 function Mensajes() {
   const toast = useToast();
   const queryClient = useQueryClient();
@@ -259,9 +275,15 @@ function Mensajes() {
                 <div className="fila-botones">
                   <a
                     className="btn btn--secundario"
-                    href={`mailto:${m.email}?subject=${encodeURIComponent(`Re: ${m.subject ?? "Tu mensaje a SIGNAL"}`)}`}
+                    href={respuestaEnGmail(m)}
+                    target="_blank"
+                    rel="noopener noreferrer"
                   >
-                    Responder por correo<span className="visually-hidden"> a {m.name}</span>
+                    Responder por correo
+                    <span className="visually-hidden">
+                      {" "}
+                      a {m.name} (se abre Gmail en otra pestaña)
+                    </span>
                   </a>
                   <Button
                     variante="fantasma"
