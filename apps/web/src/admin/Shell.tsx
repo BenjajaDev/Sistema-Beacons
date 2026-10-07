@@ -34,14 +34,14 @@ export const MENU: GrupoMenu[] = [
     items: [
       { to: "/secciones", texto: "Secciones", roles: TODOS },
       { to: "/noticias", texto: "Noticias", roles: TODOS },
-      { to: "/equipo", texto: "Equipo y colaboradores", roles: ADMIN },
+      { to: "/equipo", texto: "Equipo y colaboradores", roles: TODOS },
+      { to: "/identidad", texto: "Identidad visual", roles: TODOS },
+      { to: "/pie", texto: "Pie de página", roles: TODOS },
     ],
   },
   {
     titulo: "CMS",
     items: [
-      { to: "/identidad", texto: "Identidad visual", roles: ADMIN },
-      { to: "/pie", texto: "Pie de página", roles: ADMIN },
       { to: "/contacto", texto: "Mensajes", roles: ADMIN },
       { to: "/beacons", texto: "Beacons", roles: ADMIN },
     ],

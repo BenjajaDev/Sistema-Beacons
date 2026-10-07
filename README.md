@@ -84,7 +84,7 @@ La ruta oculta evita que el panel aparezca a simple vista, pero **no es la segur
 - **Ruta oculta:** el panel se sirve solo bajo `/<ADMIN_PATH>`, con `X-Robots-Tag: noindex`. `/admin`, `/login` o cualquier otra ruta responden 404, sin redirigir. La ruta tampoco aparece en los logs de acceso.
 - **Sesión:** JWT en la cookie `__Host-signal_session` (httpOnly, Secure, SameSite=Strict). Cada petición verifica que la cuenta siga activa y que el token no haya sido revocado. Cambiar la contraseña o cerrar sesión invalida todas las sesiones de esa cuenta.
 - **CSRF:** token de doble envío firmado y atado a la sesión, en la cabecera `X-CSRF-Token`. Además se comprueba la cabecera `Origin`.
-- **Roles:** cada ruta de `/api/admin` declara qué roles la pueden usar. Sin sesión responde 401 y con un rol insuficiente, 403. `test/integration/permissions.test.ts` recorre todas las rutas automáticamente y exige que bitácora, usuarios, beacons, identidad visual, equipo y publicación sean solo de administración.
+- **Roles:** cada ruta de `/api/admin` declara qué roles la pueden usar. Sin sesión responde 401 y con un rol insuficiente, 403. `test/integration/permissions.test.ts` recorre todas las rutas automáticamente y exige que bitácora, usuarios, beacons, mensajes y publicación sean solo de administración.
 - **Login:** el error es el mismo para un correo inexistente y una contraseña incorrecta. Tras `LOGIN_MAX_ATTEMPTS` fallos la cuenta se bloquea `LOGIN_LOCK_MINUTES` minutos, y hay un límite de intentos por IP. En el primer inicio de sesión se obliga a cambiar la contraseña.
 - **Cabeceras:** helmet aplica CSP estricta, nosniff, prohibición de iframes y HSTS en producción. CORS queda cerrado salvo los orígenes de `CORS_ORIGINS`.
 - **Bitácora:** `audit_logs` registra quién, qué, cuándo, la IP y el navegador (inicios de sesión, bloqueos, cambios de contraseña y cada cambio de contenido, con los campos modificados). Se consulta en `GET /api/admin/audit`.
@@ -97,12 +97,13 @@ Todas las respuestas de error tienen la forma `{ error, code, campos? }`. `error
 
 **Panel** (`/api/admin`, con sesión y CSRF):
 
-| Módulo                                                                                    | Editor                                                                | Administrador                                                  |
-| ----------------------------------------------------------------------------------------- | --------------------------------------------------------------------- | -------------------------------------------------------------- |
-| Noticias                                                                                  | Crea, edita sus borradores, los envía a revisión y ve la vista previa | Además publica, devuelve con observaciones, despublica y borra |
-| Secciones                                                                                 | Edita borradores y los envía a revisión                               | Además publica, devuelve, oculta y ordena                      |
-| Imágenes                                                                                  | Sube y lista                                                          | Además borra (si no están en uso)                              |
-| Equipo, colaboradores, identidad visual, contacto, beacons, usuarios, mensajes y bitácora | —                                                                     | Todo                                                           |
+| Módulo                                                            | Editor                                                                | Administrador                                                  |
+| ----------------------------------------------------------------- | --------------------------------------------------------------------- | -------------------------------------------------------------- |
+| Noticias                                                          | Crea, edita sus borradores, los envía a revisión y ve la vista previa | Además publica, devuelve con observaciones, despublica y borra |
+| Secciones                                                         | Edita borradores y los envía a revisión                               | Además publica, devuelve, oculta y ordena                      |
+| Imágenes                                                          | Sube y lista                                                          | Además borra (si no están en uso)                              |
+| Equipo, colaboradores, identidad visual, pie de página y contacto | Todo                                                                  | Todo                                                           |
+| Beacons, usuarios, mensajes y bitácora                            | —                                                                     | Todo                                                           |
 
 Garantías que impone el servidor, no solo la interfaz:
 
@@ -155,16 +156,16 @@ Express sirve la landing en sus rutas: `/`, `/nosotros`, `/noticias`, `/noticias
 
 Se abre en `/<ADMIN_PATH>` (en desarrollo: `npm run dev:admin`, en http://localhost:5174/admin.html, con el servidor corriendo). El menú lateral se ordena en cinco secciones (**Resumen, Contenido, CMS, Usuarios y Bitácora**), muestra solo lo que permite el rol y en el teléfono pasa a un cajón modal.
 
-| Sección   | Vista                                               | Editor                                                           | Administrador                                                           |
-| --------- | --------------------------------------------------- | ---------------------------------------------------------------- | ----------------------------------------------------------------------- |
-| Resumen   | Resumen                                             | Sus borradores y notas en revisión                               | Notas por revisar, secciones pendientes, mensajes y beacons incompletos |
-| Contenido | Secciones                                           | Edita borradores con vista previa en vivo y los envía a revisión | Además publica, muestra u oculta y reordena                             |
-| Contenido | Noticias                                            | Escribe, guarda y envía a revisión                               | Además publica, devuelve con observaciones, despublica y borra          |
-| Contenido | Equipo y colaboradores                              | —                                                                | Todo                                                                    |
-| CMS       | Identidad visual, Pie de página, Mensajes y Beacons | —                                                                | Todo                                                                    |
-| Usuarios  | Usuarios                                            | —                                                                | Crea, edita, desactiva, restablece contraseñas y elimina cuentas        |
-| Bitácora  | Bitácora                                            | —                                                                | Todo, filtrable por área (sesiones, contenido, CMS, usuarios)           |
-| (todas)   | Mi perfil (chip con el nombre, arriba a la derecha) | Cambia su nombre y su contraseña                                 | Además, accesos para configurar el sitio                                |
+| Sección   | Vista                                                    | Editor                                                           | Administrador                                                           |
+| --------- | -------------------------------------------------------- | ---------------------------------------------------------------- | ----------------------------------------------------------------------- |
+| Resumen   | Resumen                                                  | Sus borradores y notas en revisión                               | Notas por revisar, secciones pendientes, mensajes y beacons incompletos |
+| Contenido | Secciones                                                | Edita borradores con vista previa en vivo y los envía a revisión | Además publica, muestra u oculta y reordena                             |
+| Contenido | Noticias                                                 | Escribe, guarda y envía a revisión                               | Además publica, devuelve con observaciones, despublica y borra          |
+| Contenido | Equipo y colaboradores, Identidad visual y Pie de página | Todo                                                             | Todo                                                                    |
+| CMS       | Mensajes y Beacons                                       | —                                                                | Todo                                                                    |
+| Usuarios  | Usuarios                                                 | —                                                                | Crea, edita, desactiva, restablece contraseñas y elimina cuentas        |
+| Bitácora  | Bitácora                                                 | —                                                                | Todo, filtrable por área (sesiones, contenido, CMS, usuarios)           |
+| (todas)   | Mi perfil (chip con el nombre, arriba a la derecha)      | Cambia su nombre y su contraseña                                 | Además, accesos para configurar el sitio                                |
 
 Las vistas de administración muestran «sin acceso» si un editor entra por URL, y la API responde 403.
 
@@ -275,7 +276,7 @@ El CI (`.github/workflows/ci.yml`) tiene tres jobs: chequeos y tests (con Postgr
 | --------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------ |
 | Un visitante nunca encuentra referencias al panel en el HTML, el JS, el sitemap ni el service worker                        | `apps/web/scripts/check-public-bundle.mjs` (en cada build) y `e2e/landing.spec.ts` sobre HTML, robots, sitemap, manifest y `sw.js`         |
 | `/<ADMIN_PATH>` muestra el login; otras rutas de admin dan 404; `/api/admin/*` da 401 sin sesión y 403 con rol insuficiente | `server/test/admin-panel.test.ts`, `server/test/integration/permissions.test.ts` (recorre todas las rutas) y `e2e/panel.spec.ts`           |
-| El editor no puede publicar ni entrar a Beacons, Identidad visual ni Usuarios, ni por la interfaz ni por la API             | Política de roles en `permissions.test.ts`, flujo en `news.test.ts` y `e2e/panel.spec.ts`                                                  |
+| El editor no puede publicar ni entrar a Beacons, Mensajes ni Usuarios, ni por la interfaz ni por la API                     | Política de roles en `permissions.test.ts`, flujo en `news.test.ts` y `e2e/panel.spec.ts`                                                  |
 | La app Android sigue funcionando sin cambios con `GET /beacons/:major/:minor`                                               | `server/test/legacy-beacons.test.ts` (paridad con el `beacons.json` histórico) y `e2e/panel.spec.ts` (un beacon del panel llega a la ruta) |
 | Lighthouse: PWA instalable, accesibilidad ≥ 95 y rendimiento ≥ 90 en móvil                                                  | `lighthouserc.cjs` (umbrales) y `e2e/pwa.spec.ts` (instalabilidad con la comprobación de Chrome; Lighthouse ya no tiene categoría PWA)     |
 | README con instalación, variables de entorno, seed y despliegue                                                             | Este archivo                                                                                                                               |

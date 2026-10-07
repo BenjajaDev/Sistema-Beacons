@@ -98,7 +98,7 @@ Sigue la guía [`docs/supabase.md`](supabase.md) hasta el paso 4: ahí se explic
 
 ## 4. Las cuentas iniciales del panel
 
-El comando `npm run seed` crea dos cuentas para entrar al panel: una de **administración** (puede hacer todo) y una de **edición** (redacta noticias y contenido, pero no publica ni toca beacons, identidad visual ni usuarios).
+El comando `npm run seed` crea dos cuentas para entrar al panel: una de **administración** (puede hacer todo) y una de **edición** (redacta noticias y contenido, pero no publica ni toca beacons, mensajes ni usuarios).
 
 En `server/.env`, completa:
 

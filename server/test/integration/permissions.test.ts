@@ -24,9 +24,8 @@ const SOLO_ADMIN: [método: string, ruta: RegExp][] = [
   ["*", /^\/audit(\/|$)/],
   ["*", /^\/users(\/|$)/],
   ["*", /^\/beacons(\/|$)/],
-  ["*", /^\/settings(\/|$)/],
-  ["*", /^\/team(\/|$)/],
-  ["*", /^\/collaborators(\/|$)/],
+  // /settings, /team y /collaborators (identidad visual, pie de página con sus datos de
+  // contacto, y equipo) los gestiona también el rol de edición.
   ["*", /^\/messages(\/|$)/],
   ["*", /^\/news\/:\w+\/(publish|reject|unpublish)$/],
   ["*", /^\/sections\/:\w+\/(publish|reject|visibility)$/],

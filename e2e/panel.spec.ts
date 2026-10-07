@@ -30,7 +30,14 @@ test("sin sesión, el panel muestra el login y explica los errores", async ({ pa
 test("el editor solo ve lo suyo y escribe una nota que envía a revisión", async ({ page }) => {
   await iniciarSesion(page, "editor");
   const menu = page.getByRole("navigation", { name: "Panel" }).getByRole("link");
-  await expect(menu).toHaveText(["Resumen", "Secciones", "Noticias"]);
+  await expect(menu).toHaveText([
+    "Resumen",
+    "Secciones",
+    "Noticias",
+    "Equipo y colaboradores",
+    "Identidad visual",
+    "Pie de página",
+  ]);
   await sinViolaciones(page, "resumen (editor)");
 
   // Por URL tampoco: la vista dice «sin acceso» (y la API respondería 403).

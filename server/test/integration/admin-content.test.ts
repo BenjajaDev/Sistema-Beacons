@@ -238,13 +238,20 @@ describe.skipIf(!hasTestDb)("administración de contenido", () => {
       expect(mala.status).toBe(400);
       expect(Object.keys(mala.body.campos)).toEqual(["columnas.0.enlaces.0.href"]);
 
+      // El pie, incluidos sus datos de contacto, lo gestiona también el rol de edición.
       expect((await as(app, editor, "put", "/api/admin/settings/footer").send(pie)).status).toBe(
-        403,
-      );
-      expect((await as(app, admin, "put", "/api/admin/settings/footer").send(pie)).status).toBe(
         200,
       );
       expect((await request(app).get("/api/public/site")).body.pie).toEqual(pie);
+      const contacto = await as(app, editor, "put", "/api/admin/settings/contact").send({
+        contactEmail: "editor@signal.cl",
+        socials: [],
+        accessibilityStatement: "Declaración.",
+      });
+      expect(contacto.status).toBe(200);
+      expect((await request(app).get("/api/public/site")).body.contacto.correo).toBe(
+        "editor@signal.cl",
+      );
     });
   });
 
