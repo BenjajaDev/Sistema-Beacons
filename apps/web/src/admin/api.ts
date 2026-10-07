@@ -4,7 +4,14 @@ import { apiFetch, ApiError, type ApiFetchOptions } from "@shared/api";
 // lo renueva una vez si caducó, y avisa a la app cuando la sesión expiró o
 // cuando hay que cambiar la contraseña.
 
-export type Rol = "ADMIN" | "EDITOR";
+export type Rol = "ADMIN" | "EDITOR" | "SOCIAL";
+
+// Cómo se nombra cada rol en el panel.
+export const NOMBRE_ROL: Record<Rol, string> = {
+  ADMIN: "Administración",
+  EDITOR: "Edición",
+  SOCIAL: "Comunicación",
+};
 
 export interface Usuario {
   id: string;

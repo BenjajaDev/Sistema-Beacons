@@ -21,6 +21,11 @@ try {
     password: "Clave-E2E-Editor-2026",
     role: "EDITOR",
   });
+  await createUser(db, {
+    email: "social@e2e.test",
+    password: "Clave-E2E-Social-2026",
+    role: "SOCIAL",
+  });
   console.log("Base de pruebas lista.");
 } finally {
   await db.$disconnect();

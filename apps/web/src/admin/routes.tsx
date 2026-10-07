@@ -3,11 +3,11 @@ import { createBrowserRouter, Link, Navigate, Outlet } from "react-router";
 import { ToastProvider } from "@shared/ui/Toast";
 import type { Rol } from "./api";
 import { ErrorDeRuta } from "./ErrorDeRuta";
-import { Shell, SoloRol } from "./Shell";
+import { CONTENIDO, Shell, SoloRol } from "./Shell";
 import { usePanelPage } from "./ui";
 import { CambiarContrasena, Login } from "./views/Acceso";
 import Bitacora from "./views/Bitacora";
-import Contacto from "./views/Contacto";
+import Contacto, { ContactoYRedes } from "./views/Contacto";
 import Equipo from "./views/Equipo";
 import Noticias from "./views/Noticias";
 import Perfil from "./views/Perfil";
@@ -80,19 +80,39 @@ export function crearRouter() {
                 errorElement: <ErrorDeRuta />,
                 children: [
                   { index: true, Component: Resumen },
-                  { path: "noticias", Component: Noticias },
-                  { path: "noticias/nueva", lazy: diferida(() => import("./views/NoticiaEditor")) },
-                  { path: "noticias/:id", lazy: diferida(() => import("./views/NoticiaEditor")) },
                   {
-                    path: "noticias/:id/vista-previa",
-                    lazy: diferida(() => import("./views/NoticiaPreview")),
+                    // Contenido del sitio: edición y administración (no comunicación).
+                    element: (
+                      <SoloRol roles={CONTENIDO}>
+                        <Outlet />
+                      </SoloRol>
+                    ),
+                    children: [
+                      { path: "noticias", Component: Noticias },
+                      {
+                        path: "noticias/nueva",
+                        lazy: diferida(() => import("./views/NoticiaEditor")),
+                      },
+                      {
+                        path: "noticias/:id",
+                        lazy: diferida(() => import("./views/NoticiaEditor")),
+                      },
+                      {
+                        path: "noticias/:id/vista-previa",
+                        lazy: diferida(() => import("./views/NoticiaPreview")),
+                      },
+                      { path: "secciones", Component: Secciones },
+                      {
+                        path: "secciones/:key",
+                        lazy: diferida(() => import("./views/SeccionEditor")),
+                      },
+                      { path: "equipo", Component: Equipo },
+                      { path: "identidad", lazy: diferida(() => import("./views/Identidad")) },
+                      { path: "pie", lazy: diferida(() => import("./views/Pie")) },
+                    ],
                   },
-                  { path: "secciones", Component: Secciones },
-                  { path: "secciones/:key", lazy: diferida(() => import("./views/SeccionEditor")) },
-                  { path: "equipo", Component: Equipo },
-                  { path: "identidad", lazy: diferida(() => import("./views/Identidad")) },
-                  { path: "contacto", element: soloAdmin(Contacto) },
-                  { path: "pie", lazy: diferida(() => import("./views/Pie")) },
+                  { path: "contacto", Component: Contacto },
+                  { path: "redes", Component: ContactoYRedes },
                   { path: "perfil", Component: Perfil },
                   {
                     path: "beacons",

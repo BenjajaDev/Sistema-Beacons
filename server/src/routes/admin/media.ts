@@ -4,7 +4,7 @@ import { ApiError, notFound, parseOrThrow } from "../../http/errors.js";
 import { cropImage, processImage } from "../../services/images.js";
 import type { AdminDeps } from "./deps.js";
 import { idParam, page, paginationSchema } from "./helpers.js";
-import { ADMIN_ONLY, ANY_ROLE, type AdminRoute } from "./registry.js";
+import { ADMIN_ONLY, CONTENT_ROLES, type AdminRoute } from "./registry.js";
 
 const entero = (campo: string, min: number) =>
   z.coerce.number(`Falta ${campo}.`).int().min(min, `${campo} no es válido.`);
@@ -24,7 +24,7 @@ export function mediaRoutes({ db, env, audit, storage, logger }: AdminDeps): Adm
   return [
     {
       // Editores y administradores suben imágenes (portadas e imágenes del cuerpo).
-      roles: ANY_ROLE,
+      roles: CONTENT_ROLES,
       method: "post",
       path: "/media",
       handler: [
@@ -57,7 +57,7 @@ export function mediaRoutes({ db, env, audit, storage, logger }: AdminDeps): Adm
     {
       // Recorta una imagen subida para que calce con su marco (foto cuadrada, portada
       // 16:9). Crea una imagen nueva: la original queda en la biblioteca, intacta.
-      roles: ANY_ROLE,
+      roles: CONTENT_ROLES,
       method: "post",
       path: "/media/:id/crop",
       handler: async (req, res) => {
@@ -93,7 +93,7 @@ export function mediaRoutes({ db, env, audit, storage, logger }: AdminDeps): Adm
       },
     },
     {
-      roles: ANY_ROLE,
+      roles: CONTENT_ROLES,
       method: "get",
       path: "/media",
       handler: async (req, res) => {

@@ -20,6 +20,8 @@ datasource db {
 enum Role {
   ADMIN
   EDITOR
+  // Comunicación: mensajes de contacto, datos de contacto y redes. No toca contenido.
+  SOCIAL
 }
 
 enum NewsStatus {

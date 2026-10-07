@@ -21,4 +21,7 @@ export function mountAdminRoutes(router: Router, routes: AdminRoute[]) {
 }
 
 export const ADMIN_ONLY = ["ADMIN"] as const;
-export const ANY_ROLE = ["ADMIN", "EDITOR"] as const;
+// Noticias, secciones, equipo, identidad visual, pie de página e imágenes.
+export const CONTENT_ROLES = ["ADMIN", "EDITOR"] as const;
+// La propia cuenta, los mensajes de contacto y los datos de contacto y redes.
+export const ALL_ROLES = ["ADMIN", "EDITOR", "SOCIAL"] as const;

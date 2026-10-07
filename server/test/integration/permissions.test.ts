@@ -24,9 +24,8 @@ const SOLO_ADMIN: [método: string, ruta: RegExp][] = [
   ["*", /^\/audit(\/|$)/],
   ["*", /^\/users(\/|$)/],
   ["*", /^\/beacons(\/|$)/],
-  // /settings, /team y /collaborators (identidad visual, pie de página con sus datos de
-  // contacto, y equipo) los gestiona también el rol de edición.
-  ["*", /^\/messages(\/|$)/],
+  // /settings, /team, /collaborators y /messages (identidad visual, pie de página,
+  // datos de contacto, equipo y mensajes) los gestiona también el rol de edición.
   ["*", /^\/news\/:\w+\/(publish|reject|unpublish)$/],
   ["*", /^\/sections\/:\w+\/(publish|reject|visibility)$/],
   ["*", /^\/sections\/order$/],
@@ -46,6 +45,24 @@ describe("política de roles", () => {
   it.each(protegidas.map((r) => [nombre(r), r] as const))("%s es solo para ADMIN", (_n, ruta) => {
     expect(ruta.roles).toEqual(["ADMIN"]);
   });
+
+  // El rol de comunicación entra EXACTAMENTE a estas rutas: su cuenta, los mensajes
+  // y los datos de contacto y redes. Ni una más ni una menos.
+  const SOCIAL: [método: string, ruta: RegExp][] = [
+    ["*", /^\/auth\//],
+    ["*", /^\/messages(\/|$)/],
+    ["get", /^\/settings$/],
+    ["put", /^\/settings\/contact$/],
+  ];
+  it.each(rutas.map((r) => [nombre(r), r] as const))(
+    "%s respeta el alcance del rol de comunicación",
+    (_n, ruta) => {
+      const permitida = SOCIAL.some(
+        ([m, p]) => (m === "*" || m === ruta.method) && p.test(ruta.path),
+      );
+      expect(ruta.roles.includes("SOCIAL")).toBe(permitida);
+    },
+  );
 });
 
 describe.skipIf(!hasTestDb)("matriz de permisos de /api/admin", () => {
@@ -61,6 +78,7 @@ describe.skipIf(!hasTestDb)("matriz de permisos de /api/admin", () => {
     await resetDb(db);
     await createUser(db, { email: "admin@signal.test", password: CLAVE, role: "ADMIN" });
     await createUser(db, { email: "editor@signal.test", password: CLAVE, role: "EDITOR" });
+    await createUser(db, { email: "social@signal.test", password: CLAVE, role: "SOCIAL" });
   });
   afterAll(() => db?.$disconnect());
 
@@ -82,6 +100,27 @@ describe.skipIf(!hasTestDb)("matriz de permisos de /api/admin", () => {
       const res = await as(servidor, s, ruta.method, urlDe(ruta)).send({});
       expect(res.status).toBe(403);
       expect(res.body.code).toBe("FORBIDDEN");
+    },
+  );
+
+  const sinSocial = rutas.filter((r) => !r.roles.includes("SOCIAL"));
+  it.each(sinSocial.map((r) => [nombre(r), r] as const))(
+    "%s → 403 para el rol de comunicación",
+    async (_n, ruta) => {
+      const s = await login(servidor, "social@signal.test", CLAVE);
+      const res = await as(servidor, s, ruta.method, urlDe(ruta)).send({});
+      expect(res.status).toBe(403);
+      expect(res.body.code).toBe("FORBIDDEN");
+    },
+  );
+
+  const conSocial = rutas.filter((r) => r.roles.includes("SOCIAL"));
+  it.each(conSocial.map((r) => [nombre(r), r] as const))(
+    "%s → el rol de comunicación pasa la autorización",
+    async (_n, ruta) => {
+      const s = await login(servidor, "social@signal.test", CLAVE);
+      const res = await as(servidor, s, ruta.method, urlDe(ruta)).send({});
+      expect([401, 403], `${res.status} ${JSON.stringify(res.body)}`).not.toContain(res.status);
     },
   );
 

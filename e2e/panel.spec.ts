@@ -37,6 +37,7 @@ test("el editor solo ve lo suyo y escribe una nota que envía a revisión", asyn
     "Equipo y colaboradores",
     "Identidad visual",
     "Pie de página",
+    /^Mensajes/, // con el contador de no leídos, si hay mensajes
   ]);
   await sinViolaciones(page, "resumen (editor)");
 
@@ -67,6 +68,34 @@ test("el editor solo ve lo suyo y escribe una nota que envía a revisión", asyn
   await page.getByRole("button", { name: "Enviar a revisión" }).click();
   await expect(page.getByText("Enviada a revisión")).toBeVisible();
   await expect(page.getByLabel("Título", { exact: true })).toBeDisabled();
+});
+
+test("comunicación solo ve los mensajes y el contacto, y edita las redes", async ({ page }) => {
+  await iniciarSesion(page, "social");
+  const menu = page.getByRole("navigation", { name: "Panel" }).getByRole("link");
+  // «Mensajes» puede llevar el contador de no leídos (la landing envía uno antes).
+  await expect(menu).toHaveText(["Resumen", /^Mensajes/, "Contacto y redes"]);
+  await expect(page.getByRole("link", { name: "Nueva noticia" })).toHaveCount(0);
+  await expect(page.getByRole("heading", { name: "Mensajes de contacto" })).toBeVisible();
+  await sinViolaciones(page, "resumen (comunicación)");
+
+  // El contenido del sitio no es suyo, ni por URL ni por la API.
+  await page.goto(`${PANEL}/noticias`);
+  await expect(
+    page.getByRole("heading", { level: 1, name: "No tienes acceso a esta sección" }),
+  ).toBeVisible();
+  expect((await page.request.get("/api/admin/news")).status()).toBe(403);
+
+  await page.goto(`${PANEL}/contacto`);
+  await expect(page.getByRole("heading", { level: 1, name: "Mensajes" })).toBeVisible();
+  await sinViolaciones(page, "mensajes (comunicación)");
+
+  await page.goto(`${PANEL}/redes`);
+  await expect(page.getByRole("heading", { level: 1, name: "Contacto y redes" })).toBeVisible();
+  await sinViolaciones(page, "contacto y redes");
+  await page.getByRole("textbox", { name: "Correo (opcional)" }).fill("comunicacion@signal.test");
+  await page.getByRole("button", { name: "Guardar datos de contacto" }).click();
+  await expect(page.getByText("Datos de contacto guardados.")).toBeVisible();
 });
 
 test("la administradora publica la nota y aparece en el sitio", async ({ page }) => {
@@ -140,6 +169,7 @@ test("todas las vistas del panel pasan axe en claro y oscuro", async ({ page }) 
     ["/identidad", "Identidad visual"],
     ["/pie", "Pie de página"],
     ["/contacto", "Mensajes"],
+    ["/redes", "Contacto y redes"],
     ["/perfil", "Mi perfil"],
     ["/beacons", "Beacons"],
     ["/usuarios", "Usuarios"],

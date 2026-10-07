@@ -47,10 +47,13 @@ export default function Resumen() {
   const { usuario, tiene } = useAuth();
   const h1 = usePanelPage("Resumen");
   const admin = tiene("ADMIN");
+  // El rol de comunicación no ve noticias ni secciones: solo los mensajes.
+  const contenido = tiene("ADMIN", "EDITOR");
 
   const secciones = useQuery({
     queryKey: ["admin", "secciones"],
     queryFn: () => adminFetch<{ items: Seccion[] }>("/sections"),
+    enabled: contenido,
   });
   const beacons = useQuery({
     queryKey: ["admin", "beacons"],
@@ -64,7 +67,6 @@ export default function Resumen() {
   const mensajes = useQuery({
     queryKey: ["admin", "mensajes", "no-leidos"],
     queryFn: () => adminFetch<{ noLeidos: number }>("/messages?limit=1&noLeidos=true"),
-    enabled: admin,
   });
 
   const pendientes = secciones.data?.items.filter((s) => s.draftStatus) ?? [];
@@ -76,13 +78,15 @@ export default function Resumen() {
         titulo="Resumen"
         descripcion={`Hola, ${usuario?.name}. Esto es lo que tienes pendiente.`}
         acciones={
-          <Link to="/noticias/nueva" className="btn btn--primario">
-            Nueva noticia
-          </Link>
+          contenido && (
+            <Link to="/noticias/nueva" className="btn btn--primario">
+              Nueva noticia
+            </Link>
+          )
         }
       />
       <div className="rejilla-panel">
-        {admin ? (
+        {!contenido ? null : admin ? (
           <Tarjeta titulo="Noticias por revisar">
             <ListaNoticias filtro="status=REVIEW" vacio="No hay noticias esperando revisión." />
           </Tarjeta>
@@ -103,86 +107,87 @@ export default function Resumen() {
           </>
         )}
 
-        <Tarjeta titulo="Secciones con cambios pendientes">
-          {secciones.isPending ? (
-            <Cargando>
-              <Skeleton alto="4rem" />
-            </Cargando>
-          ) : secciones.error ? (
+        {contenido && (
+          <Tarjeta titulo="Secciones con cambios pendientes">
+            {secciones.isPending ? (
+              <Cargando>
+                <Skeleton alto="4rem" />
+              </Cargando>
+            ) : secciones.error ? (
+              <ErrorState
+                mensaje={mensajeDeError(secciones.error)}
+                onReintentar={() => secciones.refetch()}
+              />
+            ) : pendientes.length === 0 ? (
+              <p className="texto-suave">Todo lo publicado está al día.</p>
+            ) : (
+              <ul className="lista-simple">
+                {pendientes.map((s) => (
+                  <li key={s.key}>
+                    <Link to={`/secciones/${s.key}`}>{s.nombre}</Link>
+                    <span className="texto-suave">
+                      {" "}
+                      · {s.draftStatus === "REVIEW" ? "en revisión" : "borrador"}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </Tarjeta>
+        )}
+
+        <Tarjeta titulo="Mensajes de contacto">
+          {mensajes.data ? (
+            <p>
+              <strong className="cifra">{mensajes.data.noLeidos}</strong> sin leer.{" "}
+              <Link to="/contacto">Ver mensajes</Link>
+            </p>
+          ) : mensajes.error ? (
             <ErrorState
-              mensaje={mensajeDeError(secciones.error)}
-              onReintentar={() => secciones.refetch()}
+              mensaje={mensajeDeError(mensajes.error)}
+              onReintentar={() => mensajes.refetch()}
             />
-          ) : pendientes.length === 0 ? (
-            <p className="texto-suave">Todo lo publicado está al día.</p>
           ) : (
-            <ul className="lista-simple">
-              {pendientes.map((s) => (
-                <li key={s.key}>
-                  <Link to={`/secciones/${s.key}`}>{s.nombre}</Link>
-                  <span className="texto-suave">
-                    {" "}
-                    · {s.draftStatus === "REVIEW" ? "en revisión" : "borrador"}
-                  </span>
-                </li>
-              ))}
-            </ul>
+            <Cargando>
+              <Skeleton alto="2rem" />
+            </Cargando>
           )}
         </Tarjeta>
 
         {admin && (
-          <>
-            <Tarjeta titulo="Mensajes de contacto">
-              {mensajes.data ? (
+          <Tarjeta titulo="Beacons">
+            {beacons.data ? (
+              beacons.data.resumen.total === 0 ? (
+                <EmptyState
+                  titulo="No hay beacons registrados"
+                  accion={
+                    <Link to="/beacons" className="btn btn--secundario">
+                      Registrar un beacon
+                    </Link>
+                  }
+                />
+              ) : (
                 <p>
-                  <strong className="cifra">{mensajes.data.noLeidos}</strong> sin leer.{" "}
-                  <Link to="/contacto">Ver mensajes</Link>
+                  <strong className="cifra">{beacons.data.resumen.completos}</strong> de{" "}
+                  {beacons.data.resumen.total} fichas completas.{" "}
+                  {beacons.data.resumen.incompletos > 0 && (
+                    <Link to="/beacons">
+                      Completar las {beacons.data.resumen.incompletos} que faltan
+                    </Link>
+                  )}
                 </p>
-              ) : mensajes.error ? (
-                <ErrorState
-                  mensaje={mensajeDeError(mensajes.error)}
-                  onReintentar={() => mensajes.refetch()}
-                />
-              ) : (
-                <Cargando>
-                  <Skeleton alto="2rem" />
-                </Cargando>
-              )}
-            </Tarjeta>
-            <Tarjeta titulo="Beacons">
-              {beacons.data ? (
-                beacons.data.resumen.total === 0 ? (
-                  <EmptyState
-                    titulo="No hay beacons registrados"
-                    accion={
-                      <Link to="/beacons" className="btn btn--secundario">
-                        Registrar un beacon
-                      </Link>
-                    }
-                  />
-                ) : (
-                  <p>
-                    <strong className="cifra">{beacons.data.resumen.completos}</strong> de{" "}
-                    {beacons.data.resumen.total} fichas completas.{" "}
-                    {beacons.data.resumen.incompletos > 0 && (
-                      <Link to="/beacons">
-                        Completar las {beacons.data.resumen.incompletos} que faltan
-                      </Link>
-                    )}
-                  </p>
-                )
-              ) : beacons.error ? (
-                <ErrorState
-                  mensaje={mensajeDeError(beacons.error)}
-                  onReintentar={() => beacons.refetch()}
-                />
-              ) : (
-                <Cargando>
-                  <Skeleton alto="2rem" />
-                </Cargando>
-              )}
-            </Tarjeta>
-          </>
+              )
+            ) : beacons.error ? (
+              <ErrorState
+                mensaje={mensajeDeError(beacons.error)}
+                onReintentar={() => beacons.refetch()}
+              />
+            ) : (
+              <Cargando>
+                <Skeleton alto="2rem" />
+              </Cargando>
+            )}
+          </Tarjeta>
         )}
       </div>
     </div>

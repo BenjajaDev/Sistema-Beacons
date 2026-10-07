@@ -6,11 +6,9 @@ import { ConfirmDialog, Dialog } from "@shared/ui/Dialog";
 import { SelectField, TextField } from "@shared/ui/Field";
 import { Cargando, ErrorState, Skeleton } from "@shared/ui/States";
 import { useToast } from "@shared/ui/Toast";
-import { adminFetch, type CuentaUsuario, type Rol } from "../api";
+import { adminFetch, NOMBRE_ROL, type CuentaUsuario, type Rol } from "../api";
 import { useAuth } from "../auth";
 import { Cabecera, formatoFecha, Interruptor, usePanelPage, RegionDesplazable } from "../ui";
-
-const ROLES: Record<Rol, string> = { ADMIN: "Administración", EDITOR: "Edición" };
 
 function estadoCuenta(u: CuentaUsuario) {
   if (!u.active) return "Desactivada";
@@ -182,7 +180,7 @@ export default function Usuarios() {
                       {u.name} {yo && <span className="insignia">Tú</span>}
                       <span className="texto-suave bloque">{u.email}</span>
                     </th>
-                    <td>{ROLES[u.role]}</td>
+                    <td>{NOMBRE_ROL[u.role]}</td>
                     <td>{estadoCuenta(u)}</td>
                     <td>{formatoFecha(u.lastLoginAt)}</td>
                     <td>
@@ -274,12 +272,13 @@ export default function Usuarios() {
               ayuda={
                 form.id === usuario?.id
                   ? "No puedes cambiar tu propio rol."
-                  : "Edición: escribe noticias y textos, sin publicar. Administración: todo el panel."
+                  : "Comunicación: responde los mensajes y edita el contacto y las redes. Edición: además escribe noticias y textos, sin publicar. Administración: todo el panel."
               }
               onChange={(e) => setForm({ ...form, role: e.target.value as Rol })}
             >
-              <option value="EDITOR">Edición</option>
-              <option value="ADMIN">Administración</option>
+              <option value="SOCIAL">{NOMBRE_ROL.SOCIAL}</option>
+              <option value="EDITOR">{NOMBRE_ROL.EDITOR}</option>
+              <option value="ADMIN">{NOMBRE_ROL.ADMIN}</option>
             </SelectField>
           </>
         )}

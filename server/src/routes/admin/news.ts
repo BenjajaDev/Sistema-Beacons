@@ -16,7 +16,7 @@ import { asJson } from "../../lib/json.js";
 import { SLUG_REGEX, slugify, uniqueSlug } from "../../lib/slug.js";
 import type { AdminDeps } from "./deps.js";
 import { changedFields, idParam, page, paginationSchema } from "./helpers.js";
-import { ADMIN_ONLY, ANY_ROLE, type AdminRoute } from "./registry.js";
+import { ADMIN_ONLY, CONTENT_ROLES, type AdminRoute } from "./registry.js";
 
 // Flujo editorial:
 //   DRAFT ──submit──▶ REVIEW ──publish──▶ PUBLISHED
@@ -181,7 +181,7 @@ export function newsRoutes({ db, audit }: AdminDeps): AdminRoute[] {
 
   return [
     {
-      roles: ANY_ROLE,
+      roles: CONTENT_ROLES,
       method: "get",
       path: "/news/categories",
       handler: async (_req, res) => {
@@ -195,7 +195,7 @@ export function newsRoutes({ db, audit }: AdminDeps): AdminRoute[] {
       },
     },
     {
-      roles: ANY_ROLE,
+      roles: CONTENT_ROLES,
       method: "get",
       path: "/news",
       handler: async (req, res) => {
@@ -220,7 +220,7 @@ export function newsRoutes({ db, audit }: AdminDeps): AdminRoute[] {
       },
     },
     {
-      roles: ANY_ROLE,
+      roles: CONTENT_ROLES,
       method: "get",
       path: "/news/:id",
       handler: async (req, res) => {
@@ -232,7 +232,7 @@ export function newsRoutes({ db, audit }: AdminDeps): AdminRoute[] {
     },
     {
       // Vista previa: el borrador con la misma forma que recibe la landing.
-      roles: ANY_ROLE,
+      roles: CONTENT_ROLES,
       method: "get",
       path: "/news/:id/preview",
       handler: async (req, res) => {
@@ -243,7 +243,7 @@ export function newsRoutes({ db, audit }: AdminDeps): AdminRoute[] {
       },
     },
     {
-      roles: ANY_ROLE,
+      roles: CONTENT_ROLES,
       method: "post",
       path: "/news",
       handler: async (req, res) => {
@@ -274,7 +274,7 @@ export function newsRoutes({ db, audit }: AdminDeps): AdminRoute[] {
       },
     },
     {
-      roles: ANY_ROLE,
+      roles: CONTENT_ROLES,
       method: "patch",
       path: "/news/:id",
       handler: async (req, res) => {
@@ -325,7 +325,7 @@ export function newsRoutes({ db, audit }: AdminDeps): AdminRoute[] {
       },
     },
     {
-      roles: ANY_ROLE,
+      roles: CONTENT_ROLES,
       method: "post",
       path: "/news/:id/submit",
       handler: async (req, res) => {
@@ -413,7 +413,7 @@ export function newsRoutes({ db, audit }: AdminDeps): AdminRoute[] {
     },
     {
       // Un editor puede borrar sus borradores que nunca se publicaron; el admin, cualquier nota.
-      roles: ANY_ROLE,
+      roles: CONTENT_ROLES,
       method: "delete",
       path: "/news/:id",
       handler: async (req, res) => {

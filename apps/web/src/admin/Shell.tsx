@@ -7,7 +7,7 @@ import { TextSizeControl, ThemeSwitcher } from "@shared/theme/Controls";
 import { Button, IconButton } from "@shared/ui/Button";
 import { IconoCerrar, IconoMenu } from "@shared/ui/Icons";
 import { useToast } from "@shared/ui/Toast";
-import { adminFetch, type Rol } from "./api";
+import { adminFetch, NOMBRE_ROL, type Rol } from "./api";
 import { useAuth } from "./auth";
 
 interface ItemMenu {
@@ -22,30 +22,34 @@ interface GrupoMenu {
   items: ItemMenu[];
 }
 
-const TODOS: Rol[] = ["ADMIN", "EDITOR"];
+export const TODOS: Rol[] = ["ADMIN", "EDITOR", "SOCIAL"];
+export const CONTENIDO: Rol[] = ["ADMIN", "EDITOR"];
 const ADMIN: Rol[] = ["ADMIN"];
+// Edición y administración editan el contacto y las redes dentro de «Pie de página».
+const SOLO_SOCIAL: Rol[] = ["SOCIAL"];
 
-// El panel se ordena en cinco secciones. Un grupo de un solo enlace se muestra
+// El panel se ordena en secciones. Un grupo de un solo enlace se muestra
 // como enlace directo; los demás, con su título y su lista.
 export const MENU: GrupoMenu[] = [
   { titulo: "Resumen", items: [{ to: "/", texto: "Resumen", roles: TODOS, end: true }] },
   {
     titulo: "Contenido",
     items: [
-      { to: "/secciones", texto: "Secciones", roles: TODOS },
-      { to: "/noticias", texto: "Noticias", roles: TODOS },
-      { to: "/equipo", texto: "Equipo y colaboradores", roles: TODOS },
-      { to: "/identidad", texto: "Identidad visual", roles: TODOS },
-      { to: "/pie", texto: "Pie de página", roles: TODOS },
+      { to: "/secciones", texto: "Secciones", roles: CONTENIDO },
+      { to: "/noticias", texto: "Noticias", roles: CONTENIDO },
+      { to: "/equipo", texto: "Equipo y colaboradores", roles: CONTENIDO },
+      { to: "/identidad", texto: "Identidad visual", roles: CONTENIDO },
+      { to: "/pie", texto: "Pie de página", roles: CONTENIDO },
     ],
   },
   {
-    titulo: "CMS",
+    titulo: "Comunicación",
     items: [
-      { to: "/contacto", texto: "Mensajes", roles: ADMIN },
-      { to: "/beacons", texto: "Beacons", roles: ADMIN },
+      { to: "/contacto", texto: "Mensajes", roles: TODOS },
+      { to: "/redes", texto: "Contacto y redes", roles: SOLO_SOCIAL },
     ],
   },
+  { titulo: "CMS", items: [{ to: "/beacons", texto: "Beacons", roles: ADMIN }] },
   { titulo: "Usuarios", items: [{ to: "/usuarios", texto: "Usuarios", roles: ADMIN }] },
   { titulo: "Bitácora", items: [{ to: "/bitacora", texto: "Bitácora", roles: ADMIN }] },
 ];
@@ -68,7 +72,6 @@ function Navegacion() {
   const { data } = useQuery({
     queryKey: ["admin", "mensajes", "no-leidos"],
     queryFn: () => adminFetch<{ noLeidos: number }>("/messages?limit=1&noLeidos=true"),
-    enabled: tiene("ADMIN"),
     staleTime: 60_000,
   });
   const enlace = (m: ItemMenu) => (
@@ -162,9 +165,7 @@ function BarraSuperior({ onAbrirMenu }: { onAbrirMenu?: () => void }) {
           </span>
           <span className="perfil-chip__texto">
             <span className="perfil-chip__nombre">{usuario?.name}</span>
-            <span className="perfil-chip__rol">
-              {usuario?.role === "ADMIN" ? "Administración" : "Edición"}
-            </span>
+            <span className="perfil-chip__rol">{usuario && NOMBRE_ROL[usuario.role]}</span>
           </span>
           <span className="visually-hidden">: ver mi perfil</span>
         </Link>
@@ -239,8 +240,8 @@ function SinAcceso() {
         No tienes acceso a esta sección
       </h1>
       <p>
-        Esta parte del panel es solo para administración. Si necesitas cambiar algo aquí, pídeselo a
-        una persona administradora.
+        Tu rol no incluye esta parte del panel. Si necesitas cambiar algo aquí, pídeselo a una
+        persona administradora.
       </p>
       <p>
         <Link to="/" className="btn btn--primario">

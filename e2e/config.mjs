@@ -8,6 +8,7 @@ export const PANEL = `${BASE}/${ADMIN_PATH}`;
 export const CUENTAS = {
   admin: { email: "admin@e2e.test", clave: "Clave-E2E-Admin-2026" },
   editor: { email: "editor@e2e.test", clave: "Clave-E2E-Editor-2026" },
+  social: { email: "social@e2e.test", clave: "Clave-E2E-Social-2026" },
 };
 
 // Entorno del servidor de pruebas: base signal_test, ruta y secretos de prueba.
