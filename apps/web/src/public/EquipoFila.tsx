@@ -3,9 +3,10 @@ import { Img, Redes } from "./components";
 import type { Persona } from "./data";
 import { ajusteDentroDePantalla, useCardsEquipo, type CardAbierta } from "./useCardsEquipo";
 
-// El equipo en una fila (5 por fila en pantallas anchas). Cada persona es un botón
-// de divulgación: al apuntar con el mouse, o al activarlo con clic, toque o
-// teclado, despliega bajo ella una card con su información.
+// El equipo en el inicio: una fila de círculos (5 por fila en pantallas anchas).
+// Cada persona es un botón de divulgación: al apuntar con el mouse, el círculo
+// crece y se convierte en una card con su información. Con el teclado o un toque
+// (no hay hover en pantallas táctiles) se abre igual.
 
 export function EquipoFila({ personas }: { personas: Persona[] }) {
   const lista = useRef<HTMLUListElement>(null);
@@ -48,14 +49,19 @@ function Integrante({
   const card = useRef<HTMLDivElement>(null);
   const abierta = estado !== null;
 
-  // Al abrir, corre la card lo justo para que no se salga de la pantalla. Se
-  // escribe directo en el elemento: es solo posición y no necesita otro render.
+  // Al abrir, corre la card lo justo para que no se salga de la pantalla. Se mide
+  // con el ancho de layout y el centro de la persona: la card cerrada está
+  // escalada y su caja en pantalla no es la final. Se escribe directo en el
+  // elemento: es solo posición y no necesita otro render.
   useLayoutEffect(() => {
     const el = card.current;
-    if (!abierta || !el) return;
-    el.style.setProperty("--ajuste", "0px");
+    const li = zona.current;
+    if (!abierta || !el || !li) return;
+    const persona = li.getBoundingClientRect();
+    const centro = persona.left + persona.width / 2;
+    const mitad = el.offsetWidth / 2;
     const ajuste = ajusteDentroDePantalla(
-      el.getBoundingClientRect(),
+      { left: centro - mitad, right: centro + mitad },
       document.documentElement.clientWidth,
     );
     el.style.setProperty("--ajuste", `${ajuste}px`);
@@ -129,6 +135,15 @@ function Integrante({
         className="integrante__card"
         data-instantanea={estado?.instantanea || undefined}
       >
+        <span className="integrante__card-marco">
+          {p.photo ? (
+            <Img imagen={{ ...p.photo, alt: "" }} className="integrante__foto" />
+          ) : (
+            <span className="integrante__inicial" aria-hidden="true">
+              {p.name.trim().charAt(0).toUpperCase()}
+            </span>
+          )}
+        </span>
         <p className="integrante__card-nombre" aria-hidden="true">
           {p.name}
         </p>

@@ -13,6 +13,7 @@ import {
   type SlugPagina,
 } from "./data";
 import { EquipoFila } from "./EquipoFila";
+import { EquipoTarjetas } from "./EquipoTarjetas";
 
 // --- Tipos del contenido de cada sección (ver server/src/content/sections.ts) ---
 
@@ -286,7 +287,7 @@ function Equipo(p: PropsSeccion<Encabezado>) {
       ) : data.items.length === 0 ? (
         <EmptyState titulo="Pronto presentaremos al equipo" />
       ) : (
-        <EquipoFila personas={data.items} />
+        <EquipoTarjetas personas={data.items} />
       )}
     </>
   );

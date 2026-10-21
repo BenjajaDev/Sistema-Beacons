@@ -36,10 +36,30 @@ test.describe("landing pública", () => {
     });
   }
 
-  test("el equipo va en fila y la card se abre al apuntar, con teclado, y no se sale de la pantalla", async ({
+  test("Nosotros muestra las tarjetas grandes del equipo en una sola fila", async ({ page }) => {
+    await page.goto("/nosotros");
+    const tarjetas = page.locator(".persona");
+    await expect(tarjetas).toHaveCount(5);
+    const ys = await tarjetas.evaluateAll((els) => els.map((e) => e.getBoundingClientRect().top));
+    expect(Math.max(...ys) - Math.min(...ys)).toBeLessThan(2);
+    // En escritorio caben las cinco: la última se ve completa, sin desplazar.
+    const ultima = (await tarjetas.nth(4).boundingBox())!;
+    expect(ultima.x + ultima.width).toBeLessThanOrEqual(page.viewportSize()!.width);
+    await expect(page.getByRole("region", { name: /Integrantes del equipo/ })).toHaveCount(0);
+    await expect(page.getByRole("link", { name: "persona5@e2e.test" })).toBeVisible();
+
+    // A 320 px la fila se desplaza de lado dentro de su región, sin scroll en la página.
+    await page.setViewportSize({ width: 320, height: 720 });
+    await sinScrollHorizontal(page);
+    const region = page.getByRole("region", { name: /Integrantes del equipo/ });
+    await expect(region).toHaveAttribute("tabindex", "0");
+    await sinViolaciones(page, "/nosotros a 320 px");
+  });
+
+  test("en el inicio, el círculo de cada persona crece hasta ser una card al apuntar", async ({
     page,
   }) => {
-    await page.goto("/nosotros");
+    await page.goto("/");
     const primera = page.getByRole("button", { name: /^Ana Rojas/ });
     const ultima = page.getByRole("button", { name: /^Valentina Muñoz/ });
     // Cinco en una fila en pantalla ancha.
@@ -53,11 +73,14 @@ test.describe("landing pública", () => {
     const card = page.locator(`[id="${await ultima.getAttribute("aria-controls")}"]`);
     await expect(card).toBeVisible();
     await expect(card.getByRole("link", { name: "persona5@e2e.test" })).toBeVisible();
-    await sinViolaciones(page, "/nosotros con una card abierta");
+    // La card nace sobre el círculo: empieza a la misma altura que la persona.
+    const [cajaCard, cajaBoton] = [(await card.boundingBox())!, (await ultima.boundingBox())!];
+    expect(Math.abs(cajaCard.y - cajaBoton.y)).toBeLessThan(4);
+    await sinViolaciones(page, "/ con una card abierta");
     await page.keyboard.press("Escape");
     await expect(ultima).toHaveAttribute("aria-expanded", "false");
 
-    // A 320 px la card de la última persona se corre para no salirse.
+    // A 320 px, con el teclado, la card se corre para no salirse.
     await page.setViewportSize({ width: 320, height: 720 });
     await ultima.focus();
     await page.keyboard.press("Enter");
