@@ -1,5 +1,6 @@
 import type { Request } from "express";
 import { z } from "zod";
+import { resolveSectionImages } from "../../content/section-images.js";
 import { isSectionKey, SECTION_DEFINITIONS, sectionSchemas } from "../../content/sections.js";
 import { Prisma } from "../../generated/prisma/client.js";
 import type { Page } from "../../generated/prisma/enums.js";
@@ -114,7 +115,10 @@ export function sectionRoutes({ db, audit }: AdminDeps): AdminRoute[] {
             "Hay cambios de esta sección en revisión. Un administrador debe publicarlos o devolverlos antes de seguir editando.",
           );
         }
-        const content = parseOrThrow(sectionSchemas[key], req.body?.content);
+        const content = await resolveSectionImages(
+          db,
+          parseOrThrow(sectionSchemas[key], req.body?.content),
+        );
         await db.section.update({
           where: { key },
           data: {
@@ -188,8 +192,12 @@ export function sectionRoutes({ db, audit }: AdminDeps): AdminRoute[] {
         if (!seccion.draftStatus || seccion.draftContent === null) {
           throw new ApiError(409, "INVALID_STATE", "No hay cambios pendientes para publicar.");
         }
-        // Se vuelve a validar: el esquema pudo cambiar desde que se guardó el borrador.
-        const content = parseOrThrow(sectionSchemas[key], seccion.draftContent);
+        // Se vuelve a validar: el esquema pudo cambiar desde que se guardó el borrador,
+        // y una imagen pudo cambiar o borrarse de la biblioteca.
+        const content = await resolveSectionImages(
+          db,
+          parseOrThrow(sectionSchemas[key], seccion.draftContent),
+        );
         await db.section.update({
           where: { key },
           data: {

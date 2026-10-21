@@ -50,6 +50,36 @@ describe("secciones", () => {
     expect(new Set(vistos).size).toBe(vistos.length);
   });
 
+  it("una imagen exige texto alternativo, salvo que sea decorativa", () => {
+    const mediaId = "0e4f3c1a-5b7d-4a2e-9c8f-1d2b3a4c5e6f";
+    const conImagen = (imagen: object) =>
+      sectionSchemas.hero.safeParse({ ...SECTION_DEFINITIONS.hero.contenidoInicial, imagen });
+    const sinAlt = conImagen({ mediaId, alt: "  " });
+    expect(sinAlt.success).toBe(false);
+    expect(sinAlt.error?.issues[0]?.path).toEqual(["imagen", "alt"]);
+    expect(conImagen({ mediaId, alt: "", decorativa: true }).success).toBe(true);
+    expect(conImagen({ mediaId, alt: "Persona usando la app" }).success).toBe(true);
+    expect(conImagen({ mediaId: "no-es-uuid", alt: "x" }).success).toBe(false);
+  });
+
+  it("los pasos van de 1 a 6 y los botones de la portada son opcionales", () => {
+    const paso = { titulo: "Paso", texto: "Texto" };
+    const queEs = (n: number) =>
+      sectionSchemas["que-es"].safeParse({ titulo: "Qué es", pasos: Array(n).fill(paso) });
+    expect([0, 1, 6, 7].map((n) => queEs(n).success)).toEqual([false, true, true, false]);
+    const heroSinBotones: Record<string, unknown> = {
+      ...SECTION_DEFINITIONS.hero.contenidoInicial,
+    };
+    delete heroSinBotones.accionPrincipal;
+    delete heroSinBotones.accionSecundaria;
+    expect(sectionSchemas.hero.safeParse(heroSinBotones).success).toBe(true);
+  });
+
+  it("las secciones agregadas después nacen ocultas", () => {
+    expect(SECTION_DEFINITIONS["imagen-texto-inicio"].visibleInicial).toBe(false);
+    expect(SECTION_DEFINITIONS["imagen-texto-nosotros"].visibleInicial).toBe(false);
+  });
+
   it("rechaza enlaces javascript: en los botones", () => {
     const hero = {
       ...SECTION_DEFINITIONS.hero.contenidoInicial,

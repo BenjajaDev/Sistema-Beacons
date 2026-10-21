@@ -3,14 +3,16 @@ import { useId, type ComponentType, type ReactNode, type Ref } from "react";
 import { Link } from "react-router";
 import { mensajeDeError } from "@shared/api";
 import { Cargando, EmptyState, ErrorState, Reveal, Skeleton } from "@shared/ui/States";
-import { EnlaceEditable, Img, Redes, TarjetaNoticia, Titulo, type Nivel } from "./components";
+import { EnlaceEditable, Img, TarjetaNoticia, Titulo, type Nivel } from "./components";
 import {
   consultas,
   NOTICIAS_EN_INICIO,
   useTituloPagina,
+  type Imagen,
   type Seccion,
   type SlugPagina,
 } from "./data";
+import { EquipoFila } from "./EquipoFila";
 
 // --- Tipos del contenido de cada sección (ver server/src/content/sections.ts) ---
 
@@ -21,10 +23,12 @@ interface Enlace {
 interface Item {
   titulo: string;
   texto: string;
+  imagen?: Imagen;
 }
 interface Encabezado {
   titulo: string;
   intro?: string;
+  imagen?: Imagen;
 }
 
 interface PropsSeccion<C> {
@@ -42,6 +46,24 @@ function Accion({ enlace, variante }: { enlace: Enlace; variante: "primario" | "
   );
 }
 
+// Imagen de una sección. Si es la del primer bloque de la página (nivel 1) se
+// carga con prioridad: suele ser lo más grande de la primera pantalla (LCP).
+function ImagenSeccion({
+  imagen,
+  nivel,
+  className,
+}: {
+  imagen: Imagen;
+  nivel: Nivel;
+  className: string;
+}) {
+  return (
+    <figure className={className}>
+      <Img imagen={imagen} prioridad={nivel === 1} />
+    </figure>
+  );
+}
+
 function Cabecera({ contenido, nivel, refH1, idTitulo }: PropsSeccion<Encabezado>) {
   return (
     <div className="seccion__cabecera">
@@ -49,6 +71,9 @@ function Cabecera({ contenido, nivel, refH1, idTitulo }: PropsSeccion<Encabezado
         {contenido.titulo}
       </Titulo>
       {contenido.intro && <p className="seccion__intro">{contenido.intro}</p>}
+      {contenido.imagen && (
+        <ImagenSeccion imagen={contenido.imagen} nivel={nivel} className="seccion__imagen" />
+      )}
     </div>
   );
 }
@@ -60,11 +85,13 @@ function Hero(
     antetitulo?: string;
     titulo: string;
     bajada: string;
-    accionPrincipal: Enlace;
+    imagen?: Imagen;
+    accionPrincipal?: Enlace;
     accionSecundaria?: Enlace;
   }>,
 ) {
   const c = p.contenido;
+  const hayAcciones = c.accionPrincipal || c.accionSecundaria;
   return (
     <div className="hero">
       <div className="hero__texto">
@@ -73,12 +100,23 @@ function Hero(
           {c.titulo}
         </Titulo>
         <p className="hero__bajada">{c.bajada}</p>
-        <div className="hero__acciones">
-          <Accion enlace={c.accionPrincipal} variante="primario" />
-          {c.accionSecundaria && <Accion enlace={c.accionSecundaria} variante="secundario" />}
-        </div>
+        {hayAcciones && (
+          <div className="hero__acciones">
+            {c.accionPrincipal && <Accion enlace={c.accionPrincipal} variante="primario" />}
+            {c.accionSecundaria && (
+              <Accion
+                enlace={c.accionSecundaria}
+                variante={c.accionPrincipal ? "secundario" : "primario"}
+              />
+            )}
+          </div>
+        )}
       </div>
-      <SenalHero />
+      {c.imagen ? (
+        <ImagenSeccion imagen={c.imagen} nivel={p.nivel} className="hero__imagen" />
+      ) : (
+        <SenalHero />
+      )}
     </div>
   );
 }
@@ -102,13 +140,17 @@ function SenalHero() {
   );
 }
 
+// Columnas en pantallas anchas: hasta 3 en una fila; 4 pasos van de a 2.
+const columnasDePasos = (n: number) => (n <= 3 ? n : n === 4 ? 2 : 3);
+
 function Pasos(p: PropsSeccion<Encabezado & { pasos: Item[] }>) {
   return (
     <>
       <Cabecera {...p} />
-      <ol className="pasos">
+      <ol className="pasos" data-columnas={columnasDePasos(p.contenido.pasos.length)}>
         {p.contenido.pasos.map((paso, i) => (
           <li key={i} className="pasos__item">
+            {paso.imagen && <Img imagen={paso.imagen} className="item__imagen" />}
             <span className="pasos__numero" aria-hidden="true">
               {i + 1}
             </span>
@@ -128,6 +170,7 @@ function Tarjetas(p: PropsSeccion<Encabezado & { items: Item[] }>) {
       <ul className="tarjetas">
         {p.contenido.items.map((item, i) => (
           <li key={i} className="tarjeta">
+            {item.imagen && <Img imagen={item.imagen} className="item__imagen" />}
             <h3>{item.titulo}</h3>
             <p>{item.texto}</p>
           </li>
@@ -175,15 +218,57 @@ function NoticiasRecientes(p: PropsSeccion<Encabezado & { textoVerTodas: string 
   );
 }
 
-function QuienesSomos(p: PropsSeccion<{ titulo: string; cuerpo: { html: string } }>) {
+function QuienesSomos(
+  p: PropsSeccion<{ titulo: string; cuerpo: { html: string }; imagen?: Imagen }>,
+) {
+  const { imagen } = p.contenido;
   return (
-    <>
-      <Titulo nivel={p.nivel} refH1={p.refH1} id={p.idTitulo}>
-        {p.contenido.titulo}
-      </Titulo>
-      {/* HTML generado y saneado por el servidor (server/src/content/rich-text.ts). */}
-      <div className="prosa" dangerouslySetInnerHTML={{ __html: p.contenido.cuerpo.html }} />
-    </>
+    <div className={imagen ? "dos-columnas" : undefined}>
+      <div>
+        <Titulo nivel={p.nivel} refH1={p.refH1} id={p.idTitulo}>
+          {p.contenido.titulo}
+        </Titulo>
+        {/* HTML generado y saneado por el servidor (server/src/content/rich-text.ts). */}
+        <div className="prosa" dangerouslySetInnerHTML={{ __html: p.contenido.cuerpo.html }} />
+      </div>
+      {imagen && <ImagenSeccion imagen={imagen} nivel={p.nivel} className="bloque__imagen" />}
+    </div>
+  );
+}
+
+// Bloque de imagen y texto. Los párrafos se separan con una línea en blanco.
+function ImagenTexto(
+  p: PropsSeccion<{
+    titulo: string;
+    texto: string;
+    imagen?: Imagen;
+    posicion: "izquierda" | "derecha";
+    accion?: Enlace;
+  }>,
+) {
+  const c = p.contenido;
+  const parrafos = c.texto
+    .split(/\n\s*\n/)
+    .map((t) => t.trim())
+    .filter(Boolean);
+  return (
+    <div
+      className={c.imagen ? "dos-columnas" : undefined}
+      data-imagen={c.imagen ? c.posicion : undefined}
+    >
+      <div className="imagen-texto__texto">
+        <Titulo nivel={p.nivel} refH1={p.refH1} id={p.idTitulo}>
+          {c.titulo}
+        </Titulo>
+        {parrafos.map((t, i) => (
+          <p key={i} className="seccion__intro">
+            {t}
+          </p>
+        ))}
+        {c.accion && <Accion enlace={c.accion} variante="primario" />}
+      </div>
+      {c.imagen && <ImagenSeccion imagen={c.imagen} nivel={p.nivel} className="bloque__imagen" />}
+    </div>
   );
 }
 
@@ -201,25 +286,7 @@ function Equipo(p: PropsSeccion<Encabezado>) {
       ) : data.items.length === 0 ? (
         <EmptyState titulo="Pronto presentaremos al equipo" />
       ) : (
-        <ul className="personas">
-          {data.items.map((m) => (
-            <li key={m.name} className="persona">
-              <div className="persona__marco">
-                {m.photo ? (
-                  <Img imagen={m.photo} className="persona__foto" />
-                ) : (
-                  <span className="persona__inicial" aria-hidden="true">
-                    {m.name.trim().charAt(0).toUpperCase()}
-                  </span>
-                )}
-              </div>
-              <h3 className="persona__nombre">{m.name}</h3>
-              <p className="persona__cargo">{m.position}</p>
-              {m.bio && <p className="persona__bio">{m.bio}</p>}
-              <Redes redes={m.links} etiqueta={`Enlaces de ${m.name}`} variante="iconos" />
-            </li>
-          ))}
-        </ul>
+        <EquipoFila personas={data.items} />
       )}
     </>
   );
@@ -227,9 +294,13 @@ function Equipo(p: PropsSeccion<Encabezado>) {
 
 // Presenta al equipo en el inicio: texto, un botón a «Nosotros» y hasta cinco
 // fotos del equipo con su nombre (los datos llegan con el HTML inicial).
-function NosotrosInicio(p: PropsSeccion<{ titulo: string; texto: string; accion: Enlace }>) {
+// Con una imagen propia, la muestra en lugar de las fotos.
+function NosotrosInicio(
+  p: PropsSeccion<{ titulo: string; texto: string; imagen?: Imagen; accion?: Enlace }>,
+) {
   const { data } = useQuery(consultas.equipo());
-  const conFoto = (data?.items ?? []).filter((m) => m.photo).slice(0, 5);
+  const { imagen } = p.contenido;
+  const conFoto = imagen ? [] : (data?.items ?? []).filter((m) => m.photo).slice(0, 5);
   return (
     <div className="nosotros-inicio">
       <div className="nosotros-inicio__texto">
@@ -237,8 +308,9 @@ function NosotrosInicio(p: PropsSeccion<{ titulo: string; texto: string; accion:
           {p.contenido.titulo}
         </Titulo>
         <p className="seccion__intro">{p.contenido.texto}</p>
-        <Accion enlace={p.contenido.accion} variante="primario" />
+        {p.contenido.accion && <Accion enlace={p.contenido.accion} variante="primario" />}
       </div>
+      {imagen && <ImagenSeccion imagen={imagen} nivel={p.nivel} className="bloque__imagen" />}
       {conFoto.length > 0 && (
         <ul className="nosotros-inicio__fotos" aria-label="Parte del equipo">
           {conFoto.map((m) => (
@@ -309,6 +381,8 @@ export const RENDERIZADORES: Record<string, ComponentType<PropsSeccion<never>>> 
   colaboradores: Colaboradores as ComponentType<PropsSeccion<never>>,
   noticias: Cabecera as ComponentType<PropsSeccion<never>>,
   contacto: Cabecera as ComponentType<PropsSeccion<never>>,
+  "imagen-texto-inicio": ImagenTexto as ComponentType<PropsSeccion<never>>,
+  "imagen-texto-nosotros": ImagenTexto as ComponentType<PropsSeccion<never>>,
 };
 
 function BloqueSeccion({

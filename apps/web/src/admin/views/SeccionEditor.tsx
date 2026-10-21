@@ -15,7 +15,13 @@ import "../../public/landing.css";
 import { adminFetch, type Seccion } from "../api";
 import { useAuth } from "../auth";
 import { RichTextEditor } from "../editor/RichTextEditor";
-import { AvisoCambiosSinGuardar, Cabecera, formatoFecha, usePanelPage } from "../ui";
+import {
+  AvisoCambiosSinGuardar,
+  Cabecera,
+  formatoFecha,
+  SelectorImagen,
+  usePanelPage,
+} from "../ui";
 import { estadoSeccion } from "./Secciones";
 
 // --- Descripción de los campos de cada sección (espejo de server/src/content/sections.ts) ---
@@ -31,8 +37,34 @@ type Campo =
       ayuda?: string;
     }
   | { tipo: "enlace"; clave: string; etiqueta: string; opcional?: boolean }
-  | { tipo: "lista"; clave: string; etiqueta: string; elemento: string; min: number; max: number }
-  | { tipo: "rico"; clave: string; etiqueta: string };
+  | {
+      tipo: "lista";
+      clave: string;
+      etiqueta: string;
+      elemento: string;
+      min: number;
+      max: number;
+      // Cada elemento acepta una imagen opcional.
+      conImagen?: boolean;
+    }
+  | { tipo: "rico"; clave: string; etiqueta: string }
+  | { tipo: "imagen"; clave: string; etiqueta: string; marco: Marco }
+  | {
+      tipo: "opciones";
+      clave: string;
+      etiqueta: string;
+      opciones: { valor: string; texto: string }[];
+    };
+
+// Proporción en que la landing muestra la imagen (ver landing.css). Si la imagen
+// no calza, el selector ofrece encuadrarla.
+interface Marco {
+  proporcion: number;
+  nombre: string;
+}
+const HORIZONTAL: Marco = { proporcion: 16 / 9, nombre: "horizontal (16:9)" };
+const CUATRO_TERCIOS: Marco = { proporcion: 4 / 3, nombre: "4:3" };
+const TRES_MEDIOS: Marco = { proporcion: 3 / 2, nombre: "3:2" };
 
 const titulo: Campo = { tipo: "texto", clave: "titulo", etiqueta: "Título", max: 120 };
 const intro: Campo = {
@@ -43,6 +75,40 @@ const intro: Campo = {
   opcional: true,
   multilinea: true,
 };
+const imagenEncabezado: Campo = {
+  tipo: "imagen",
+  clave: "imagen",
+  etiqueta: "Imagen bajo la introducción (opcional)",
+  marco: HORIZONTAL,
+};
+const imagenAlLado: Campo = {
+  tipo: "imagen",
+  clave: "imagen",
+  etiqueta: "Imagen (opcional)",
+  marco: CUATRO_TERCIOS,
+};
+const camposImagenTexto: Campo[] = [
+  titulo,
+  {
+    tipo: "texto",
+    clave: "texto",
+    etiqueta: "Texto",
+    max: 1200,
+    multilinea: true,
+    ayuda: "Separa los párrafos con una línea en blanco.",
+  },
+  imagenAlLado,
+  {
+    tipo: "opciones",
+    clave: "posicion",
+    etiqueta: "Lado de la imagen en pantallas anchas",
+    opciones: [
+      { valor: "izquierda", texto: "Izquierda" },
+      { valor: "derecha", texto: "Derecha" },
+    ],
+  },
+  { tipo: "enlace", clave: "accion", etiqueta: "Botón", opcional: true },
+];
 
 const CAMPOS: Record<string, Campo[]> = {
   hero: [
@@ -56,22 +122,47 @@ const CAMPOS: Record<string, Campo[]> = {
     },
     titulo,
     { tipo: "texto", clave: "bajada", etiqueta: "Bajada", max: 300, multilinea: true },
-    { tipo: "enlace", clave: "accionPrincipal", etiqueta: "Botón principal" },
+    {
+      tipo: "imagen",
+      clave: "imagen",
+      etiqueta: "Imagen de la portada (opcional; sin ella se muestran las ondas de la señal)",
+      marco: CUATRO_TERCIOS,
+    },
+    { tipo: "enlace", clave: "accionPrincipal", etiqueta: "Botón principal", opcional: true },
     { tipo: "enlace", clave: "accionSecundaria", etiqueta: "Botón secundario", opcional: true },
   ],
   "que-es": [
     titulo,
     intro,
-    { tipo: "lista", clave: "pasos", etiqueta: "Pasos", elemento: "Paso", min: 3, max: 3 },
+    imagenEncabezado,
+    {
+      tipo: "lista",
+      clave: "pasos",
+      etiqueta: "Pasos",
+      elemento: "Paso",
+      min: 1,
+      max: 6,
+      conImagen: true,
+    },
   ],
   objetivos: [
     titulo,
     intro,
-    { tipo: "lista", clave: "items", etiqueta: "Objetivos", elemento: "Objetivo", min: 1, max: 8 },
+    imagenEncabezado,
+    {
+      tipo: "lista",
+      clave: "items",
+      etiqueta: "Objetivos",
+      elemento: "Objetivo",
+      min: 1,
+      max: 8,
+      conImagen: true,
+    },
   ],
   proyecciones: [
     titulo,
     intro,
+    imagenEncabezado,
     {
       tipo: "lista",
       clave: "items",
@@ -79,6 +170,7 @@ const CAMPOS: Record<string, Campo[]> = {
       elemento: "Proyección",
       min: 1,
       max: 8,
+      conImagen: true,
     },
   ],
   "nosotros-inicio": [
@@ -89,22 +181,31 @@ const CAMPOS: Record<string, Campo[]> = {
       etiqueta: "Texto",
       max: 600,
       multilinea: true,
-      ayuda: "Presenta al equipo en pocas líneas. Al lado se muestran las fotos del equipo.",
+      ayuda:
+        "Presenta al equipo en pocas líneas. Al lado se muestran las fotos del equipo, salvo que elijas una imagen.",
     },
-    { tipo: "enlace", clave: "accion", etiqueta: "Botón" },
+    {
+      tipo: "imagen",
+      clave: "imagen",
+      etiqueta: "Imagen en lugar de las fotos del equipo (opcional)",
+      marco: CUATRO_TERCIOS,
+    },
+    { tipo: "enlace", clave: "accion", etiqueta: "Botón", opcional: true },
   ],
   "noticias-recientes": [
     titulo,
     intro,
+    imagenEncabezado,
     { tipo: "texto", clave: "textoVerTodas", etiqueta: "Texto del enlace «ver todas»", max: 40 },
   ],
-  "quienes-somos": [titulo, { tipo: "rico", clave: "cuerpo", etiqueta: "Texto" }],
-  equipo: [titulo, intro],
-  colaboradores: [titulo, intro],
-  noticias: [titulo, intro],
+  "quienes-somos": [titulo, { tipo: "rico", clave: "cuerpo", etiqueta: "Texto" }, imagenAlLado],
+  equipo: [titulo, intro, imagenEncabezado],
+  colaboradores: [titulo, intro, imagenEncabezado],
+  noticias: [titulo, intro, imagenEncabezado],
   contacto: [
     titulo,
     intro,
+    imagenEncabezado,
     { tipo: "texto", clave: "formularioTitulo", etiqueta: "Título del formulario", max: 80 },
     {
       tipo: "texto",
@@ -115,10 +216,32 @@ const CAMPOS: Record<string, Campo[]> = {
       ayuda: "Lo que lee la persona después de enviar el formulario.",
     },
   ],
+  "imagen-texto-inicio": camposImagenTexto,
+  "imagen-texto-nosotros": camposImagenTexto,
 };
 
 type Contenido = Record<string, unknown>;
-type Item = { titulo: string; texto: string };
+// Imagen tal como la guarda el servidor (server/src/content/section-images.ts).
+interface ImagenValor {
+  mediaId: string;
+  url: string;
+  alt: string;
+  decorativa: boolean;
+  width?: number | null;
+  height?: number | null;
+}
+type Item = { titulo: string; texto: string; imagen?: ImagenValor };
+
+// En la vista previa, una imagen decorativa se muestra con alt vacío, como en el sitio.
+function paraVista(valor: unknown): unknown {
+  if (Array.isArray(valor)) return valor.map(paraVista);
+  if (valor && typeof valor === "object") {
+    const obj = valor as Record<string, unknown>;
+    if (typeof obj.mediaId === "string") return { ...obj, alt: obj.decorativa ? "" : obj.alt };
+    return Object.fromEntries(Object.entries(obj).map(([k, v]) => [k, paraVista(v)]));
+  }
+  return valor;
+}
 type EnlaceValor = { texto: string; href: string };
 
 const idDe = (ruta: string) => `campo-${ruta.replaceAll(".", "-")}`;
@@ -247,10 +370,11 @@ function Editor({ seccion }: { seccion: Seccion }) {
   // Vista previa con el mismo componente que usa la landing.
   const Vista = RENDERIZADORES[seccion.key];
   const contenidoVista = useMemo(() => {
-    if (seccion.key !== "quienes-somos") return contenido;
+    const vista = paraVista(contenido) as Contenido;
+    if (seccion.key !== "quienes-somos") return vista;
     const cuerpo = contenido.cuerpo as { json?: unknown } | undefined;
     const doc = docSchema.safeParse(cuerpo?.json);
-    return { ...contenido, cuerpo: { html: doc.success ? renderDoc(doc.data) : "" } };
+    return { ...vista, cuerpo: { html: doc.success ? renderDoc(doc.data) : "" } };
   }, [contenido, seccion.key]);
 
   const esAutora = seccion.draftAuthor?.id === usuario?.id;
@@ -449,6 +573,38 @@ function CampoSeccion({
     };
     return campo.multilinea ? <TextArea {...props} rows={3} /> : <TextField {...props} />;
   }
+  if (campo.tipo === "imagen") {
+    return (
+      <CampoImagen
+        ruta={campo.clave}
+        etiqueta={campo.etiqueta}
+        marco={campo.marco}
+        valor={valor as ImagenValor | undefined}
+        onCambiar={onCambiar}
+        errores={errores}
+      />
+    );
+  }
+  if (campo.tipo === "opciones") {
+    const actual = (valor as string | undefined) ?? campo.opciones[0]?.valor;
+    return (
+      <fieldset className="grupo-campos">
+        <legend>{campo.etiqueta}</legend>
+        {campo.opciones.map((o) => (
+          <label key={o.valor} className="casilla">
+            <input
+              type="radio"
+              name={id}
+              value={o.valor}
+              checked={actual === o.valor}
+              onChange={() => onCambiar(o.valor)}
+            />
+            {o.texto}
+          </label>
+        ))}
+      </fieldset>
+    );
+  }
   if (campo.tipo === "enlace") {
     const v = valor as EnlaceValor | undefined;
     return (
@@ -528,6 +684,18 @@ function CampoSeccion({
                   error={errores[`${id}-${i}-texto`]}
                   onChange={(e) => cambiarItem(i, { texto: e.target.value })}
                 />
+                {campo.conImagen && (
+                  <CampoImagen
+                    ruta={`${campo.clave}.${i}.imagen`}
+                    etiqueta={`Imagen del ${campo.elemento.toLowerCase()} ${i + 1} (opcional)`}
+                    marco={TRES_MEDIOS}
+                    valor={it.imagen}
+                    onCambiar={(imagen) =>
+                      cambiarItem(i, { imagen: imagen as ImagenValor | undefined })
+                    }
+                    errores={errores}
+                  />
+                )}
                 {!soloLectura && (
                   <div className="fila-botones">
                     <IconButton
@@ -578,6 +746,57 @@ function CampoSeccion({
       onCambiar={(json) => onCambiar({ json })}
       error={errores[idDe(`${campo.clave}.json`)] ?? errores[id]}
       soloLectura={soloLectura}
+    />
+  );
+}
+
+// Imagen de una sección: se sube o se elige de la biblioteca, con su texto
+// alternativo o marcada como decorativa. El servidor completa su URL y tamaño.
+function CampoImagen({
+  ruta,
+  etiqueta,
+  marco,
+  valor,
+  onCambiar,
+  errores,
+}: {
+  ruta: string;
+  etiqueta: string;
+  marco: Marco;
+  valor: ImagenValor | undefined;
+  onCambiar: (v: ImagenValor | undefined) => void;
+  errores: Record<string, string>;
+}) {
+  const idAlt = idDe(`${ruta}.alt`);
+  const idBoton = idDe(`${ruta}.mediaId`);
+  return (
+    <SelectorImagen
+      etiqueta={etiqueta}
+      marco={marco}
+      imagen={valor ? { id: valor.mediaId, url: valor.url } : null}
+      alt={valor?.alt ?? ""}
+      onCambiar={(img, alt) =>
+        onCambiar(
+          img
+            ? {
+                mediaId: img.id,
+                url: img.url,
+                alt,
+                decorativa: valor?.mediaId === img.id ? valor.decorativa : false,
+              }
+            : undefined,
+        )
+      }
+      decorativa={
+        valor && {
+          valor: valor.decorativa,
+          onCambiar: (decorativa) => onCambiar({ ...valor, decorativa }),
+        }
+      }
+      idAlt={idAlt}
+      idBoton={idBoton}
+      errorAlt={errores[idAlt]}
+      errorImagen={errores[idBoton]}
     />
   );
 }

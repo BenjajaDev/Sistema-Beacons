@@ -179,7 +179,14 @@ Las vistas de administración muestran «sin acceso» si un editor entra por URL
 - **Revisión de accesibilidad** en cada nota: lo que impide publicar y las recomendaciones. La vista previa usa los mismos componentes que la landing.
 - **Identidad visual:** paleta clara y oscura con verificación de contraste WCAG en vivo y vista previa de ambos temas. Una paleta que no cumple no se guarda.
 - **Pie de página:** descripción, hasta 3 columnas de enlaces, qué bloques se muestran (contacto, redes, accesibilidad), texto legal, y los datos de contacto y redes. Cada red se muestra con su ícono (Instagram, Facebook, X, LinkedIn, YouTube, TikTok, WhatsApp, GitHub, Telegram; el resto, uno de web).
-- **Encuadre de imágenes:** la foto del equipo (cuadrada) y la portada de las noticias (16:9) se pueden encuadrar en su marco. Se abre sola si la imagen no calza; se arrastra o se ajusta con controles deslizantes (alternativa sin arrastre, WCAG 2.5.7). El servidor recorta con `sharp` y crea una imagen nueva: la original queda en la biblioteca.
+- **Imágenes en las secciones:**
+  - portada, encabezados de sección, cada paso, objetivo y proyección, «Quiénes somos», «Nosotros» del inicio y los bloques **Imagen y texto** (uno en Inicio y otro en Nosotros, nacen ocultos);
+  - cada imagen exige texto alternativo o se marca como decorativa;
+  - el servidor guarda la URL y el tamaño leídos de la biblioteca (`server/src/content/section-images.ts`), así una imagen usada en una sección, aunque sea en un borrador, no se puede borrar;
+  - las listas son flexibles: de 1 a 6 pasos, y los botones de la portada y de «Nosotros» son opcionales;
+  - una sección nueva del catálogo se crea sola, oculta, al arrancar el servidor sobre una base existente.
+- **Equipo:** cada persona tiene área, formación y un correo público opcionales. En la landing se muestran en fila (5 por fila en pantallas anchas). La card de cada persona se abre al apuntar con el mouse, o con clic, toque o teclado, y se cierra con Escape (WCAG 1.4.13).
+- **Encuadre de imágenes:** la foto del equipo (cuadrada), la portada de las noticias (16:9) y las imágenes de las secciones (en la proporción de su marco) se pueden encuadrar. Se abre sola si la imagen no calza; se arrastra o se ajusta con controles deslizantes (alternativa sin arrastre, WCAG 2.5.7). El servidor recorta con `sharp` y crea una imagen nueva: la original queda en la biblioteca.
 - **Beacons:** el CMS anterior integrado como módulo, con fichas completas e incompletas, conteo por ubicación, búsqueda, cambio de major/minor en un solo paso y botón para escuchar la descripción como la leerá la app.
 - **Usuarios:** cuentas con contraseña temporal que se muestra una sola vez; desactivar o restablecer la contraseña cierra las sesiones de esa persona. Solo administración gestiona cuentas. Eliminar se permite si la cuenta no tiene noticias, borradores, imágenes ni beacons a su nombre (si los tiene, se desactiva para conservar la autoría), nunca la propia ni la última administradora.
 

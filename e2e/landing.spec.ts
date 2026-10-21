@@ -36,6 +36,38 @@ test.describe("landing pública", () => {
     });
   }
 
+  test("el equipo va en fila y la card se abre al apuntar, con teclado, y no se sale de la pantalla", async ({
+    page,
+  }) => {
+    await page.goto("/nosotros");
+    const primera = page.getByRole("button", { name: /^Ana Rojas/ });
+    const ultima = page.getByRole("button", { name: /^Valentina Muñoz/ });
+    // Cinco en una fila en pantalla ancha.
+    const [y1, y5] = await Promise.all(
+      [primera, ultima].map(async (b) => (await b.boundingBox())!.y),
+    );
+    expect(Math.abs(y1! - y5!)).toBeLessThan(2);
+
+    await ultima.hover();
+    await expect(ultima).toHaveAttribute("aria-expanded", "true");
+    const card = page.locator(`[id="${await ultima.getAttribute("aria-controls")}"]`);
+    await expect(card).toBeVisible();
+    await expect(card.getByRole("link", { name: "persona5@e2e.test" })).toBeVisible();
+    await sinViolaciones(page, "/nosotros con una card abierta");
+    await page.keyboard.press("Escape");
+    await expect(ultima).toHaveAttribute("aria-expanded", "false");
+
+    // A 320 px la card de la última persona se corre para no salirse.
+    await page.setViewportSize({ width: 320, height: 720 });
+    await ultima.focus();
+    await page.keyboard.press("Enter");
+    await expect(card).toBeVisible();
+    const caja = (await card.boundingBox())!;
+    expect(caja.x).toBeGreaterThanOrEqual(0);
+    expect(caja.x + caja.width).toBeLessThanOrEqual(320);
+    await sinScrollHorizontal(page);
+  });
+
   test("el enlace «Saltar al contenido» es lo primero y lleva al contenido", async ({ page }) => {
     await page.goto("/");
     await page.keyboard.press("Tab");

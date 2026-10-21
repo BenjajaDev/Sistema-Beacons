@@ -197,6 +197,9 @@ export function SelectorImagen({
   ayudaAlt = "Describe lo que muestra la imagen, como se lo contarías a alguien por teléfono. Ejemplo: «Persona con bastón usando la app frente a una puerta».",
   sinAlt = false,
   marco,
+  decorativa,
+  idAlt,
+  idBoton,
 }: {
   etiqueta: string;
   imagen: ImagenElegida | null;
@@ -210,6 +213,12 @@ export function SelectorImagen({
   // Marco en que se muestra la imagen en el sitio. Si la imagen no calza, se ofrece
   // encuadrarla (recortarla) con esa proporción.
   marco?: { proporcion: number; nombre: string };
+  // Permite marcarla como decorativa (sin texto alternativo, el lector la omite).
+  decorativa?: { valor: boolean; onCambiar: (valor: boolean) => void };
+  // Ids del texto alternativo y del botón «Subir imagen», para que el resumen de
+  // errores lleve el foco al campo correcto.
+  idAlt?: string;
+  idBoton?: string;
 }) {
   const id = useId();
   const archivo = useRef<HTMLInputElement>(null);
@@ -273,6 +282,7 @@ export function SelectorImagen({
           onChange={(e) => e.target.files?.[0] && subir(e.target.files[0])}
         />
         <Button
+          id={idBoton}
           variante="secundario"
           cargando={subiendo}
           textoCargando="Subiendo…"
@@ -303,8 +313,19 @@ export function SelectorImagen({
         JPG, PNG, WebP o AVIF. Se quitan los datos de ubicación de las fotos.
         {marco && ` En el sitio se muestra en un marco ${marco.nombre}.`}
       </p>
-      {imagen && !sinAlt && (
+      {imagen && decorativa && (
+        <label className="casilla">
+          <input
+            type="checkbox"
+            checked={decorativa.valor}
+            onChange={(e) => decorativa.onCambiar(e.target.checked)}
+          />
+          Es decorativa: no aporta información y el lector de pantalla la omite
+        </label>
+      )}
+      {imagen && !sinAlt && !decorativa?.valor && (
         <TextArea
+          id={idAlt}
           label="Texto alternativo"
           ayuda={ayudaAlt}
           value={alt}

@@ -314,7 +314,6 @@ main:focus {
 .pasos,
 .tarjetas,
 .rejilla-noticias,
-.personas,
 .colaboradores {
   display: grid;
   gap: var(--space-5);
@@ -322,8 +321,12 @@ main:focus {
   padding: 0;
   list-style: none;
 }
+/* De 1 a 6 pasos: data-columnas lo calcula el componente (4 pasos van de a 2). */
 @media (min-width: 48rem) {
-  .pasos {
+  .pasos[data-columnas="2"] {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  .pasos[data-columnas="3"] {
     grid-template-columns: repeat(3, 1fr);
   }
 }
@@ -338,7 +341,12 @@ main:focus {
     transform var(--dur) var(--curva);
 }
 @media (min-width: 48rem) {
-  /* El tramo de recorrido hacia el siguiente paso. */
+  /* El tramo de recorrido hacia el siguiente paso, solo dentro de la misma fila. */
+  .pasos[data-columnas="1"] .pasos__item::after,
+  .pasos[data-columnas="2"] .pasos__item:nth-child(2n)::after,
+  .pasos[data-columnas="3"] .pasos__item:nth-child(3n)::after {
+    display: none;
+  }
   .pasos__item:not(:last-child)::after {
     content: "";
     position: absolute;
@@ -705,66 +713,200 @@ main:focus {
   border-top: 1px solid var(--color-border);
 }
 
-/* --- Nosotros: tarjetas de persona con la foto en su marco cuadrado --- */
+/* --- Equipo: la fila de personas y su card desplegable ---
+   Cada persona es un botón; su card cae bajo ella (useCardsEquipo.ts). Cerrada,
+   la card queda con visibility: hidden: fuera del orden de tabulación y del
+   lector de pantalla, pero medible para ajustarla a los bordes. */
 
-.personas {
-  grid-template-columns: repeat(auto-fill, minmax(min(100%, 16rem), 1fr));
+/* Las cards cerradas siguen en el layout (para medirlas) y no deben agregar scroll
+   horizontal; clip no crea un contenedor con scroll ni corta la card abierta, que
+   ya se ajusta dentro de la pantalla. */
+.seccion--equipo {
+  overflow-x: clip;
 }
-.persona {
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-lg);
-  background: var(--color-surface);
-  transition:
-    border-color var(--dur) ease,
-    transform var(--dur) var(--curva);
+.equipo {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-6) var(--space-4);
+  margin: 0;
+  padding: 0;
+  list-style: none;
 }
-.persona > :not(.persona__marco) {
-  margin-inline: var(--space-5);
+@media (min-width: 36rem) {
+  .equipo {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
 }
-.persona > :last-child {
-  margin-bottom: var(--space-5);
+@media (min-width: 56rem) {
+  .equipo {
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+  }
 }
-/* La foto llena un marco cuadrado (object-fit), así una foto vertical u
-   horizontal no deforma la tarjeta. El panel ofrece encuadrarla. */
-.persona__marco {
+.integrante {
   position: relative;
-  overflow: hidden;
-  aspect-ratio: 1 / 1;
-  margin-bottom: var(--space-4);
-  background: color-mix(in srgb, var(--color-primary) 10%, var(--color-surface));
 }
-.persona__foto {
+.integrante[data-abierta] {
+  z-index: 2;
+}
+.integrante__titulo {
+  margin: 0;
+  font-size: inherit;
+}
+.integrante__boton {
+  display: grid;
+  justify-items: center;
+  gap: var(--space-1);
+  width: 100%;
+  min-height: var(--target);
+  padding: var(--space-2);
+  border: 0;
+  border-radius: var(--radius-lg);
+  background: none;
+  text-align: center;
+  cursor: pointer;
+  transition: transform var(--dur-rapida) var(--curva);
+}
+.integrante__boton:active {
+  transform: scale(0.97);
+}
+/* Foto redonda con el anillo de la señal: se enciende al abrir la card. */
+.integrante__marco {
+  display: block;
+  overflow: hidden;
+  width: min(100%, 8.5rem);
+  aspect-ratio: 1 / 1;
+  margin-bottom: var(--space-2);
+  border: 3px solid var(--color-surface);
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--color-primary) 10%, var(--color-surface));
+  box-shadow: 0 0 0 2px var(--color-border);
+}
+.integrante[data-abierta] .integrante__marco,
+.integrante__boton:hover .integrante__marco {
+  box-shadow:
+    0 0 0 3px var(--color-primary),
+    0 0 0 0.6rem color-mix(in srgb, var(--color-primary) 16%, transparent);
+}
+.integrante__foto {
   width: 100%;
   height: 100%;
   object-fit: cover;
   transition: transform var(--dur-lenta) var(--curva);
 }
 /* Sin foto: la inicial sobre las ondas de la señal. */
-.persona__inicial {
+.integrante__inicial {
   display: grid;
   place-items: center;
   height: 100%;
   background: repeating-radial-gradient(
     circle at 50% 50%,
-    transparent 0 1.6rem,
-    color-mix(in srgb, var(--color-primary) 16%, transparent) 1.6rem 1.75rem
+    transparent 0 1.2rem,
+    color-mix(in srgb, var(--color-primary) 16%, transparent) 1.2rem 1.32rem
   );
   color: var(--color-primary);
   font-family: var(--font-heading);
-  font-size: 3.5rem;
+  font-size: 2.75rem;
   font-weight: 800;
 }
-.persona__nombre {
-  margin-bottom: var(--space-1);
+.integrante__nombre {
+  font-family: var(--font-heading);
   font-size: var(--text-lg);
+  font-weight: var(--peso-fuerte);
+  line-height: var(--leading-tight);
 }
-.persona__cargo {
-  justify-self: start;
-  align-self: flex-start;
-  margin-bottom: var(--space-3);
+.integrante__cargo {
+  color: var(--color-text-muted);
+  font-size: var(--text-sm);
+}
+@media (hover: hover) and (pointer: fine) and (prefers-reduced-motion: no-preference) {
+  .integrante__boton:hover .integrante__foto {
+    transform: scale(1.06);
+  }
+}
+
+.integrante__card {
+  position: absolute;
+  top: calc(100% + var(--space-3));
+  left: 50%;
+  width: min(20rem, calc(100vw - 2rem));
+  padding: var(--space-5);
+  border: 1px solid var(--color-border);
+  border-top: 3px solid var(--color-primary);
+  border-radius: var(--radius-lg);
+  background: var(--color-surface);
+  box-shadow: var(--sombra-alta);
+  text-align: start;
+  translate: calc(-50% + var(--ajuste, 0px)) 0;
+  transform-origin: calc(50% - var(--ajuste, 0px)) 0;
+  visibility: hidden;
+  opacity: 0;
+  /* Salida más rápida que la entrada; visibility cambia al terminar. */
+  transition:
+    opacity var(--dur-rapida) var(--curva),
+    transform var(--dur-rapida) var(--curva),
+    visibility 0s linear var(--dur-rapida);
+}
+/* Puente invisible sobre el espacio entre la persona y su card: el puntero
+   puede bajar a la card sin que se cierre. */
+.integrante__card::before {
+  content: "";
+  position: absolute;
+  inset: calc(-1 * var(--space-3) - 3px) 0 auto;
+  height: var(--space-3);
+}
+/* Flecha hacia la persona, que sigue apuntándola aunque la card se corra. */
+.integrante__card::after {
+  content: "";
+  position: absolute;
+  top: calc(-0.5rem - 2px);
+  left: calc(50% - var(--ajuste, 0px));
+  width: 0.9rem;
+  height: 0.9rem;
+  border-top: 3px solid var(--color-primary);
+  border-left: 3px solid var(--color-primary);
+  background: var(--color-surface);
+  translate: -50% 0;
+  rotate: 45deg;
+}
+.integrante[data-abierta] .integrante__card {
+  visibility: visible;
+  opacity: 1;
+  transition:
+    opacity var(--dur) var(--curva),
+    transform var(--dur) var(--curva),
+    visibility 0s;
+}
+.integrante__card[data-instantanea] {
+  transition-duration: 0s;
+  transition-delay: 0s;
+}
+@media (prefers-reduced-motion: no-preference) {
+  .integrante__card {
+    transform: translateY(-0.25rem) scale(0.98);
+  }
+  .integrante[data-abierta] .integrante__card {
+    transform: none;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .integrante__card {
+    transition-delay: 0s;
+  }
+}
+.integrante__card > * {
+  margin: 0;
+}
+.integrante__card > * + * {
+  margin-top: var(--space-2);
+}
+.integrante__card-nombre {
+  font-family: var(--font-heading);
+  font-size: var(--text-lg);
+  font-weight: var(--peso-fuerte);
+  line-height: var(--leading-tight);
+}
+.integrante__card-cargo {
+  display: inline-block;
   padding: var(--space-1) var(--space-3);
   border-radius: var(--radius-pill);
   background: color-mix(in srgb, var(--color-primary) 10%, transparent);
@@ -772,19 +914,81 @@ main:focus {
   font-size: var(--text-sm);
   font-weight: var(--peso-fuerte);
 }
-.persona__bio {
+.integrante__detalle {
+  font-size: var(--text-sm);
+  font-weight: var(--peso-medio);
+}
+.integrante__bio {
   color: var(--color-text-muted);
 }
-.persona:hover {
-  border-color: var(--color-primary);
+.integrante__correo {
+  overflow-wrap: anywhere;
 }
-@media (hover: hover) and (pointer: fine) and (prefers-reduced-motion: no-preference) {
-  .persona:hover {
-    transform: translateY(-4px);
+.integrante__card .redes {
+  margin-top: var(--space-3);
+}
+
+/* --- Imágenes de las secciones --- */
+
+.seccion__imagen,
+.bloque__imagen,
+.hero__imagen {
+  margin: 0;
+}
+.seccion__imagen img,
+.bloque__imagen img,
+.hero__imagen img,
+.item__imagen {
+  display: block;
+  width: 100%;
+  height: auto;
+  border-radius: var(--radius-lg);
+  object-fit: cover;
+}
+.seccion__imagen {
+  max-width: none;
+  margin-top: var(--space-5);
+}
+.seccion__cabecera:has(.seccion__imagen) {
+  max-width: none;
+}
+.seccion__cabecera:has(.seccion__imagen) .seccion__intro {
+  max-width: var(--medida);
+}
+.seccion__imagen img {
+  aspect-ratio: 16 / 9;
+  max-height: 28rem;
+}
+.hero__imagen img {
+  aspect-ratio: 4 / 3;
+  box-shadow: var(--sombra-alta);
+}
+.bloque__imagen img {
+  aspect-ratio: 4 / 3;
+}
+.item__imagen {
+  aspect-ratio: 3 / 2;
+  margin-bottom: var(--space-4);
+  border-radius: var(--radius);
+}
+
+/* Texto e imagen lado a lado en pantallas anchas; la imagen debajo en las angostas. */
+.dos-columnas {
+  display: grid;
+  gap: var(--space-6);
+  align-items: center;
+}
+@media (min-width: 56rem) {
+  .dos-columnas {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
   }
-  .persona:hover .persona__foto {
-    transform: scale(1.06);
+  /* Solo cambia el orden visual: el texto sigue antes en el DOM y en la lectura. */
+  .dos-columnas[data-imagen="izquierda"] .bloque__imagen {
+    order: -1;
   }
+}
+.imagen-texto__texto .btn {
+  margin-top: var(--space-3);
 }
 
 .colaboradores {

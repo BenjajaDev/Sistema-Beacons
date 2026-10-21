@@ -4,6 +4,7 @@ import { createPrisma } from "./lib/prisma.js";
 import { createApp } from "./app.js";
 import { prismaBeaconReader, snapshotBeaconReader } from "./beacons/store.js";
 import { writeBeaconSnapshot } from "./beacons/snapshot.js";
+import { createMissingSections } from "./content/section-catalog.js";
 import { createBackup } from "./services/backup.js";
 
 const env = loadServerEnv();
@@ -21,6 +22,14 @@ const app = createApp({
     await db.$queryRaw`SELECT 1`;
   },
 });
+
+// Crea las secciones nuevas del catálogo (ocultas) en una base existente.
+try {
+  const creadas = await createMissingSections(db);
+  if (creadas.length) logger.info({ creadas }, "Secciones nuevas del catálogo creadas");
+} catch (err) {
+  logger.warn({ err }, "No se pudieron revisar las secciones del catálogo");
+}
 
 // Refresca el snapshot al arrancar. Si la base no responde, se conserva el último.
 try {

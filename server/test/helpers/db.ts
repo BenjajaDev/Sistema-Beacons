@@ -40,12 +40,7 @@ export async function createUser(
 // Configuración y secciones iniciales, como las deja `npm run seed`.
 export async function seedContent(db: Db) {
   const { DEFAULT_SITE_SETTINGS } = await import("../../src/content/settings.js");
-  const { SECTION_DEFINITIONS } = await import("../../src/content/sections.js");
-  const { asJson } = await import("../../src/lib/json.js");
+  const { createMissingSections } = await import("../../src/content/section-catalog.js");
   await db.siteSettings.create({ data: DEFAULT_SITE_SETTINGS });
-  for (const [key, def] of Object.entries(SECTION_DEFINITIONS)) {
-    await db.section.create({
-      data: { key, page: def.page, order: def.order, content: asJson(def.contenidoInicial) },
-    });
-  }
+  await createMissingSections(db);
 }
