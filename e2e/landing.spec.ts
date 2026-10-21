@@ -1,6 +1,6 @@
 import { expect, test } from "@playwright/test";
 import { ADMIN_PATH } from "./config.mjs";
-import { recorrer, sinScrollHorizontal, sinViolaciones } from "./ayuda";
+import { recorrer, sinScrollHorizontal, sinTarjetasCortadas, sinViolaciones } from "./ayuda";
 
 const PAGINAS = [
   { ruta: "/", nombre: "Inicio" },
@@ -55,10 +55,13 @@ test.describe("landing pública", () => {
     await expect(anterior).toHaveAttribute("aria-disabled", "true");
     await sinViolaciones(page, "/nosotros con el carrusel");
 
-    // Avanza hasta el final: la última tarjeta queda a la vista y «siguiente» se inactiva.
+    // Avanza hasta el final sin dejar tarjetas cortadas en los bordes: la última
+    // queda a la vista y «siguiente» se inactiva.
+    await sinTarjetasCortadas(page);
     for (let i = 0; i < 5 && (await siguiente.getAttribute("aria-disabled")) !== "true"; i++) {
       await siguiente.click();
       await page.waitForTimeout(450);
+      await sinTarjetasCortadas(page);
     }
     await expect(siguiente).toHaveAttribute("aria-disabled", "true");
     await expect(anterior).not.toHaveAttribute("aria-disabled");
@@ -67,6 +70,7 @@ test.describe("landing pública", () => {
     // A 320 px el carrusel se recorre dentro de su región, sin scroll en la página.
     await page.setViewportSize({ width: 320, height: 720 });
     await sinScrollHorizontal(page);
+    await sinTarjetasCortadas(page);
     await sinViolaciones(page, "/nosotros a 320 px");
   });
 

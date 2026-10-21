@@ -18,15 +18,14 @@ function urlDe(ruta: AdminRoute) {
 const nombre = (r: AdminRoute) => `${r.method.toUpperCase()} ${r.path} [${r.roles.join(", ")}]`;
 
 // Política del proyecto, independiente de lo que declare cada ruta: estas rutas son
-// SOLO de administración. Si alguien declara una por error como accesible a
-// editores, este test falla aunque la matriz de abajo pase.
+// SOLO de administración (CMS y Administración del menú, más publicar). Si alguien
+// declara una por error como accesible a editores, este test falla aunque la
+// matriz de abajo pase. El resto del Contenido (equipo, identidad, pie) lo
+// editan también los editores: ver CONTENIDO más abajo.
 const SOLO_ADMIN: [método: string, ruta: RegExp][] = [
   ["*", /^\/audit(\/|$)/],
   ["*", /^\/users(\/|$)/],
   ["*", /^\/beacons(\/|$)/],
-  ["*", /^\/settings(\/|$)/],
-  ["*", /^\/team(\/|$)/],
-  ["*", /^\/collaborators(\/|$)/],
   ["*", /^\/messages(\/|$)/],
   ["*", /^\/news\/:\w+\/(publish|reject|unpublish)$/],
   ["*", /^\/sections\/:\w+\/(publish|reject|visibility)$/],
@@ -47,6 +46,23 @@ describe("política de roles", () => {
   it.each(protegidas.map((r) => [nombre(r), r] as const))("%s es solo para ADMIN", (_n, ruta) => {
     expect(ruta.roles).toEqual(["ADMIN"]);
   });
+
+  // Lo que el menú agrupa en «Contenido» es de ambos roles.
+  const CONTENIDO = [/^\/team(\/|$)/, /^\/collaborators(\/|$)/, /^\/settings(\/|$)/];
+  const contenido = rutas.filter((r) => CONTENIDO.some((p) => p.test(r.path)));
+
+  it("cubre equipo, colaboradores e identidad visual y pie", () => {
+    expect(contenido.map((r) => r.path)).toEqual(
+      expect.arrayContaining(["/team", "/collaborators", "/settings/identity", "/settings/footer"]),
+    );
+  });
+
+  it.each(contenido.map((r) => [nombre(r), r] as const))(
+    "%s es para ADMIN y EDITOR",
+    (_n, ruta) => {
+      expect(ruta.roles).toEqual(["ADMIN", "EDITOR"]);
+    },
+  );
 });
 
 describe.skipIf(!hasTestDb)("matriz de permisos de /api/admin", () => {

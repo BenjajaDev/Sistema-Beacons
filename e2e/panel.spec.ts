@@ -30,14 +30,29 @@ test("sin sesión, el panel muestra el login y explica los errores", async ({ pa
 test("el editor solo ve lo suyo y escribe una nota que envía a revisión", async ({ page }) => {
   await iniciarSesion(page, "editor");
   const menu = page.getByRole("navigation", { name: "Panel" }).getByRole("link");
-  await expect(menu).toHaveText(["Resumen", "Secciones", "Noticias"]);
+  // Todo el Contenido, como la administradora; ni CMS ni Administración.
+  await expect(menu).toHaveText([
+    "Resumen",
+    "Secciones",
+    "Equipo y colaboradores",
+    "Noticias",
+    "Identidad visual",
+    "Pie de página",
+  ]);
   await sinViolaciones(page, "resumen (editor)");
+  await page.getByRole("link", { name: "Equipo y colaboradores" }).click();
+  await expect(
+    page.getByRole("heading", { level: 1, name: "Equipo y colaboradores" }),
+  ).toBeVisible();
+  await expect(page.getByText("Ana Rojas").first()).toBeVisible();
 
   // Por URL tampoco: la vista dice «sin acceso» (y la API respondería 403).
-  await page.goto(`${PANEL}/beacons`);
-  await expect(
-    page.getByRole("heading", { level: 1, name: "No tienes acceso a esta sección" }),
-  ).toBeVisible();
+  for (const ruta of ["/beacons", "/contacto", "/usuarios", "/bitacora"]) {
+    await page.goto(`${PANEL}${ruta}`);
+    await expect(
+      page.getByRole("heading", { level: 1, name: "No tienes acceso a esta sección" }),
+    ).toBeVisible();
+  }
   expect((await page.request.get("/api/admin/beacons")).status()).toBe(403);
 
   await page.goto(`${PANEL}/noticias/nueva`);

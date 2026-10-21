@@ -277,8 +277,8 @@ describe.skipIf(!hasTestDb)("autenticación", () => {
   it("la bitácora se filtra por área del panel", async () => {
     const s = await login(app, ADMIN, CLAVE);
     await as(app, s, "patch", "/api/admin/auth/me").send({ name: "Admin Renombrada" });
-    const usuarios = await as(app, s, "get", "/api/admin/audit?area=usuarios");
-    expect(usuarios.body.items.map((e: { action: string }) => e.action)).toEqual([
+    const administracion = await as(app, s, "get", "/api/admin/audit?area=administracion");
+    expect(administracion.body.items.map((e: { action: string }) => e.action)).toEqual([
       "PROFILE_UPDATE",
     ]);
     const sesiones = await as(app, s, "get", "/api/admin/audit?area=sesiones");

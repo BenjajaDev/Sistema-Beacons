@@ -5,7 +5,7 @@ import { ApiError, parseOrThrow } from "../../http/errors.js";
 import { asJson } from "../../lib/json.js";
 import type { AdminDeps } from "./deps.js";
 import { assertImage, changedFields, textoOpcional, urlHttps } from "./helpers.js";
-import { ADMIN_ONLY, type AdminRoute } from "./registry.js";
+import { ANY_ROLE, type AdminRoute } from "./registry.js";
 
 const imagenId = z
   .uuid("Imagen no válida.")
@@ -78,7 +78,7 @@ export function settingsRoutes({ db, audit }: AdminDeps): AdminRoute[] {
 
   return [
     {
-      roles: ADMIN_ONLY,
+      roles: ANY_ROLE,
       method: "get",
       path: "/settings",
       handler: async (_req, res) => {
@@ -86,7 +86,7 @@ export function settingsRoutes({ db, audit }: AdminDeps): AdminRoute[] {
       },
     },
     {
-      roles: ADMIN_ONLY,
+      roles: ANY_ROLE,
       method: "put",
       path: "/settings/identity",
       handler: async (req, res) => {
@@ -148,7 +148,7 @@ export function settingsRoutes({ db, audit }: AdminDeps): AdminRoute[] {
       },
     },
     {
-      roles: ADMIN_ONLY,
+      roles: ANY_ROLE,
       method: "put",
       path: "/settings/contact",
       handler: async (req, res) => {
@@ -167,7 +167,7 @@ export function settingsRoutes({ db, audit }: AdminDeps): AdminRoute[] {
       },
     },
     {
-      roles: ADMIN_ONLY,
+      roles: ANY_ROLE,
       method: "put",
       path: "/settings/footer",
       handler: async (req, res) => {

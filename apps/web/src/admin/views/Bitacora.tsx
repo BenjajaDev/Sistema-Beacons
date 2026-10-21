@@ -62,7 +62,7 @@ const AREAS = [
   { valor: "sesiones", texto: "Sesiones" },
   { valor: "contenido", texto: "Contenido" },
   { valor: "cms", texto: "CMS" },
-  { valor: "usuarios", texto: "Usuarios" },
+  { valor: "administracion", texto: "Administración" },
 ] as const;
 
 function detalle(e: EntradaBitacora) {
