@@ -1,0 +1,115 @@
+/* =====================================================================
+   Tokens de diseño de SIGNAL (landing y panel).
+
+   Los colores de interfaz (--color-*) y las fuentes (--font-*) vienen de
+   theme-default.css y el servidor los reemplaza con los de Identidad visual.
+   Aquí van los tokens que no se editan desde el panel.
+
+   Todo tamaño de texto y espaciado está en rem: escala con el control A−/A+
+   y con el zoom del navegador (WCAG 1.4.4, texto al 200 %).
+   ===================================================================== */
+
+:root {
+  /* --- Marca (referencia; la interfaz usa los --color-* editables) ---
+     Misma paleta que la app Android: BeaconsAndroid/.../SignalColors.kt. */
+  --marca-azul: #004aad;
+  --marca-azul-claro: #9dc2f7;
+  --marca-azul-palido: #ebf1f8;
+  --marca-ciruela: #3d1534;
+  --marca-crema: #f6e0b6;
+  --marca-fondo: #fff4eb;
+  --marca-borde: #ecdcc4;
+  --marca-fondo-oscuro: #150c14;
+  --marca-superficie-oscura: #221521;
+
+  /* --- Estados (contraste ≥ 4,5:1 sobre fondo claro y oscuro).
+     El rojo de error es el de la app Android. --- */
+  --color-ok: #146c2e;
+  --color-ok-bg: #e6f4ea;
+  --color-error: #c0392b;
+  --color-error-bg: #fdecea;
+  --color-aviso: #7a4f01;
+  --color-aviso-bg: #fff4d6;
+
+  /* --- Tipografía --- */
+  --text-sm: 0.875rem;
+  --text-base: 1.0625rem;
+  --text-lg: 1.25rem;
+  --text-xl: clamp(1.375rem, 1.25rem + 0.5vw, 1.625rem);
+  --text-2xl: clamp(1.75rem, 1.5rem + 1vw, 2.25rem);
+  --text-3xl: clamp(2.125rem, 1.75rem + 1.6vw, 3.25rem);
+  --leading: 1.6;
+  --leading-tight: 1.2;
+  --peso-normal: 400;
+  --peso-medio: 600;
+  --peso-fuerte: 700;
+  /* Largo de línea cómodo para leer. */
+  --medida: 68ch;
+
+  /* --- Espacio --- */
+  --space-1: 0.25rem;
+  --space-2: 0.5rem;
+  --space-3: 0.75rem;
+  --space-4: 1rem;
+  --space-5: 1.5rem;
+  --space-6: 2rem;
+  --space-7: 3rem;
+  --space-8: 4rem;
+  --gutter: clamp(1rem, 0.5rem + 2.5vw, 2rem);
+  --ancho-max: 72rem;
+
+  /* --- Forma --- */
+  --radius-sm: 0.375rem;
+  --radius: 0.75rem;
+  --radius-lg: 1.25rem;
+  --radius-pill: 999px;
+  /* Objetivo táctil mínimo: 44 × 44 px (WCAG 2.5.5). */
+  --target: 2.75rem;
+  --sombra: 0 1px 2px rgb(61 21 52 / 0.08), 0 4px 12px rgb(61 21 52 / 0.08);
+  --sombra-alta: 0 8px 28px rgb(61 21 52 / 0.18);
+
+  /* --- Movimiento (150–300 ms; en 0 con prefers-reduced-motion) --- */
+  --dur-rapida: 150ms;
+  --dur: 200ms;
+  --dur-lenta: 300ms;
+  /* Salida fuerte para respuestas de la interfaz; la de movimiento, para lo que se
+     desplaza en pantalla (curvas de .claude/skills/review-animations/STANDARDS.md). */
+  --curva: cubic-bezier(0.23, 1, 0.32, 1);
+  --curva-movimiento: cubic-bezier(0.77, 0, 0.175, 1);
+
+  /* --- Foco --- */
+  --foco-ancho: 3px;
+  --foco-separacion: 2px;
+}
+
+:root[data-theme="dark"] {
+  --color-ok: #7dd89a;
+  --color-ok-bg: #12321e;
+  --color-error: #f0796a;
+  --color-error-bg: #3c1512;
+  --color-aviso: #ffd479;
+  --color-aviso-bg: #3a2b05;
+  --sombra: 0 1px 2px rgb(0 0 0 / 0.4), 0 4px 12px rgb(0 0 0 / 0.3);
+  --sombra-alta: 0 8px 28px rgb(0 0 0 / 0.5);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --color-ok: #7dd89a;
+    --color-ok-bg: #12321e;
+    --color-error: #f0796a;
+    --color-error-bg: #3c1512;
+    --color-aviso: #ffd479;
+    --color-aviso-bg: #3a2b05;
+    --sombra: 0 1px 2px rgb(0 0 0 / 0.4), 0 4px 12px rgb(0 0 0 / 0.3);
+    --sombra-alta: 0 8px 28px rgb(0 0 0 / 0.5);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --dur-rapida: 0ms;
+    --dur: 0ms;
+    --dur-lenta: 0ms;
+  }
+}

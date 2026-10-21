@@ -17,7 +17,8 @@ data class BeaconAdvertisement(
     val minor: Int? = null,
     val uuid: String? = null,
     val rssi: Int,
-    val distance: Double
+    /** Potencia calibrada a 1 m que anuncia el propio beacon (dBm). */
+    val txPower: Int
 )
 
 class BeaconScanner(
@@ -36,9 +37,9 @@ class BeaconScanner(
             val hasConnectPermission = ContextCompat.checkSelfPermission(context, android.Manifest.permission.BLUETOOTH_CONNECT) == PackageManager.PERMISSION_GRANTED
             val deviceName = if (hasConnectPermission) result.device.name ?: "N/A" else "Sin Permiso"
             
-            parseBeacon(record, result.rssi)?.let { 
-                Log.i("SIGNAL_FOUND", "!!! Beacon detectado: ${it.type} M:${it.major} m:${it.minor} Dist:${"%.2f".format(it.distance)}m ($deviceName)")
-                onDetected(it) 
+            parseBeacon(record, result.rssi)?.let {
+                Log.i("SIGNAL_FOUND", "!!! Beacon detectado: ${it.type} M:${it.major} m:${it.minor} RSSI:${it.rssi}dBm Tx:${it.txPower}dBm ($deviceName)")
+                onDetected(it)
             }
         }
         
@@ -77,8 +78,14 @@ class BeaconScanner(
             return
         }
 
+        // Cuantas más muestras por segundo, mejor filtra el promedio de RSSI y
+        // más estable queda la distancia (clave para el umbral de 0,5 m).
         val settings = ScanSettings.Builder()
             .setScanMode(ScanSettings.SCAN_MODE_LOW_LATENCY)
+            .setReportDelay(0)
+            .setCallbackType(ScanSettings.CALLBACK_TYPE_ALL_MATCHES)
+            .setMatchMode(ScanSettings.MATCH_MODE_AGGRESSIVE)
+            .setNumOfMatches(ScanSettings.MATCH_NUM_MAX_ADVERTISEMENT)
             .build()
         
         // Lista de filtros vacía (recibe todo)
@@ -122,16 +129,19 @@ class BeaconScanner(
                     (data[i + 4].toInt() and 0xFF) == 0x02 && 
                     (data[i + 5].toInt() and 0xFF) == 0x15) {
                     
+                    val uuid = buildUuid(data, i + 6)
                     val major = ((data[i + 22].toInt() and 0xFF) shl 8) or (data[i + 23].toInt() and 0xFF)
                     val minor = ((data[i + 24].toInt() and 0xFF) shl 8) or (data[i + 25].toInt() and 0xFF)
+                    // txPower es un entero con signo (dBm medidos a 1 m).
                     val txPower = data[i + 26].toInt()
-                    
+
                     return BeaconAdvertisement(
                         type = BeaconType.IBEACON,
                         major = major,
                         minor = minor,
+                        uuid = uuid,
                         rssi = rssi,
-                        distance = calculateDistance(txPower, rssi)
+                        txPower = txPower
                     )
                 }
             }
@@ -140,13 +150,14 @@ class BeaconScanner(
         return null
     }
 
-    private fun calculateDistance(txPower: Int, rssi: Int): Double {
-        if (rssi == 0) return -1.0
-        val ratio = rssi * 1.0 / txPower
-        return if (ratio < 1.0) {
-            Math.pow(ratio, 10.0)
-        } else {
-            (0.89976) * Math.pow(ratio, 7.7095) + 0.111
+    /** Reconstruye el UUID de 16 bytes del iBeacon a partir de [offset]. */
+    private fun buildUuid(data: ByteArray, offset: Int): String? {
+        if (offset + 16 > data.size) return null
+        val sb = StringBuilder(36)
+        for (b in 0 until 16) {
+            if (b == 4 || b == 6 || b == 8 || b == 10) sb.append('-')
+            sb.append("%02x".format(data[offset + b].toInt() and 0xFF))
         }
+        return sb.toString()
     }
 }

@@ -1,0 +1,17 @@
+{
+  "1-1": {
+    "titulo": "Oficina de reuniones",
+    "descripcion": "Estás en el cuarto piso, en la oficina del living lab del centro de innovación social y políticas públicas.",
+    "ubicacion": "Planta baja - Vestíbulo"
+  },
+  "1-16": {
+    "titulo": "Entrada principal",
+    "descripcion": "Te estás acercando a la entrada de la sede Alameda.",
+    "ubicacion": "Planta baja - Vestíbulo"
+  },
+  "1-21": {
+    "titulo": "Recepción Facultad de trabajo social",
+    "descripcion": "Al frente tuyo se encuentra la secretaria de Trabajo Social, a tu izquierda comienza el pasillo y en 40 pasos llegas a la Oficina del LivingLab",
+    "ubicacion": "Planta baja - Vestíbulo"
+  }
+}

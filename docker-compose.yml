@@ -1,0 +1,17 @@
+# Alternativa a `npm run db:local` para quien prefiera Docker.
+# Uso: docker compose up -d   →   DATABASE_URL="postgresql://postgres:postgres@localhost:5433/signal"
+services:
+  postgres:
+    image: postgres:17
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: signal
+    ports:
+      - "5433:5432"
+    volumes:
+      - signal-pgdata:/var/lib/postgresql/data
+      - ./server/scripts/docker-init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+
+volumes:
+  signal-pgdata:

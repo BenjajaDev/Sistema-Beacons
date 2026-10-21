@@ -11,30 +11,53 @@ import androidx.compose.ui.graphics.Color
 /**
  * Paleta de colores de SIGNAL.
  *
- * Pensada para alto contraste. Cada color tiene su variante para tema claro y
- * oscuro. Las pantallas eligen una u otra según [SignalTheme].
+ * Calcada del branding del CMS (mismo proyecto, mismo sistema de tokens: ver
+ * `cms/src/styles.css`) para que la app y el panel administrativo se sientan
+ * parte del mismo producto: azul marca `#004aad`, ciruela `#3d1534` como
+ * tinta principal, crema `#f6e0b6` como detalle cálido, sobre un fondo claro
+ * cálido en vez de blanco/azulado puro. Pensada para alto contraste; cada
+ * color tiene su variante para tema claro y oscuro, y las pantallas eligen
+ * una u otra según [SignalTheme].
  */
 object SignalColors {
-    val NavyDark     = Color(0xFF0D1B3E)
-    val Blue         = Color(0xFF1A56DB)
-    val BlueLight    = Color(0xFF5B8EFF)
-    val BluePale     = Color(0xFFEEF3FF)
-    val BlueBorder   = Color(0xFFC0D0F5)
-    val SurfaceLight = Color(0xFFF5F7FF)
+    /** Tinta oscura para texto sobre fondos de acento claro (botones, chips). */
+    val NavyDark     = Color(0xFF150C14)
+    /** `--marca-azul` / `--primary` del CMS. */
+    val Blue         = Color(0xFF004AAD)
+    /** `--titulo` en tema oscuro del CMS: azul claro para acentos sobre fondo oscuro. */
+    val BlueLight    = Color(0xFF9DC2F7)
+    /** Azul de marca al 8% sobre blanco, igual que `--primary-suave` del CMS. */
+    val BluePale     = Color(0xFFEBF1F8)
+    /** `--borde` (claro) del CMS: borde cálido, no azul. */
+    val BlueBorder   = Color(0xFFECDCC4)
+    /** `--bg` (claro) del CMS. */
+    val SurfaceLight = Color(0xFFFFF4EB)
     val CardLight    = Color(0xFFFFFFFF)
-    val CardActive   = Color(0xFFEEF3FF)
-    val SurfaceDark  = Color(0xFF0D1B3E)
-    val CardDark     = Color(0xFF152044)
-    val CardActiveDk = Color(0xFF0E1E4A)
-    val BorderDark   = Color(0xFF1E2E5A)
-    val TextPrimaryL   = Color(0xFF0D1B3E)
-    val TextSecondaryL = Color(0xFF4A5A8A)
-    val TextMutedL     = Color(0xFF8A98C0)
-    val TextPrimaryD   = Color(0xFFE8EEFF)
-    val TextSecondaryD = Color(0xFF7A8FC0)
-    val TextMutedD     = Color(0xFF3A4870)
-    val TabBarDark   = Color(0xFF0A1228)
-    val TabInactive  = Color(0xFF3A4870)
+    val CardActive   = Color(0xFFEBF1F8)
+    /** `--bg` (oscuro) del CMS. */
+    val SurfaceDark  = Color(0xFF150C14)
+    /** `--panel` (oscuro) del CMS. */
+    val CardDark     = Color(0xFF221521)
+    /** `--primary-suave` (oscuro) sobre `--panel` (oscuro) del CMS. */
+    val CardActiveDk = Color(0xFF2E2A3E)
+    /** `--borde` (oscuro) del CMS. */
+    val BorderDark   = Color(0xFF3D2A39)
+    /** `--text` (claro) del CMS: ciruela, no navy. */
+    val TextPrimaryL   = Color(0xFF3D1534)
+    /** `--text-2` (claro) del CMS. */
+    val TextSecondaryL = Color(0xFF6B4F63)
+    /** `--muted` (claro) del CMS. */
+    val TextMutedL     = Color(0xFF8A7D84)
+    /** `--text` (oscuro) del CMS: crema, no blanco azulado. */
+    val TextPrimaryD   = Color(0xFFF2E6DC)
+    /** `--text-2` (oscuro) del CMS. */
+    val TextSecondaryD = Color(0xFFD3C1CC)
+    /** `--muted` (oscuro) del CMS. */
+    val TextMutedD     = Color(0xFFA6919E)
+    /** `--side-bg` (oscuro) del CMS. */
+    val TabBarDark   = Color(0xFF100910)
+    /** `--side-muted` (oscuro) del CMS. */
+    val TabInactive  = Color(0xFFA6919E)
 }
 
 /**
@@ -106,7 +129,7 @@ fun SignalTheme(
             onBackground = SignalColors.TextPrimaryD,
             surface = SignalColors.CardDark,
             onSurface = SignalColors.TextPrimaryD,
-            error = Color(0xFFFF6B6B),
+            error = Color(0xFFF0796A), // --peligro (oscuro) del CMS
         )
     } else {
         lightColorScheme(
@@ -116,7 +139,7 @@ fun SignalTheme(
             onBackground = SignalColors.TextPrimaryL,
             surface = SignalColors.CardLight,
             onSurface = SignalColors.TextPrimaryL,
-            error = Color(0xFFD32F2F),
+            error = Color(0xFFC0392B), // --peligro (claro) del CMS
         )
     }
 

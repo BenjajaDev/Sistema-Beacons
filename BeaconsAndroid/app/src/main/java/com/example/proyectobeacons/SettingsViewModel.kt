@@ -20,6 +20,10 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
     val settings: StateFlow<SignalSettings> = repository.settings
         .stateIn(viewModelScope, SharingStarted.Eagerly, SignalSettings())
 
+    init {
+        viewModelScope.launch { repository.migrateIfNeeded() }
+    }
+
     fun setTtsSpeed(speed: Float) = viewModelScope.launch { repository.setTtsSpeed(speed) }
 
     fun setVibration(enabled: Boolean) = viewModelScope.launch { repository.setVibration(enabled) }

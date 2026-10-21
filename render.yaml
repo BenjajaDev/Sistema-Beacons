@@ -1,0 +1,71 @@
+# Blueprint de Render: el servidor Express de SIGNAL, detrás de Cloudflare Pages.
+# Guía completa: docs/cloudflare-pages.md
+#
+# Render → New → Blueprint → este repositorio. Las variables con `sync: false`
+# se piden al crear el Blueprint: nunca se escriben en este archivo.
+services:
+  - type: web
+    name: signal-api
+    runtime: node
+    # Starter: no se suspende (la app Android consulta en tiempo real) y permite
+    # disco persistente y preDeployCommand.
+    plan: starter
+    # Render no tiene región en Sudamérica: Virginia es la más cercana a Supabase São Paulo.
+    region: virginia
+    # Producción se despliega solo desde main, y solo si el CI de GitHub pasó.
+    branch: main
+    autoDeployTrigger: checksPass
+    # NODE_ENV=production haría que npm omita las devDependencies que el build necesita.
+    buildCommand: npm ci --include=dev && npm run build
+    # Migraciones antes de cada versión nueva (usa DIRECT_URL).
+    preDeployCommand: npm run db:deploy
+    startCommand: npm start
+    # Solo comprueba que el proceso responde: si Supabase cae, Render no reinicia el
+    # servidor y la app Android sigue respondiendo desde el snapshot.
+    healthCheckPath: /api/health/live
+    # Respaldos y snapshot de beacons: el disco del contenedor se borra en cada despliegue.
+    # Con disco, Render no hace despliegues sin corte: hay unos segundos sin servicio.
+    disk:
+      name: signal-datos
+      mountPath: /var/data
+      sizeGB: 1
+    envVars:
+      - key: NODE_ENV
+        value: production
+      # Contrato de la app Android: el servidor escucha en el 3000.
+      - key: PORT
+        value: "3000"
+      - key: HOST
+        value: 0.0.0.0
+      - key: COOKIE_SECURE
+        value: "true"
+      - key: TRUST_PROXY
+        value: "1"
+      - key: STORAGE_DRIVER
+        value: supabase
+      - key: SUPABASE_BUCKET
+        value: media
+      - key: BACKUP_DIR
+        value: /var/data/backups
+      - key: BEACON_SNAPSHOT_PATH
+        value: /var/data/backups/beacons.snapshot.json
+      # Render genera valores aleatorios y distintos entre sí.
+      - key: JWT_SECRET
+        generateValue: true
+      - key: CSRF_SECRET
+        generateValue: true
+      # Se piden al crear el Blueprint.
+      - key: ADMIN_PATH
+        sync: false
+      - key: EDGE_PROXY_SECRET
+        sync: false
+      - key: SITE_URL
+        sync: false
+      - key: DATABASE_URL
+        sync: false
+      - key: DIRECT_URL
+        sync: false
+      - key: SUPABASE_URL
+        sync: false
+      - key: SUPABASE_SERVICE_ROLE_KEY
+        sync: false

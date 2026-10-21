@@ -8,7 +8,7 @@
 -->
 <network-security-config>
     <domain-config cleartextTrafficPermitted="true">
-        <domain includeSubdomains="true">10.187.248.177</domain>
+        <domain includeSubdomains="true">10.147.219.177</domain>
         <domain includeSubdomains="true">localhost</domain>
         <!-- Ejemplo: descomenta y pon la IP de tu PC para probar con teléfono físico -->
         <!-- <domain includeSubdomains="true">192.168.1.100</domain> -->

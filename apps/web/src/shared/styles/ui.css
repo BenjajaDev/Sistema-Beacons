@@ -1,0 +1,414 @@
+/* Componentes compartidos por la landing y el panel. */
+
+/* --- Botones ---
+   Cada variante tiene su gesto, todos tomados de la señal del beacon:
+   primario: se eleva y emite un anillo; secundario: se llena con un barrido;
+   fantasma: una ficha tenue que se intensifica; peligro: sólido y sin adornos.
+   El movimiento solo con puntero fino y sin «reducir movimiento» (WCAG 2.3.3). */
+
+.btn {
+  position: relative;
+  isolation: isolate;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  min-height: var(--target);
+  min-width: var(--target);
+  padding: var(--space-2) var(--space-5);
+  border: 2px solid transparent;
+  border-radius: var(--radius-pill);
+  font-weight: var(--peso-fuerte);
+  line-height: 1.2;
+  text-decoration: none;
+  cursor: pointer;
+  overflow: visible;
+  transition:
+    background-color var(--dur-rapida) ease,
+    border-color var(--dur-rapida) ease,
+    color var(--dur-rapida) ease,
+    transform var(--dur-rapida) var(--curva);
+}
+.btn[aria-disabled="true"] {
+  cursor: not-allowed;
+  opacity: 0.65;
+}
+
+.btn--primario {
+  background: var(--color-primary);
+  color: var(--color-on-primary);
+}
+/* El anillo de la señal: aparece alrededor del botón al apuntarlo. */
+.btn--primario::after {
+  content: "";
+  position: absolute;
+  inset: -6px;
+  z-index: -1;
+  border: 2px solid var(--color-primary);
+  border-radius: inherit;
+  opacity: 0;
+  transform: scale(0.94);
+  transition:
+    opacity var(--dur) ease,
+    transform var(--dur) var(--curva);
+  pointer-events: none;
+}
+.btn--primario:hover:not([aria-disabled="true"]) {
+  background: color-mix(in srgb, var(--color-primary) 86%, var(--color-text));
+}
+
+.btn--secundario {
+  background: transparent;
+  border-color: var(--color-border-control);
+  color: var(--color-text);
+  overflow: hidden;
+}
+/* Barrido desde la izquierda con el tono pálido del primario. */
+.btn--secundario::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background: color-mix(in srgb, var(--color-primary) 14%, transparent);
+  transform: scaleX(0);
+  transform-origin: left center;
+  transition: transform var(--dur) var(--curva);
+}
+.btn--secundario:hover:not([aria-disabled="true"]) {
+  border-color: var(--color-primary);
+}
+
+/* Fantasma: sigue pareciendo un botón (ficha tenue), no un enlace suelto. */
+.btn--fantasma {
+  background: color-mix(in srgb, var(--color-primary) 8%, transparent);
+  color: var(--color-link);
+  padding-inline: var(--space-4);
+}
+.btn--fantasma:hover:not([aria-disabled="true"]) {
+  background: color-mix(in srgb, var(--color-primary) 16%, transparent);
+}
+
+.btn--peligro {
+  background: var(--color-error);
+  color: var(--color-bg);
+}
+.btn--peligro:hover:not([aria-disabled="true"]) {
+  background: color-mix(in srgb, var(--color-error) 85%, var(--color-text));
+}
+
+@media (hover: hover) and (pointer: fine) and (prefers-reduced-motion: no-preference) {
+  .btn--primario:hover:not([aria-disabled="true"]) {
+    transform: translateY(-2px);
+  }
+  .btn--primario:hover:not([aria-disabled="true"])::after {
+    opacity: 0.35;
+    transform: scale(1);
+  }
+  .btn--secundario:hover:not([aria-disabled="true"])::before {
+    transform: scaleX(1);
+  }
+}
+@media (hover: hover) and (pointer: fine) and (prefers-reduced-motion: reduce) {
+  /* Sin movimiento: el barrido se muestra completo, sin animarse. */
+  .btn--secundario:hover:not([aria-disabled="true"])::before {
+    transform: scaleX(1);
+  }
+}
+/* Al presionar, un hundimiento breve (100–160 ms). */
+.btn:active:not([aria-disabled="true"]) {
+  transform: scale(0.97);
+}
+
+.btn__spinner {
+  width: 1em;
+  height: 1em;
+  border: 2px solid currentColor;
+  border-inline-end-color: transparent;
+  border-radius: 50%;
+  animation: girar 0.8s linear infinite;
+}
+@keyframes girar {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.icon-btn {
+  display: inline-grid;
+  place-items: center;
+  width: var(--target);
+  height: var(--target);
+  padding: 0;
+  border: 0;
+  border-radius: var(--radius-pill);
+  background: transparent;
+  color: var(--color-text);
+  cursor: pointer;
+  transition:
+    background-color var(--dur-rapida) ease,
+    transform var(--dur-rapida) var(--curva);
+}
+.icon-btn:hover {
+  background: color-mix(in srgb, var(--color-primary) 12%, transparent);
+}
+.icon-btn:active {
+  transform: scale(0.94);
+}
+.icon-btn svg {
+  width: 1.375rem;
+  height: 1.375rem;
+}
+
+/* --- Formularios --- */
+
+.campo {
+  display: grid;
+  gap: var(--space-1);
+  margin-bottom: var(--space-4);
+}
+.campo__label {
+  font-weight: var(--peso-medio);
+}
+.campo__opcional {
+  font-weight: var(--peso-normal);
+  color: var(--color-text-muted);
+}
+.campo__ayuda {
+  color: var(--color-text-muted);
+  font-size: var(--text-sm);
+}
+.campo__control {
+  width: 100%;
+  min-height: var(--target);
+  padding: var(--space-2) var(--space-3);
+  background: var(--color-bg);
+  border: 2px solid var(--color-border-control);
+  border-radius: var(--radius-sm);
+  transition: border-color var(--dur-rapida) var(--curva);
+}
+textarea.campo__control {
+  min-height: 8rem;
+  resize: vertical;
+}
+.campo__control:focus-visible {
+  border-color: var(--color-focus);
+}
+.campo__control[aria-invalid="true"] {
+  border-color: var(--color-error);
+}
+.campo__error {
+  display: flex;
+  gap: var(--space-2);
+  align-items: flex-start;
+  color: var(--color-error);
+  font-size: var(--text-sm);
+  font-weight: var(--peso-medio);
+}
+
+.resumen-errores {
+  padding: var(--space-4);
+  margin-bottom: var(--space-5);
+  border: 2px solid var(--color-error);
+  border-radius: var(--radius);
+  background: var(--color-error-bg);
+}
+.resumen-errores h2 {
+  font-size: var(--text-lg);
+  color: var(--color-error);
+}
+.resumen-errores ul {
+  margin: 0;
+  padding-inline-start: var(--space-5);
+}
+
+/* --- Control segmentado (tema claro/oscuro/sistema) --- */
+
+.segmentado {
+  display: inline-flex;
+  margin: 0;
+  padding: 2px;
+  border: 2px solid var(--color-border-control);
+  border-radius: var(--radius-pill);
+}
+.segmentado legend {
+  /* La leyenda existe para lectores de pantalla; se oculta visualmente. */
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+}
+.segmentado label {
+  position: relative;
+  display: inline-grid;
+  place-items: center;
+  min-width: var(--target);
+  min-height: calc(var(--target) - 8px);
+  padding-inline: var(--space-2);
+  border-radius: var(--radius-pill);
+  cursor: pointer;
+  transition: background-color var(--dur-rapida) var(--curva);
+}
+.segmentado input {
+  position: absolute;
+  opacity: 0;
+  inset: 0;
+  cursor: pointer;
+}
+.segmentado label:has(input:checked) {
+  background: var(--color-primary);
+  color: var(--color-on-primary);
+}
+.segmentado label:has(input:focus-visible) {
+  outline: var(--foco-ancho) solid var(--color-focus);
+  outline-offset: var(--foco-separacion);
+}
+
+.tamano-texto {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+}
+
+/* --- Avisos (toasts) --- */
+
+.avisos {
+  position: fixed;
+  inset-inline-end: var(--space-4);
+  bottom: var(--space-4);
+  z-index: 900;
+  display: grid;
+  gap: var(--space-2);
+  width: min(26rem, calc(100vw - 2 * var(--space-4)));
+  pointer-events: none;
+}
+.aviso {
+  display: flex;
+  gap: var(--space-3);
+  align-items: flex-start;
+  padding: var(--space-3) var(--space-4);
+  border-radius: var(--radius);
+  border-inline-start: 6px solid currentColor;
+  background: var(--color-bg);
+  color: var(--color-text);
+  box-shadow: var(--sombra-alta);
+  pointer-events: auto;
+  animation: aviso-entra var(--dur) var(--curva);
+}
+.aviso--ok {
+  border-inline-start-color: var(--color-ok);
+}
+.aviso--error {
+  border-inline-start-color: var(--color-error);
+}
+.aviso__texto {
+  flex: 1;
+  margin: 0;
+}
+@keyframes aviso-entra {
+  from {
+    opacity: 0;
+    transform: translateY(0.5rem);
+  }
+}
+
+/* --- Diálogos --- */
+
+.dialogo {
+  width: min(32rem, calc(100vw - 2 * var(--space-4)));
+  max-height: calc(100dvh - 2 * var(--space-4));
+  padding: var(--space-5);
+  border: 0;
+  border-radius: var(--radius-lg);
+  background: var(--color-surface);
+  color: var(--color-text);
+  box-shadow: var(--sombra-alta);
+}
+.dialogo::backdrop {
+  background: rgb(21 12 20 / 0.6);
+}
+.dialogo[open] {
+  animation: dialogo-entra var(--dur) var(--curva);
+}
+.dialogo__acciones {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: var(--space-2);
+  margin-top: var(--space-5);
+}
+@keyframes dialogo-entra {
+  from {
+    opacity: 0;
+    transform: translateY(0.75rem) scale(0.98);
+  }
+}
+
+/* --- Estados: carga, vacío, error --- */
+
+.skeleton {
+  display: block;
+  border-radius: var(--radius-sm);
+  background: linear-gradient(
+    90deg,
+    var(--color-surface) 25%,
+    color-mix(in srgb, var(--color-surface) 70%, var(--color-bg)) 50%,
+    var(--color-surface) 75%
+  );
+  background-size: 200% 100%;
+  /* Barrido lento (1,6 s): muy por debajo del límite de 3 destellos por segundo. */
+  animation: brillo 1.6s ease-in-out infinite;
+}
+@keyframes brillo {
+  from {
+    background-position: 200% 0;
+  }
+  to {
+    background-position: -200% 0;
+  }
+}
+
+.estado {
+  display: grid;
+  justify-items: center;
+  gap: var(--space-3);
+  padding: var(--space-7) var(--space-4);
+  text-align: center;
+}
+.estado__icono {
+  width: 3rem;
+  height: 3rem;
+  color: var(--color-text-muted);
+}
+.estado__titulo {
+  font-size: var(--text-lg);
+  margin: 0;
+}
+.estado__texto {
+  max-width: 40ch;
+  margin: 0;
+  color: var(--color-text-muted);
+}
+.estado--error .estado__icono {
+  color: var(--color-error);
+}
+
+/* --- Entrada al hacer scroll (<Reveal>) --- */
+
+.revelar {
+  opacity: 0;
+  transform: translateY(1rem);
+  transition:
+    opacity var(--dur-lenta) var(--curva),
+    transform var(--dur-lenta) var(--curva);
+}
+.revelar--visible {
+  opacity: 1;
+  transform: none;
+}
+@media (prefers-reduced-motion: reduce) {
+  .revelar {
+    opacity: 1;
+    transform: none;
+  }
+}

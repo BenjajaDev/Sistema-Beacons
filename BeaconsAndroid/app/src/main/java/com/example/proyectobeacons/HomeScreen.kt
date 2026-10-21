@@ -18,7 +18,6 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -201,13 +200,6 @@ private fun DetectedContent(
         contentDesc = "Reproducir: ${state.ttsMessage}",
         onClick = onPlay,
     )
-
-    SignalSecondaryButton(
-        text = "Siguientes pasos",
-        palette = palette,
-        contentDesc = "Siguientes pasos",
-        onClick = { /* Navegación de guiado pendiente */ },
-    )
 }
 
 /* ----------------------------- Componentes ----------------------------- */
@@ -329,24 +321,3 @@ private fun SignalPrimaryButton(
     }
 }
 
-@Composable
-private fun SignalSecondaryButton(
-    text: String,
-    palette: SignalPalette,
-    contentDesc: String,
-    onClick: () -> Unit,
-) {
-    OutlinedButton(
-        onClick = onClick,
-        shape = RoundedCornerShape(16.dp),
-        border = BorderStroke(1.5.dp, palette.border),
-        colors = ButtonDefaults.outlinedButtonColors(contentColor = palette.accent),
-        contentPadding = PaddingValues(vertical = 16.dp),
-        modifier = Modifier
-            .fillMaxWidth()
-            .heightIn(min = 56.dp)
-            .semantics { contentDescription = contentDesc },
-    ) {
-        Text(text = text, fontSize = 16.sp, fontWeight = FontWeight.Medium)
-    }
-}

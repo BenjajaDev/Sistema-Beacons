@@ -1,0 +1,6 @@
+/* Generado por `npm run gen:theme -w server` desde server/src/content/theme.ts.
+   No editar a mano: el servidor inyecta los valores de Identidad visual sobre estos. */
+:root{color-scheme:light;--color-bg:#FFF4EB;--color-surface:#FFFFFF;--color-text:#3D1534;--color-text-muted:#6B4F63;--color-primary:#004AAD;--color-on-primary:#FFFFFF;--color-link:#004AAD;--color-border:#ECDCC4;--color-border-control:#8A7D84;--color-focus:#004AAD;--color-accent:#9DC2F7;}
+:root[data-theme="dark"]{color-scheme:dark;--color-bg:#150C14;--color-surface:#221521;--color-text:#F2E6DC;--color-text-muted:#D3C1CC;--color-primary:#9DC2F7;--color-on-primary:#150C14;--color-link:#9DC2F7;--color-border:#3D2A39;--color-border-control:#A6919E;--color-focus:#9DC2F7;--color-accent:#004AAD;}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){color-scheme:dark;--color-bg:#150C14;--color-surface:#221521;--color-text:#F2E6DC;--color-text-muted:#D3C1CC;--color-primary:#9DC2F7;--color-on-primary:#150C14;--color-link:#9DC2F7;--color-border:#3D2A39;--color-border-control:#A6919E;--color-focus:#9DC2F7;--color-accent:#004AAD;}}
+:root{--font-body:"Atkinson Hyperlegible Next Variable", "Atkinson Hyperlegible Next", system-ui, sans-serif;--font-heading:"Bricolage Grotesque Variable", "Bricolage Grotesque", system-ui, sans-serif;}
