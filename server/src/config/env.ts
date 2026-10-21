@@ -62,6 +62,9 @@ const serverEnvSchema = z
     CORS_ORIGINS: lista,
     TRUST_PROXY: z.string().default("false"),
     CSP_IMG_HOSTS: lista,
+    // Secreto compartido con la Function de Cloudflare Pages (ver docs/cloudflare-pages.md).
+    // Con él, el servidor rechaza lo que no pase por Cloudflare.
+    EDGE_PROXY_SECRET: secreto("EDGE_PROXY_SECRET").optional(),
 
     // --- Imágenes subidas ---
     STORAGE_DRIVER: z.enum(["local", "supabase"]).default("local"),
@@ -93,7 +96,14 @@ const serverEnvSchema = z
   .refine((e) => e.JWT_SECRET !== e.CSRF_SECRET, {
     path: ["CSRF_SECRET"],
     message: "CSRF_SECRET debe ser distinto de JWT_SECRET.",
-  });
+  })
+  .refine(
+    (e) => !e.EDGE_PROXY_SECRET || ![e.JWT_SECRET, e.CSRF_SECRET].includes(e.EDGE_PROXY_SECRET),
+    {
+      path: ["EDGE_PROXY_SECRET"],
+      message: "EDGE_PROXY_SECRET debe ser distinto de JWT_SECRET y de CSRF_SECRET.",
+    },
+  );
 
 type ParsedEnv = z.infer<typeof serverEnvSchema>;
 

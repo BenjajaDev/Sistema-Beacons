@@ -5,7 +5,8 @@
   "description": "SIGNAL: navegación interior con beacons BLE. Sitio público, panel de administración y API.",
   "workspaces": [
     "server",
-    "apps/web"
+    "apps/web",
+    "apps/edge"
   ],
   "engines": {
     "node": ">=22.12"
@@ -14,6 +15,7 @@
     "dev": "npm run dev -w server",
     "dev:all": "node scripts/dev-all.mjs",
     "build": "npm run build -w apps/web && npm run build -w server",
+    "build:pages": "npm run build -w apps/web && npm run build -w apps/edge",
     "start": "npm run start -w server",
     "db:local": "npm run db:local -w server",
     "db:migrate": "npm run db:migrate -w server",

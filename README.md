@@ -7,6 +7,7 @@ Navegación interior con beacons BLE para personas con discapacidad visual.
 | `server/`         | API en Express + Prisma (PostgreSQL / Supabase): ficha de cada beacon para la app, API pública de la landing y API del panel. |
 | `BeaconsAndroid/` | App Android (Kotlin + Compose). Consume `GET /beacons/:major/:minor`.                                                         |
 | `apps/web/`       | Frontend: landing pública y panel, en dos builds de Vite separados.                                                           |
+| `apps/edge/`      | Function de Cloudflare Pages (`functions/[[path]].ts`): sirve los estáticos y reenvía el resto al servidor.                   |
 | `e2e/`            | Pruebas de punta a punta con Playwright y axe, y el servidor de pruebas que comparten con Lighthouse CI.                      |
 | `docs/`           | Guías (audiodescripciones, revisión con lector de pantalla) y [diagramas](docs/diagramas/README.md) de arquitectura y flujo.  |
 
@@ -61,6 +62,7 @@ Todas están documentadas en [`server/.env.example`](server/.env.example). `serv
 | `LOGIN_*`, `API_RATE_LIMIT`                          | Bloqueo de cuenta por intentos fallidos y límites de peticiones por IP.                                    |
 | `SITE_URL`                                           | Dominio público (https://…) para el sitemap, el canonical y Open Graph.                                    |
 | `CORS_ORIGINS`, `TRUST_PROXY`, `CSP_IMG_HOSTS`       | Orígenes extra permitidos, proxy delante del servidor y hosts de imágenes para la CSP.                     |
+| `EDGE_PROXY_SECRET`                                  | Solo detrás de Cloudflare Pages: sin este secreto, el servidor responde 404 (salvo `/api/health`).         |
 | `STORAGE_DRIVER`, `UPLOAD_*`, `SUPABASE_*`           | Dónde se guardan las imágenes: disco local en desarrollo, Supabase Storage en producción.                  |
 | `SEED_ADMIN_*`, `SEED_EDITOR_*`                      | Cuentas iniciales que crea `npm run seed`.                                                                 |
 | `BACKUP_DIR`, `BACKUP_INTERVAL_HOURS`, `BACKUP_KEEP` | Respaldos locales automáticos.                                                                             |
@@ -242,32 +244,24 @@ El CI (`.github/workflows/ci.yml`) tiene tres jobs: chequeos y tests (con Postgr
 
 ## Despliegue
 
-**Requisitos:** un proyecto de Supabase, un servidor con Node.js 22.12 o superior (VPS, Render, Railway, Fly…) y **HTTPS**, porque las cookies de sesión son `Secure`. Debe correr **una sola instancia**: los límites de intentos viven en memoria.
+**Producción se despliega siempre desde `main`**, por pull request desde `develop`. Guía paso a paso: [`docs/cloudflare-pages.md`](docs/cloudflare-pages.md).
 
-1. **Supabase:** copia las cadenas de conexión (ver [Supabase](#supabase)) y crea un bucket **público** de Storage para las imágenes (por defecto `media`).
-2. **Variables de producción** en `server/.env` o en el panel de la plataforma:
-   - `NODE_ENV=production` y `COOKIE_SECURE=true` (el servidor no arranca sin ella en producción);
-   - `ADMIN_PATH`, `JWT_SECRET` y `CSRF_SECRET` **nuevos**, generados con `npm run secret` (nunca los de desarrollo);
-   - `DATABASE_URL` y `DIRECT_URL` de Supabase, y `STORAGE_DRIVER=supabase` con `SUPABASE_URL` y `SUPABASE_SERVICE_ROLE_KEY`;
-   - `SITE_URL=https://tu-dominio`, y `TRUST_PROXY=1` si hay un proxy o balanceador delante (casi siempre);
-   - `SEED_*` con los correos reales y contraseñas temporales.
-3. **Build y base de datos:**
-   ```bash
-   npm ci
-   npm run build            # frontends + verificación del bundle + servidor (server/dist)
-   npm run db:deploy        # migraciones (usa DIRECT_URL)
-   npm run import:beacons   # solo la primera vez
-   npm run seed             # idempotente
-   npm start                # node server/dist/index.js
-   ```
-   Usa un gestor de procesos (systemd, pm2 o el de la plataforma) que reinicie el servidor si se cae.
-4. **HTTPS:** si usas un VPS, pon Nginx o Caddy delante con un certificado de Let's Encrypt, reenviando a `127.0.0.1:3000` con la cabecera `X-Forwarded-Proto`. Las plataformas como Render o Railway ya entregan HTTPS.
-5. **App Android:** el contrato no cambia, pero su `BASE_URL` (`RetrofitClient.kt`) hoy apunta a una IP de la red local por HTTP. Para usar el servidor desplegado hay que cambiarla a `https://tu-dominio/` y recompilar la app. Con HTTPS ya no hace falta la excepción de `network_security_config.xml`.
-6. **Después de desplegar:**
-   - entra en `https://tu-dominio/<ADMIN_PATH>` con cada cuenta del seed y crea la contraseña definitiva;
-   - comprueba que `/admin` responde 404 y que `https://tu-dominio/beacons/1/1` responde la ficha;
-   - copia `server/backups/` fuera del servidor periódicamente (Supabase tiene además sus propios respaldos).
-7. **Actualizar:** `git pull && npm ci && npm run build && npm run db:deploy` y reinicia el proceso.
+| Pieza               | Servicio                   | Qué hace                                                                                                |
+| ------------------- | -------------------------- | ------------------------------------------------------------------------------------------------------- |
+| Dominio y estáticos | **Cloudflare Pages**       | HTTPS y CDN para la landing. Su Function reenvía al servidor el HTML, `/api`, `/beacons` y el panel.    |
+| Servidor Express    | **Render** (`render.yaml`) | Plan Starter, una sola instancia (los límites de intentos viven en memoria) y disco para los respaldos. |
+| Base e imágenes     | **Supabase**               | PostgreSQL por los poolers y el bucket público `media`. Solo el servidor se conecta.                    |
+
+En resumen:
+
+1. **Supabase:** cadenas de los poolers, bucket `media` y, una vez, `npm run db:deploy`, `npm run import:beacons` y `npm run seed` desde tu computador ([`docs/supabase.md`](docs/supabase.md)).
+2. **Secretos:** `npm run secret`; en producción se usan `ADMIN_PATH` y `EDGE_PROXY_SECRET` **nuevos**. `JWT_SECRET` y `CSRF_SECRET` los genera Render.
+3. **Render:** New → Blueprint con este repositorio (branch `main`). Compila con `npm ci --include=dev && npm run build`, migra con `npm run db:deploy` antes de cada versión y solo despliega si el CI pasó.
+4. **Cloudflare Pages:** conectar el repositorio con build `npm run build:pages`, salida `apps/web/dist/public`, y las variables `BACKEND_ORIGIN` (URL de Render) y `EDGE_PROXY_SECRET` (el mismo de Render). Luego, el dominio propio y `SITE_URL` en Render.
+5. **App Android:** su `BASE_URL` (`RetrofitClient.kt`) hoy apunta a una IP de la red local por HTTP. Para producción, `https://tu-dominio/` y recompilar. El contrato no cambia.
+6. **Después de desplegar:** entra a `https://tu-dominio/<ADMIN_PATH>` con cada cuenta del seed y crea la contraseña definitiva; comprueba que `/admin` responde 404 y que `/beacons/1/1` responde la ficha.
+
+**Sin Cloudflare (VPS propio):** `npm ci && npm run build && npm run db:deploy && npm start` detrás de Nginx o Caddy con HTTPS, reenviando a `127.0.0.1:3000` con `X-Forwarded-Proto`, `TRUST_PROXY=1` y sin `EDGE_PROXY_SECRET`. Las variables de producción están en [`docs/configurar-env.md`](docs/configurar-env.md#10-en-producción).
 
 ## Criterios de aceptación
 
@@ -296,4 +290,4 @@ El CI (`.github/workflows/ci.yml`) tiene tres jobs: chequeos y tests (con Postgr
 - ajustar el diseño cuando llegue la propuesta visual;
 - un ícono cuadrado de la PWA;
 - la revisión con NVDA y TalkBack;
-- conectar Supabase en producción.
+- desplegar en Supabase, Render y Cloudflare Pages siguiendo [`docs/cloudflare-pages.md`](docs/cloudflare-pages.md).

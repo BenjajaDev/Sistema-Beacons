@@ -276,4 +276,4 @@ La app no cambia por usar Supabase: sigue pidiendo `GET /beacons/:major/:minor` 
 | `SUPABASE_SERVICE_ROLE_KEY` | Solo con Storage            | `eyJ...`                                                                               |
 | `SUPABASE_BUCKET`           | No (por defecto `media`)    | `media`                                                                                |
 
-El resto de la configuración de producción (HTTPS, `ADMIN_PATH`, secretos, proxy) está en la sección [Despliegue](../README.md#despliegue) del README.
+El resto de la configuración de producción (Render, Cloudflare Pages, dominio y secretos) está en [`docs/cloudflare-pages.md`](cloudflare-pages.md).
