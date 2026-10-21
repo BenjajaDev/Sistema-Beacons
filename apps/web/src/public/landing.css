@@ -452,53 +452,16 @@ main:focus {
   }
 }
 
-/* --- Nosotros en el inicio --- */
+/* --- Nosotros en el inicio: texto (e imagen opcional) y debajo la fila del equipo --- */
 
-.nosotros-inicio {
-  display: grid;
-  gap: var(--space-6);
-  align-items: center;
-}
-@media (min-width: 56rem) {
-  .nosotros-inicio {
-    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-  }
+.nosotros-inicio__texto {
+  max-width: var(--medida);
 }
 .nosotros-inicio__texto .seccion__intro {
   margin-bottom: var(--space-5);
 }
-.nosotros-inicio__fotos {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--space-4);
-  margin: 0;
-  padding: 0;
-  list-style: none;
-}
-.nosotros-inicio__foto {
-  display: grid;
-  justify-items: center;
-  gap: var(--space-2);
-  width: 7rem;
-  text-align: center;
-}
-.nosotros-inicio__foto img {
-  width: 6rem;
-  height: 6rem;
-  border-radius: 50%;
-  object-fit: cover;
-  border: 3px solid var(--color-surface);
-  box-shadow: 0 0 0 3px var(--color-primary);
-  transition: transform var(--dur) var(--curva);
-}
-.nosotros-inicio__nombre {
-  font-size: var(--text-sm);
-  font-weight: var(--peso-fuerte);
-}
-@media (hover: hover) and (pointer: fine) and (prefers-reduced-motion: no-preference) {
-  .nosotros-inicio__foto:hover img {
-    transform: translateY(-4px) rotate(-4deg);
-  }
+.nosotros-inicio + .equipo {
+  margin-top: var(--space-7);
 }
 
 /* --- Noticias --- */
@@ -720,8 +683,8 @@ main:focus {
 
 /* Las cards cerradas siguen en el layout (para medirlas) y no deben agregar scroll
    horizontal; clip no crea un contenedor con scroll ni corta la card abierta, que
-   ya se ajusta dentro de la pantalla. */
-.seccion--equipo {
+   ya se ajusta dentro de la pantalla. Vale para Nosotros y para el inicio. */
+.seccion:has(.equipo) {
   overflow-x: clip;
 }
 .equipo {

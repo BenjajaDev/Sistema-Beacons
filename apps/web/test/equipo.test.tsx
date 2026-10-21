@@ -155,3 +155,34 @@ describe("ajusteDentroDePantalla", () => {
     expect(ajusteDentroDePantalla({ left: 20, right: 340 }, 360)).toBe(0);
   });
 });
+
+describe("equipo en el inicio", () => {
+  it("«Nosotros» del inicio muestra la fila del equipo con sus cards", async () => {
+    const { QueryClient, QueryClientProvider } = await import("@tanstack/react-query");
+    const { MemoryRouter } = await import("react-router");
+    const { RENDERIZADORES } = await import("../src/public/sections");
+    const cliente = new QueryClient();
+    cliente.setQueryData(["equipo"], { items: EQUIPO });
+    const Vista = RENDERIZADORES["nosotros-inicio"] as unknown as (p: {
+      contenido: object;
+      nivel: 2;
+      idTitulo: string;
+    }) => React.ReactElement;
+    const { container } = render(
+      <QueryClientProvider client={cliente}>
+        <MemoryRouter>
+          <Vista
+            contenido={{ titulo: "Quiénes hacen SIGNAL", texto: "Somos un equipo." }}
+            nivel={2}
+            idTitulo="t"
+          />
+        </MemoryRouter>
+      </QueryClientProvider>,
+    );
+    expect(screen.getByRole("heading", { level: 2, name: "Quiénes hacen SIGNAL" })).toBeVisible();
+    expect(screen.getAllByRole("button", { expanded: false })).toHaveLength(5);
+    await userEvent.setup().click(boton("Ana"));
+    expect(abierta("Ana")).toBe(true);
+    await expectNoAxeViolations(container);
+  });
+});

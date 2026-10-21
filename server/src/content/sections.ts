@@ -66,7 +66,7 @@ export const sectionSchemas = {
   }),
   objetivos: z.object({ ...encabezado, items: z.array(item).min(1).max(8) }),
   proyecciones: z.object({ ...encabezado, items: z.array(item).min(1).max(8) }),
-  // Sin imagen propia, muestra las fotos del equipo.
+  // Debajo del texto se muestra la fila del equipo con sus cards.
   "nosotros-inicio": z.object({
     titulo: texto(120),
     texto: texto(600),
