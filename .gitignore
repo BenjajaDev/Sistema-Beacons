@@ -33,3 +33,7 @@ server/.e2e-snapshot.json
 # Caché de Python (scripts de las skills)
 __pycache__/
 *.pyc
+
+# Cloudflare (wrangler pages dev)
+.wrangler/
+.dev.vars

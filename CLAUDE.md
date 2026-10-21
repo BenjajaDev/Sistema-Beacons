@@ -4,9 +4,11 @@ SIGNAL es navegación interior con beacons BLE para personas con discapacidad vi
 
 - `server/`: Express 5 y Prisma 7 sobre PostgreSQL (Supabase). API pública (`/api/public`), API del panel (`/api/admin`), landing con datos iniciales en el HTML y el endpoint de la app Android.
 - `apps/web/`: dos builds de Vite. `index.html` es la landing y la PWA (`dist/public`); `admin.html` es el panel (`dist/admin`), servido solo bajo `/<ADMIN_PATH>`.
+- `apps/edge/` y `functions/[[path]].ts`: Function de Cloudflare Pages. Sirve los estáticos de `dist/public` y reenvía el resto a Express con `EDGE_PROXY_SECRET`. No conoce `ADMIN_PATH`.
 - `BeaconsAndroid/`: app Android en Kotlin y Jetpack Compose.
 - `e2e/`: Playwright y axe. `lighthouserc.cjs`: Lighthouse CI móvil.
-- `docs/`: guías ([`.env`](docs/configurar-env.md), [Supabase](docs/supabase.md)) y [diagramas](docs/diagramas/README.md).
+- `docs/`: guías ([`.env`](docs/configurar-env.md), [Supabase](docs/supabase.md), [despliegue](docs/cloudflare-pages.md)) y [diagramas](docs/diagramas/README.md).
+- Producción: Cloudflare Pages + Render (`render.yaml`) + Supabase, desplegados **desde `main`**.
 
 ## Reglas que no se rompen
 
@@ -36,7 +38,7 @@ La fuente de verdad es la app Android: `BeaconsAndroid/app/src/main/java/com/exa
 - Si cambias un color, cámbialo **en los dos lados** en el mismo commit y ejecuta `npm run gen:theme -w server`.
 - Toda paleta nueva debe pasar `checkPaletteContrast` (en `theme.ts`). Si un color de Android no llega al contraste en la web, se ajusta en ambos lados; no se rompe la accesibilidad para calzar un color.
 - No escribas colores sueltos en CSS: usa las variables `--color-*` (editables desde Identidad visual) o los tokens de `apps/web/src/shared/styles/tokens.css`.
-- `apps/web/public/offline.html`, `index.html` (`theme-color`), el manifest de `vite.public.config.ts` y `apps/web/scripts/gen-icons.mjs` tienen colores fijos: mantenlos alineados.
+- `apps/web/public/offline.html` (de ella se derivan `404.html` y `sin-servidor.html` para Pages), `index.html` (`theme-color`), el manifest de `vite.public.config.ts` y `apps/web/scripts/gen-icons.mjs` tienen colores fijos: mantenlos alineados.
 - Las tipografías son Atkinson Hyperlegible Next (cuerpo) y Bricolage Grotesque (títulos), autoalojadas. No se cambian sin pedirlo.
 
 ## Lenguaje visual y movimiento
@@ -97,4 +99,6 @@ Por ejemplo, `frontend-design` pide elegir tipografías y paletas «distintivas�
 - `server/prisma/data/beacons.json` está excluido de Prettier: son datos.
 - `e2e/pwa.spec.ts` usa un perfil persistente: en incógnito Chrome no permite instalar la PWA.
 - Los textos `.visually-hidden` dentro de contenedores con scroll necesitan un ancestro con `position: relative`.
+- Cloudflare Pages redirige `/archivo.html` a `/archivo`; la Function sigue esa redirección para responder en la misma URL. `index.html` nunca se sirve desde Pages: es la plantilla que completa el servidor.
+- Detrás de Pages, el servidor ve el host de Render: el chequeo de `Origin` acepta `SITE_URL` y la IP real llega en `x-signal-client-ip` (`server/src/http/edge-gate.ts`).
 - La paleta de una base existente vive en `site_settings`: un cambio de `DEFAULT_PALETTE` solo afecta a bases nuevas. En las existentes, usa «Volver a los colores y tipografías por defecto» en Identidad visual y guarda.
