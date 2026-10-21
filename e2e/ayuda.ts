@@ -20,6 +20,19 @@ export async function sinScrollHorizontal(page: Page) {
   expect(sobra, "Ancho de más (scroll horizontal)").toBeLessThanOrEqual(0);
 }
 
+// En el carrusel de tarjetas, cada una se ve entera o no se ve: ninguna queda
+// cortada por los bordes. Tolera 1 px por el redondeo de las cajas.
+export async function sinTarjetasCortadas(page: Page) {
+  const cortadas = await page.evaluate(() => {
+    const pista = document.querySelector(".carrusel__pista")!.getBoundingClientRect();
+    return [...document.querySelectorAll(".carrusel__pista .persona")]
+      .map((t) => t.getBoundingClientRect())
+      .filter((t) => t.right > pista.left + 1 && t.left < pista.right - 1)
+      .filter((t) => t.left < pista.left - 1 || t.right > pista.right + 1).length;
+  });
+  expect(cortadas, "Tarjetas cortadas en el carrusel").toBe(0);
+}
+
 // La landing revela secciones al entrar en pantalla: se recorre para verlas todas.
 export async function recorrer(page: Page) {
   await page.evaluate(async () => {

@@ -25,29 +25,30 @@ interface GrupoMenu {
 const TODOS: Rol[] = ["ADMIN", "EDITOR"];
 const ADMIN: Rol[] = ["ADMIN"];
 
-// El panel se ordena en cinco secciones. Un grupo de un solo enlace se muestra
-// como enlace directo; los demás, con su título y su lista.
+// El panel se ordena en cuatro secciones: Resumen, Contenido (lo que se ve en el
+// sitio), CMS (los beacons de la app) y Administración. Un grupo de un solo
+// enlace se muestra como enlace directo; los demás, con su título y su lista.
 export const MENU: GrupoMenu[] = [
   { titulo: "Resumen", items: [{ to: "/", texto: "Resumen", roles: TODOS, end: true }] },
   {
     titulo: "Contenido",
     items: [
       { to: "/secciones", texto: "Secciones", roles: TODOS },
+      { to: "/equipo", texto: "Equipo y colaboradores", roles: TODOS },
       { to: "/noticias", texto: "Noticias", roles: TODOS },
-      { to: "/equipo", texto: "Equipo y colaboradores", roles: ADMIN },
+      { to: "/identidad", texto: "Identidad visual", roles: TODOS },
+      { to: "/pie", texto: "Pie de página", roles: TODOS },
     ],
   },
+  { titulo: "CMS", items: [{ to: "/beacons", texto: "Beacons", roles: ADMIN }] },
   {
-    titulo: "CMS",
+    titulo: "Administración",
     items: [
-      { to: "/identidad", texto: "Identidad visual", roles: ADMIN },
-      { to: "/pie", texto: "Pie de página", roles: ADMIN },
       { to: "/contacto", texto: "Mensajes", roles: ADMIN },
-      { to: "/beacons", texto: "Beacons", roles: ADMIN },
+      { to: "/usuarios", texto: "Usuarios", roles: ADMIN },
+      { to: "/bitacora", texto: "Bitácora", roles: ADMIN },
     ],
   },
-  { titulo: "Usuarios", items: [{ to: "/usuarios", texto: "Usuarios", roles: ADMIN }] },
-  { titulo: "Bitácora", items: [{ to: "/bitacora", texto: "Bitácora", roles: ADMIN }] },
 ];
 
 const ESCRITORIO = "(min-width: 64rem)";

@@ -9,11 +9,17 @@ import { useAuth } from "../auth";
 import { Cabecera, usePanelPage } from "../ui";
 
 // Accesos para configurar el sitio (solo administración).
-const CONFIGURAR = [
+// Accesos para configurar el sitio; cada uno se muestra solo a los roles que pueden usarlo.
+const CONFIGURAR: { to: string; titulo: string; texto: string; soloAdmin?: boolean }[] = [
   { to: "/identidad", titulo: "Identidad visual", texto: "Nombre, logos, colores y tipografías." },
   { to: "/pie", titulo: "Pie de página", texto: "Textos, enlaces, contacto y redes." },
   { to: "/secciones", titulo: "Secciones", texto: "Qué muestra cada página y en qué orden." },
-  { to: "/usuarios", titulo: "Usuarios", texto: "Cuentas, roles y accesos al panel." },
+  {
+    to: "/usuarios",
+    titulo: "Usuarios",
+    texto: "Cuentas, roles y accesos al panel.",
+    soloAdmin: true,
+  },
 ];
 
 export default function Perfil() {
@@ -111,21 +117,19 @@ export default function Perfil() {
         </Link>
       </section>
 
-      {esAdmin && (
-        <section className="tarjeta-panel" aria-labelledby="perfil-sitio">
-          <h2 id="perfil-sitio">Configurar el sitio</h2>
-          <ul className="accesos">
-            {CONFIGURAR.map((a) => (
-              <li key={a.to}>
-                <Link to={a.to} className="acceso-rapido">
-                  <span className="acceso-rapido__titulo">{a.titulo}</span>
-                  <span className="acceso-rapido__texto">{a.texto}</span>
-                </Link>
-              </li>
-            ))}
-          </ul>
-        </section>
-      )}
+      <section className="tarjeta-panel" aria-labelledby="perfil-sitio">
+        <h2 id="perfil-sitio">Configurar el sitio</h2>
+        <ul className="accesos">
+          {CONFIGURAR.filter((a) => esAdmin || !a.soloAdmin).map((a) => (
+            <li key={a.to}>
+              <Link to={a.to} className="acceso-rapido">
+                <span className="acceso-rapido__titulo">{a.titulo}</span>
+                <span className="acceso-rapido__texto">{a.texto}</span>
+              </Link>
+            </li>
+          ))}
+        </ul>
+      </section>
     </div>
   );
 }

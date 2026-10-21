@@ -882,12 +882,14 @@ main:focus {
 }
 
 /* --- Nosotros: tarjetas grandes de persona en un carrusel ---
-   Scroll nativo con snap; las flechas (beacons) avanzan una tarjeta. 3 por vista
-   en pantallas anchas y 1 (con un asomo de la siguiente) en las angostas. */
+   Scroll nativo con snap; las flechas (beacons) avanzan una tarjeta. Caben 1, 2 o
+   3 tarjetas enteras según el ancho del carrusel (no de la pantalla: en la vista
+   previa del panel el marco es angosto), sin tarjetas cortadas en los bordes. */
 
 .carrusel__pista {
-  /* Su ancho no depende de las tarjetas: así desplaza en vez de ensanchar la página. */
-  contain: inline-size;
+  /* Su ancho no depende de las tarjetas: así desplaza en vez de ensanchar la
+     página. Además es el contenedor de las consultas de abajo. */
+  container-type: inline-size;
   /* Ancla los textos .visually-hidden de las redes: sin esto se escapan del
      scroll y ensanchan la página (ver «Trampas conocidas» en CLAUDE.md). */
   position: relative;
@@ -907,11 +909,22 @@ main:focus {
 .personas {
   display: grid;
   grid-auto-flow: column;
-  grid-auto-columns: max(15rem, calc((100% - 2 * var(--space-5)) / 3));
+  grid-auto-columns: 100%;
   gap: var(--space-5);
   margin: 0;
   padding: 0;
   list-style: none;
+}
+/* Cada tarjeta mide al menos 15rem: 2 × 15rem + el espacio entre ellas, etc. */
+@container (min-width: 31.5rem) {
+  .personas {
+    grid-auto-columns: calc((100% - var(--space-5)) / 2);
+  }
+}
+@container (min-width: 48rem) {
+  .personas {
+    grid-auto-columns: calc((100% - 2 * var(--space-5)) / 3);
+  }
 }
 .carrusel__controles {
   display: flex;

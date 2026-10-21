@@ -87,16 +87,10 @@ export function crearRouter() {
               },
               { path: "secciones", Component: Secciones },
               { path: "secciones/:key", lazy: diferida(() => import("./views/SeccionEditor")) },
-              { path: "equipo", element: soloAdmin(Equipo) },
-              {
-                path: "identidad",
-                lazy: diferidaAdmin(() => import("./views/Identidad")),
-              },
+              { path: "equipo", Component: Equipo },
+              { path: "identidad", lazy: diferida(() => import("./views/Identidad")) },
               { path: "contacto", element: soloAdmin(Contacto) },
-              {
-                path: "pie",
-                lazy: diferidaAdmin(() => import("./views/Pie")),
-              },
+              { path: "pie", lazy: diferida(() => import("./views/Pie")) },
               { path: "perfil", Component: Perfil },
               {
                 path: "beacons",

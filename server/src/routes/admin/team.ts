@@ -5,9 +5,9 @@ import { Prisma } from "../../generated/prisma/client.js";
 import { asJson } from "../../lib/json.js";
 import type { AdminDeps } from "./deps.js";
 import { assertImage, changedFields, idParam, textoOpcional, urlHttps } from "./helpers.js";
-import { ADMIN_ONLY, type AdminRoute } from "./registry.js";
+import { ANY_ROLE, type AdminRoute } from "./registry.js";
 
-// Equipo y Colaboradores: listas ordenables que solo administra el rol ADMIN.
+// Equipo y Colaboradores: listas ordenables. Son contenido: las editan ADMIN y EDITOR.
 
 const nombre = z.string("Escribe el nombre.").trim().min(1, "Escribe el nombre.").max(120);
 const imagenId = z
@@ -118,7 +118,7 @@ function orderedCollection({ db, audit }: AdminDeps, c: Config): AdminRoute[] {
 
   return [
     {
-      roles: ADMIN_ONLY,
+      roles: ANY_ROLE,
       method: "get",
       path: c.ruta,
       handler: async (_req, res) => {
@@ -128,7 +128,7 @@ function orderedCollection({ db, audit }: AdminDeps, c: Config): AdminRoute[] {
       },
     },
     {
-      roles: ADMIN_ONLY,
+      roles: ANY_ROLE,
       method: "put",
       path: `${c.ruta}/order`,
       handler: async (req, res) => {
@@ -159,7 +159,7 @@ function orderedCollection({ db, audit }: AdminDeps, c: Config): AdminRoute[] {
       },
     },
     {
-      roles: ADMIN_ONLY,
+      roles: ANY_ROLE,
       method: "post",
       path: c.ruta,
       handler: async (req, res) => {
@@ -178,7 +178,7 @@ function orderedCollection({ db, audit }: AdminDeps, c: Config): AdminRoute[] {
       },
     },
     {
-      roles: ADMIN_ONLY,
+      roles: ANY_ROLE,
       method: "patch",
       path: `${c.ruta}/:id`,
       handler: async (req, res) => {
@@ -198,7 +198,7 @@ function orderedCollection({ db, audit }: AdminDeps, c: Config): AdminRoute[] {
       },
     },
     {
-      roles: ADMIN_ONLY,
+      roles: ANY_ROLE,
       method: "delete",
       path: `${c.ruta}/:id`,
       handler: async (req, res) => {

@@ -238,10 +238,8 @@ describe.skipIf(!hasTestDb)("administración de contenido", () => {
       expect(mala.status).toBe(400);
       expect(Object.keys(mala.body.campos)).toEqual(["columnas.0.enlaces.0.href"]);
 
+      // El pie es contenido: también lo edita un editor.
       expect((await as(app, editor, "put", "/api/admin/settings/footer").send(pie)).status).toBe(
-        403,
-      );
-      expect((await as(app, admin, "put", "/api/admin/settings/footer").send(pie)).status).toBe(
         200,
       );
       expect((await request(app).get("/api/public/site")).body.pie).toEqual(pie);
