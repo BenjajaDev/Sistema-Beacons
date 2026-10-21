@@ -246,17 +246,17 @@ El CI (`.github/workflows/ci.yml`) tiene tres jobs: chequeos y tests (con Postgr
 
 **Producción se despliega siempre desde `main`**, por pull request desde `develop`. Guía paso a paso: [`docs/cloudflare-pages.md`](docs/cloudflare-pages.md).
 
-| Pieza               | Servicio                   | Qué hace                                                                                                |
-| ------------------- | -------------------------- | ------------------------------------------------------------------------------------------------------- |
-| Dominio y estáticos | **Cloudflare Pages**       | HTTPS y CDN para la landing. Su Function reenvía al servidor el HTML, `/api`, `/beacons` y el panel.    |
-| Servidor Express    | **Render** (`render.yaml`) | Plan Starter, una sola instancia (los límites de intentos viven en memoria) y disco para los respaldos. |
-| Base e imágenes     | **Supabase**               | PostgreSQL por los poolers y el bucket público `media`. Solo el servidor se conecta.                    |
+| Pieza               | Servicio                   | Qué hace                                                                                                                            |
+| ------------------- | -------------------------- | ----------------------------------------------------------------------------------------------------------------------------------- |
+| Dominio y estáticos | **Cloudflare Pages**       | HTTPS y CDN para la landing. Su Function reenvía al servidor el HTML, `/api`, `/beacons` y el panel.                                |
+| Servidor Express    | **Render** (`render.yaml`) | Plan gratis y una sola instancia (los límites de intentos viven en memoria). Se suspende sin uso: un monitor lo mantiene despierto. |
+| Base e imágenes     | **Supabase**               | PostgreSQL por los poolers y el bucket público `media`. Solo el servidor se conecta.                                                |
 
 En resumen:
 
 1. **Supabase:** cadenas de los poolers, bucket `media` y, una vez, `npm run db:deploy`, `npm run import:beacons` y `npm run seed` desde tu computador ([`docs/supabase.md`](docs/supabase.md)).
 2. **Secretos:** `npm run secret`; en producción se usan `ADMIN_PATH` y `EDGE_PROXY_SECRET` **nuevos**. `JWT_SECRET` y `CSRF_SECRET` los genera Render.
-3. **Render:** New → Blueprint con este repositorio (branch `main`). Compila con `npm ci --include=dev && npm run build`, migra con `npm run db:deploy` antes de cada versión y solo despliega si el CI pasó.
+3. **Render:** New → Blueprint con este repositorio (branch `main`). Compila con `npm ci --include=dev && npm run build`, migra con `npm run db:deploy` al final del build y solo despliega si el CI pasó. Sin disco, los respaldos se hacen con `npm run backup` desde tu computador.
 4. **Cloudflare Pages:** conectar el repositorio con build `npm run build:pages`, salida `apps/web/dist/public`, y las variables `BACKEND_ORIGIN` (URL de Render) y `EDGE_PROXY_SECRET` (el mismo de Render). Luego, el dominio propio y `SITE_URL` en Render.
 5. **App Android:** su `BASE_URL` (`RetrofitClient.kt`) hoy apunta a una IP de la red local por HTTP. Para producción, `https://tu-dominio/` y recompilar. El contrato no cambia.
 6. **Después de desplegar:** entra a `https://tu-dominio/<ADMIN_PATH>` con cada cuenta del seed y crea la contraseña definitiva; comprueba que `/admin` responde 404 y que `/beacons/1/1` responde la ficha.
