@@ -292,36 +292,28 @@ function Equipo(p: PropsSeccion<Encabezado>) {
   );
 }
 
-// Presenta al equipo en el inicio: texto, un botón a «Nosotros» y hasta cinco
-// fotos del equipo con su nombre (los datos llegan con el HTML inicial).
-// Con una imagen propia, la muestra en lugar de las fotos.
+// Presenta al equipo en el inicio: texto, botón opcional, una imagen opcional al
+// lado y debajo la fila del equipo con sus cards (los datos llegan con el HTML inicial).
 function NosotrosInicio(
   p: PropsSeccion<{ titulo: string; texto: string; imagen?: Imagen; accion?: Enlace }>,
 ) {
   const { data } = useQuery(consultas.equipo());
   const { imagen } = p.contenido;
-  const conFoto = imagen ? [] : (data?.items ?? []).filter((m) => m.photo).slice(0, 5);
+  const personas = data?.items ?? [];
   return (
-    <div className="nosotros-inicio">
-      <div className="nosotros-inicio__texto">
-        <Titulo nivel={p.nivel} refH1={p.refH1} id={p.idTitulo}>
-          {p.contenido.titulo}
-        </Titulo>
-        <p className="seccion__intro">{p.contenido.texto}</p>
-        {p.contenido.accion && <Accion enlace={p.contenido.accion} variante="primario" />}
+    <>
+      <div className={imagen ? "nosotros-inicio dos-columnas" : "nosotros-inicio"}>
+        <div className="nosotros-inicio__texto">
+          <Titulo nivel={p.nivel} refH1={p.refH1} id={p.idTitulo}>
+            {p.contenido.titulo}
+          </Titulo>
+          <p className="seccion__intro">{p.contenido.texto}</p>
+          {p.contenido.accion && <Accion enlace={p.contenido.accion} variante="primario" />}
+        </div>
+        {imagen && <ImagenSeccion imagen={imagen} nivel={p.nivel} className="bloque__imagen" />}
       </div>
-      {imagen && <ImagenSeccion imagen={imagen} nivel={p.nivel} className="bloque__imagen" />}
-      {conFoto.length > 0 && (
-        <ul className="nosotros-inicio__fotos" aria-label="Parte del equipo">
-          {conFoto.map((m) => (
-            <li key={m.name} className="nosotros-inicio__foto">
-              <Img imagen={m.photo!} />
-              <span className="nosotros-inicio__nombre">{m.name}</span>
-            </li>
-          ))}
-        </ul>
-      )}
-    </div>
+      {personas.length > 0 && <EquipoFila personas={personas} />}
+    </>
   );
 }
 

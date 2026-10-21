@@ -182,12 +182,12 @@ const CAMPOS: Record<string, Campo[]> = {
       max: 600,
       multilinea: true,
       ayuda:
-        "Presenta al equipo en pocas líneas. Al lado se muestran las fotos del equipo, salvo que elijas una imagen.",
+        "Presenta al equipo en pocas líneas. Debajo se muestra la fila del equipo con sus cards.",
     },
     {
       tipo: "imagen",
       clave: "imagen",
-      etiqueta: "Imagen en lugar de las fotos del equipo (opcional)",
+      etiqueta: "Imagen al lado del texto (opcional)",
       marco: CUATRO_TERCIOS,
     },
     { tipo: "enlace", clave: "accion", etiqueta: "Botón", opcional: true },
