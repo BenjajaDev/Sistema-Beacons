@@ -6,8 +6,10 @@ import { ConfirmDialog, Dialog } from "@shared/ui/Dialog";
 import { TextArea, TextField } from "@shared/ui/Field";
 import { Cargando, EmptyState, ErrorState, Skeleton } from "@shared/ui/States";
 import { useToast } from "@shared/ui/Toast";
+import type { Encuadre, Persona as PersonaPublica } from "../../public/data";
 import { adminFetch, type Colaborador, type Enlace, type Persona } from "../api";
 import { Cabecera, Interruptor, SelectorImagen, usePanelPage, type ImagenElegida } from "../ui";
+import { VistaPreviaPersona } from "../VistaPreviaPersona";
 
 interface Base {
   id: string;
@@ -215,8 +217,22 @@ interface FormPersona {
   email: string;
   photo: ImagenElegida | null;
   photoAlt: string;
+  photoFrame: Encuadre | null;
   links: Enlace[];
 }
+
+// La persona como la recibe la landing, para la vista previa.
+const comoEnLaLanding = (f: FormPersona): PersonaPublica => ({
+  name: f.name,
+  position: f.position,
+  bio: f.bio || null,
+  area: f.area || null,
+  education: f.education || null,
+  email: f.email || null,
+  links: f.links.filter((l) => l.url),
+  photo: f.photo ? { url: f.photo.url, alt: f.photoAlt, width: null, height: null } : null,
+  photoFrame: f.photoFrame,
+});
 
 function CamposPersona({
   form,
@@ -288,9 +304,21 @@ function CamposPersona({
         marco={{ proporcion: 1, nombre: "cuadrado" }}
         imagen={form.photo}
         alt={form.photoAlt}
-        onCambiar={(photo, photoAlt) => set({ ...form, photo, photoAlt })}
+        onCambiar={(photo, photoAlt) =>
+          // Una foto distinta empieza centrada: el encuadre anterior era de otra imagen.
+          set({
+            ...form,
+            photo,
+            photoAlt,
+            photoFrame: photo?.id === form.photo?.id ? form.photoFrame : null,
+          })
+        }
         errorAlt={errores.photoAlt}
         ayudaAlt="Describe a la persona en la foto, por ejemplo «Ana sonriendo frente a un pizarrón». No repitas solo su nombre."
+      />
+      <VistaPreviaPersona
+        persona={comoEnLaLanding(form)}
+        onEncuadre={(photoFrame) => set({ ...form, photoFrame })}
       />
       <ListaEnlaces
         enlaces={form.links}
@@ -365,6 +393,7 @@ const equipo: Config<Persona, FormPersona> = {
     email: p?.email ?? "",
     photo: p?.photo ? { id: p.photo.id, url: p.photo.url } : null,
     photoAlt: p?.photoAlt ?? "",
+    photoFrame: p?.photoFrame ?? null,
     links: p?.links ?? [],
   }),
   aCuerpo: (f) => ({
@@ -376,6 +405,7 @@ const equipo: Config<Persona, FormPersona> = {
     email: f.email || null,
     photoId: f.photo?.id ?? null,
     photoAlt: f.photo ? f.photoAlt : null,
+    photoFrame: f.photo ? f.photoFrame : null,
     links: f.links,
   }),
   Campos: CamposPersona,

@@ -97,6 +97,13 @@ export interface NoticiaDetalle extends NoticiaResumen {
   lectura: { palabras: number; minutosLectura: number } | null;
 }
 
+// Encuadre de la foto de una persona: punto de enfoque en % y zoom (1 a 3).
+export interface Encuadre {
+  x: number;
+  y: number;
+  zoom: number;
+}
+
 export interface Persona {
   name: string;
   position: string;
@@ -106,6 +113,7 @@ export interface Persona {
   email: string | null;
   links: RedSocial[];
   photo: Imagen | null;
+  photoFrame: Encuadre | null;
 }
 
 export interface Colaborador {

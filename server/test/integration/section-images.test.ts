@@ -206,6 +206,36 @@ describe.skipIf(!hasTestDb)("datos de la card del equipo", () => {
     });
   });
 
+  it("guarda el encuadre de la foto, lo publica y lo vuelve a null al quitarlo", async () => {
+    const creado = await as(app, admin, "post", "/api/admin/team").send({
+      name: "Ana",
+      position: "Coordinación",
+      photoFrame: { x: 30, y: 20, zoom: 1.5 },
+    });
+    expect(creado.body.item.photoFrame).toEqual({ x: 30, y: 20, zoom: 1.5 });
+    const [publica] = (await request(app).get("/api/public/team")).body.items;
+    expect(publica.photoFrame).toEqual({ x: 30, y: 20, zoom: 1.5 });
+
+    // Un PATCH sin photoFrame no lo toca; con null lo quita.
+    await as(app, admin, "patch", `/api/admin/team/${creado.body.item.id}`).send({ bio: "x" });
+    const sinCambio = await as(app, admin, "get", "/api/admin/team");
+    expect(sinCambio.body.items[0].photoFrame).toEqual({ x: 30, y: 20, zoom: 1.5 });
+    const quitado = await as(app, admin, "patch", `/api/admin/team/${creado.body.item.id}`).send({
+      photoFrame: null,
+    });
+    expect(quitado.body.item.photoFrame).toBeNull();
+  });
+
+  it("rechaza un encuadre fuera de rango", async () => {
+    const res = await as(app, admin, "post", "/api/admin/team").send({
+      name: "Luis",
+      position: "Desarrollo",
+      photoFrame: { x: 120, y: 50, zoom: 5 },
+    });
+    expect(res.status).toBe(400);
+    expect(Object.keys(res.body.campos).sort()).toEqual(["photoFrame.x", "photoFrame.zoom"]);
+  });
+
   it("valida el correo e indica el campo", async () => {
     const res = await as(app, admin, "post", "/api/admin/team").send({
       name: "Luis",

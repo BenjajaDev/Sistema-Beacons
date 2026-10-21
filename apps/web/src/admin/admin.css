@@ -1239,3 +1239,62 @@
 .segmentado--texto label:hover:not(:has(input:checked)) {
   background: color-mix(in srgb, var(--color-primary) 12%, transparent);
 }
+
+/* --- Equipo: vista previa de la persona con los estilos de la landing --- */
+
+.vista-persona {
+  display: grid;
+  gap: var(--space-4);
+  padding: var(--space-4);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  background: var(--color-bg);
+}
+.vista-persona__titulo {
+  margin: 0;
+  font-size: var(--text-lg);
+}
+.vista-persona__marcos {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 13rem), 1fr));
+  align-items: start;
+  gap: var(--space-4);
+}
+.vista-persona__marco {
+  display: grid;
+  gap: var(--space-2);
+  margin: 0;
+}
+.vista-persona__marco figcaption {
+  color: var(--color-text-muted);
+  font-size: var(--text-sm);
+  text-align: center;
+}
+/* El círculo sin botón y la card siempre abierta, en su lugar. Van dentro de
+   .vista-persona para ganarle a landing.css, que se carga después. */
+.vista-persona .integrante--estatico {
+  display: grid;
+  justify-items: center;
+  gap: var(--space-1);
+  text-align: center;
+}
+.vista-persona .integrante__card--estatica {
+  position: static;
+  width: 100%;
+  max-width: 18rem;
+  justify-self: center;
+  visibility: visible;
+  opacity: 1;
+  translate: 0 0;
+}
+/* En otra regla a propósito: si van juntos, el minificador une transform y translate
+   en un solo transform y el translate de landing.css (-50 %) vuelve a aplicarse. */
+.vista-persona .integrante__card.integrante__card--estatica {
+  transform: none;
+}
+.vista-persona .persona {
+  max-width: 18rem;
+}
+.vista-persona__encuadre .btn {
+  justify-self: start;
+}

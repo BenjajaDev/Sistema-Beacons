@@ -140,7 +140,22 @@ export function createApp(deps: AppDeps) {
       return null;
     }
   };
-  app.use(adminPanel({ adminPath: env.ADMIN_PATH, distDir: env.adminDistDir, getThemeCss }));
+  // El favicon de Identidad visual también va en el panel.
+  const getFavicon = async () => {
+    try {
+      const s = await db.siteSettings.findUnique({
+        where: { id: 1 },
+        select: { favicon: { select: { url: true } } },
+      });
+      return s?.favicon?.url ?? null;
+    } catch (err) {
+      logger.warn({ err }, "No se pudo leer el favicon; se usa el por defecto");
+      return null;
+    }
+  };
+  app.use(
+    adminPanel({ adminPath: env.ADMIN_PATH, distDir: env.adminDistDir, getThemeCss, getFavicon }),
+  );
 
   // --- Landing pública ---
   app.use(

@@ -127,6 +127,7 @@ export async function getTeam(db: Db) {
       email: m.email,
       links: m.links,
       photo: m.photo ? { ...m.photo, alt: m.photoAlt ?? "" } : null,
+      photoFrame: m.photoFrame,
     })),
   };
 }

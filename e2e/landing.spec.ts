@@ -36,23 +36,37 @@ test.describe("landing pública", () => {
     });
   }
 
-  test("Nosotros muestra las tarjetas grandes del equipo en una sola fila", async ({ page }) => {
+  test("Nosotros muestra las tarjetas grandes en un carrusel con flechas de beacon", async ({
+    page,
+  }) => {
     await page.goto("/nosotros");
     const tarjetas = page.locator(".persona");
     await expect(tarjetas).toHaveCount(5);
+    // Tarjetas grandes (al menos 15rem) en una fila.
+    const caja = (await tarjetas.first().boundingBox())!;
+    expect(caja.width).toBeGreaterThanOrEqual(240);
     const ys = await tarjetas.evaluateAll((els) => els.map((e) => e.getBoundingClientRect().top));
     expect(Math.max(...ys) - Math.min(...ys)).toBeLessThan(2);
-    // En escritorio caben las cinco: la última se ve completa, sin desplazar.
-    const ultima = (await tarjetas.nth(4).boundingBox())!;
-    expect(ultima.x + ultima.width).toBeLessThanOrEqual(page.viewportSize()!.width);
-    await expect(page.getByRole("region", { name: /Integrantes del equipo/ })).toHaveCount(0);
-    await expect(page.getByRole("link", { name: "persona5@e2e.test" })).toBeVisible();
 
-    // A 320 px la fila se desplaza de lado dentro de su región, sin scroll en la página.
+    const carrusel = page.getByRole("region", { name: "Integrantes del equipo" });
+    await expect(carrusel).toHaveAttribute("tabindex", "0");
+    const anterior = page.getByRole("button", { name: "Ver integrantes anteriores" });
+    const siguiente = page.getByRole("button", { name: "Ver más integrantes" });
+    await expect(anterior).toHaveAttribute("aria-disabled", "true");
+    await sinViolaciones(page, "/nosotros con el carrusel");
+
+    // Avanza hasta el final: la última tarjeta queda a la vista y «siguiente» se inactiva.
+    for (let i = 0; i < 5 && (await siguiente.getAttribute("aria-disabled")) !== "true"; i++) {
+      await siguiente.click();
+      await page.waitForTimeout(450);
+    }
+    await expect(siguiente).toHaveAttribute("aria-disabled", "true");
+    await expect(anterior).not.toHaveAttribute("aria-disabled");
+    await expect(page.getByRole("link", { name: "persona5@e2e.test" })).toBeInViewport();
+
+    // A 320 px el carrusel se recorre dentro de su región, sin scroll en la página.
     await page.setViewportSize({ width: 320, height: 720 });
     await sinScrollHorizontal(page);
-    const region = page.getByRole("region", { name: /Integrantes del equipo/ });
-    await expect(region).toHaveAttribute("tabindex", "0");
     await sinViolaciones(page, "/nosotros a 320 px");
   });
 

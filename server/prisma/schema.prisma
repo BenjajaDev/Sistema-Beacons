@@ -159,23 +159,25 @@ model News {
 }
 
 model TeamMember {
-  id        String   @id @default(uuid())
-  name      String
-  position  String
-  bio       String?
+  id         String   @id @default(uuid())
+  name       String
+  position   String
+  bio        String?
   // Datos opcionales de la card: área («Ingeniería»), formación y un correo
   // público (conviene el institucional).
-  area      String?
-  education String?
-  email     String?
-  photoId   String?
-  photoAlt  String?
+  area       String?
+  education  String?
+  email      String?
+  photoId    String?
+  photoAlt   String?
+  // Encuadre no destructivo de la foto: { x, y, zoom }. Null = centrada, sin zoom.
+  photoFrame Json?
   // [{ red, url, etiqueta }]
-  links     Json     @default("[]")
-  order     Int
-  visible   Boolean  @default(true)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  links      Json     @default("[]")
+  order      Int
+  visible    Boolean  @default(true)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
 
   photo Media? @relation(fields: [photoId], references: [id], onDelete: Restrict)
 

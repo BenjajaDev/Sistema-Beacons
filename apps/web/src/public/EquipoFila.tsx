@@ -1,6 +1,7 @@
 import { useEffect, useId, useLayoutEffect, useRef } from "react";
-import { Img, Redes } from "./components";
+import { Redes } from "./components";
 import type { Persona } from "./data";
+import { FotoPersona } from "./FotoPersona";
 import { ajusteDentroDePantalla, useCardsEquipo, type CardAbierta } from "./useCardsEquipo";
 
 // El equipo en el inicio: una fila de círculos (5 por fila en pantallas anchas).
@@ -101,8 +102,6 @@ function Integrante({
     };
   }, [abierta, onApuntar, onRetirar, onCerrar]);
 
-  const detalle = [p.area, p.education].filter(Boolean).join(" · ");
-
   return (
     <li ref={zona} className="integrante" data-abierta={abierta || undefined}>
       <h3 className="integrante__titulo">
@@ -116,14 +115,13 @@ function Integrante({
           onClick={(e) => onActivar(e.detail === 0)}
         >
           <span className="integrante__marco">
-            {p.photo ? (
-              // Decorativa: el nombre del botón ya identifica a la persona.
-              <Img imagen={{ ...p.photo, alt: "" }} className="integrante__foto" />
-            ) : (
-              <span className="integrante__inicial" aria-hidden="true">
-                {p.name.trim().charAt(0).toUpperCase()}
-              </span>
-            )}
+            {/* Decorativa: el nombre del botón ya identifica a la persona. */}
+            <FotoPersona
+              persona={p}
+              className="integrante__foto"
+              claseInicial="integrante__inicial"
+              decorativa
+            />
           </span>
           <span className="integrante__nombre">{p.name}</span>{" "}
           <span className="integrante__cargo">{p.position}</span>
@@ -135,28 +133,37 @@ function Integrante({
         className="integrante__card"
         data-instantanea={estado?.instantanea || undefined}
       >
-        <span className="integrante__card-marco">
-          {p.photo ? (
-            <Img imagen={{ ...p.photo, alt: "" }} className="integrante__foto" />
-          ) : (
-            <span className="integrante__inicial" aria-hidden="true">
-              {p.name.trim().charAt(0).toUpperCase()}
-            </span>
-          )}
-        </span>
-        <p className="integrante__card-nombre" aria-hidden="true">
-          {p.name}
-        </p>
-        <p className="integrante__card-cargo">{p.position}</p>
-        {detalle && <p className="integrante__detalle">{detalle}</p>}
-        {p.bio && <p className="integrante__bio">{p.bio}</p>}
-        {p.email && (
-          <p className="integrante__correo">
-            <a href={`mailto:${p.email}`}>{p.email}</a>
-          </p>
-        )}
-        <Redes redes={p.links} etiqueta={`Enlaces de ${p.name}`} variante="iconos" />
+        <ContenidoCard persona={p} />
       </div>
     </li>
+  );
+}
+
+// Lo que muestra la card abierta. Exportado para la vista previa del panel.
+export function ContenidoCard({ persona: p }: { persona: Persona }) {
+  const detalle = [p.area, p.education].filter(Boolean).join(" · ");
+  return (
+    <>
+      <span className="integrante__card-marco">
+        <FotoPersona
+          persona={p}
+          className="integrante__foto"
+          claseInicial="integrante__inicial"
+          decorativa
+        />
+      </span>
+      <p className="integrante__card-nombre" aria-hidden="true">
+        {p.name}
+      </p>
+      <p className="integrante__card-cargo">{p.position}</p>
+      {detalle && <p className="integrante__detalle">{detalle}</p>}
+      {p.bio && <p className="integrante__bio">{p.bio}</p>}
+      {p.email && (
+        <p className="integrante__correo">
+          <a href={`mailto:${p.email}`}>{p.email}</a>
+        </p>
+      )}
+      <Redes redes={p.links} etiqueta={`Enlaces de ${p.name}`} variante="iconos" />
+    </>
   );
 }

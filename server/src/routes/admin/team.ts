@@ -1,6 +1,7 @@
 import type { Response } from "express";
 import { z } from "zod";
 import { ApiError, notFound, parseOrThrow } from "../../http/errors.js";
+import { Prisma } from "../../generated/prisma/client.js";
 import { asJson } from "../../lib/json.js";
 import type { AdminDeps } from "./deps.js";
 import { assertImage, changedFields, idParam, textoOpcional, urlHttps } from "./helpers.js";
@@ -19,6 +20,17 @@ const enlace = z.object({
   url: urlHttps,
   etiqueta: z.string().trim().max(80).optional(),
 });
+
+// Encuadre de la foto: punto de enfoque en % y zoom. Lo aplica la landing con
+// object-position y escala, sin recortar el archivo.
+const encuadre = z
+  .object({
+    x: z.number().min(0).max(100),
+    y: z.number().min(0).max(100),
+    zoom: z.number().min(1).max(3),
+  })
+  .nullish()
+  .transform((v) => v ?? null);
 
 // Ojo: en Zod 4, .partial() aplica los .default(). Por eso el esquema base no tiene
 // defaults (sirve para editar) y el de creación los agrega.
@@ -40,6 +52,7 @@ const teamBase = z.object({
     .transform((v) => v || null),
   photoId: imagenId,
   photoAlt: textoOpcional(300),
+  photoFrame: encuadre,
   links: z.array(enlace).max(6),
   visible: z.boolean(),
 });
@@ -94,9 +107,14 @@ function orderedCollection({ db, audit }: AdminDeps, c: Config): AdminRoute[] {
     res.status(status).json({ item });
   }
 
-  // Los enlaces son JSON; el resto de campos pasa tal cual.
-  const datos = (d: Record<string, unknown>) =>
-    d.links === undefined ? d : { ...d, links: asJson(d.links) };
+  // Los enlaces y el encuadre son JSON; el resto de campos pasa tal cual.
+  const datos = (d: Record<string, unknown>) => ({
+    ...d,
+    ...(d.links !== undefined && { links: asJson(d.links) }),
+    ...(d.photoFrame !== undefined && {
+      photoFrame: d.photoFrame === null ? Prisma.DbNull : asJson(d.photoFrame),
+    }),
+  });
 
   return [
     {
