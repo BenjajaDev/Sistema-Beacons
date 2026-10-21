@@ -112,6 +112,35 @@ test("un beacon creado en el panel llega a la app Android", async ({ page }) => 
   expect((await page.request.get("/beacons/9/9")).status()).toBe(404);
 });
 
+test("un mensaje se responde por Gmail, Outlook, la app de correo o copiando la dirección", async ({
+  page,
+}) => {
+  const envio = await page.request.post("/api/public/contact", {
+    data: {
+      nombre: "Persona de la prueba",
+      correo: "persona.prueba@e2e.test",
+      asunto: "Consulta",
+      mensaje: "Quiero saber más sobre SIGNAL.",
+    },
+  });
+  expect(envio.status()).toBe(201);
+  await iniciarSesion(page, "admin");
+  await page.goto(`${PANEL}/contacto`);
+  const responder = page.getByRole("button", { name: "Responder a Persona de la prueba" }).first();
+  await responder.click();
+  await expect(responder).toHaveAttribute("aria-expanded", "true");
+  await expect(page.getByRole("link", { name: /^En Gmail/ }).first()).toHaveAttribute(
+    "href",
+    /mail\.google\.com.*to=persona\.prueba%40e2e\.test&su=Re%3A%20Consulta/,
+  );
+  for (const esquema of ["light", "dark"] as const) {
+    await page.emulateMedia({ colorScheme: esquema });
+    await sinViolaciones(page, `responder un mensaje (${esquema})`);
+  }
+  await page.keyboard.press("Escape");
+  await expect(responder).toHaveAttribute("aria-expanded", "false");
+});
+
 test("todas las vistas del panel pasan axe en claro y oscuro", async ({ page }) => {
   await iniciarSesion(page, "admin");
   const vistas: [string, string][] = [
