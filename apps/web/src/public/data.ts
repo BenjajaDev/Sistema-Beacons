@@ -101,6 +101,9 @@ export interface Persona {
   name: string;
   position: string;
   bio: string | null;
+  area: string | null;
+  education: string | null;
+  email: string | null;
   links: RedSocial[];
   photo: Imagen | null;
 }
@@ -160,7 +163,9 @@ export function crearQueryClient() {
         retry: (intentos, error) =>
           intentos < 1 &&
           !(error && "status" in error && (error as { status: number }).status === 404),
-        refetchOnWindowFocus: false,
+        // Al volver a la pestaña (por ejemplo, desde el panel) se piden los datos de
+        // nuevo: lo recién guardado aparece sin recargar.
+        refetchOnWindowFocus: "always",
       },
     },
   });

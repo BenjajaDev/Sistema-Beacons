@@ -210,6 +210,9 @@ interface FormPersona {
   name: string;
   position: string;
   bio: string;
+  area: string;
+  education: string;
+  email: string;
   photo: ImagenElegida | null;
   photoAlt: string;
   links: Enlace[];
@@ -240,6 +243,36 @@ function CamposPersona({
         maxLength={120}
         onChange={(e) => set({ ...form, position: e.target.value })}
         error={errores.position}
+      />
+      <TextField
+        label="Área"
+        opcional
+        value={form.area}
+        maxLength={80}
+        placeholder="Ingeniería"
+        ayuda="Se muestra en su card junto a la formación."
+        onChange={(e) => set({ ...form, area: e.target.value })}
+        error={errores.area}
+      />
+      <TextField
+        label="Formación"
+        opcional
+        value={form.education}
+        maxLength={120}
+        placeholder="Ingeniería Civil, Universidad de Chile"
+        onChange={(e) => set({ ...form, education: e.target.value })}
+        error={errores.education}
+      />
+      <TextField
+        label="Correo de contacto"
+        opcional
+        type="email"
+        autoComplete="off"
+        value={form.email}
+        maxLength={200}
+        ayuda="Es público: aparece en la card de la persona. Usa un correo institucional, no uno personal."
+        onChange={(e) => set({ ...form, email: e.target.value })}
+        error={errores.email}
       />
       <TextArea
         label="Biografía breve"
@@ -327,6 +360,9 @@ const equipo: Config<Persona, FormPersona> = {
     name: p?.name ?? "",
     position: p?.position ?? "",
     bio: p?.bio ?? "",
+    area: p?.area ?? "",
+    education: p?.education ?? "",
+    email: p?.email ?? "",
     photo: p?.photo ? { id: p.photo.id, url: p.photo.url } : null,
     photoAlt: p?.photoAlt ?? "",
     links: p?.links ?? [],
@@ -335,6 +371,9 @@ const equipo: Config<Persona, FormPersona> = {
     name: f.name,
     position: f.position,
     bio: f.bio || null,
+    area: f.area || null,
+    education: f.education || null,
+    email: f.email || null,
     photoId: f.photo?.id ?? null,
     photoAlt: f.photo ? f.photoAlt : null,
     links: f.links,

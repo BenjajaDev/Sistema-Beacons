@@ -7,10 +7,10 @@
 // "Supabase" del README y la migración inicial.
 
 generator client {
-  provider               = "prisma-client"
-  output                 = "../src/generated/prisma"
-  moduleFormat           = "esm"
-  importFileExtension    = "js"
+  provider            = "prisma-client"
+  output              = "../src/generated/prisma"
+  moduleFormat        = "esm"
+  importFileExtension = "js"
 }
 
 datasource db {
@@ -163,6 +163,11 @@ model TeamMember {
   name      String
   position  String
   bio       String?
+  // Datos opcionales de la card: área («Ingeniería»), formación y un correo
+  // público (conviene el institucional).
+  area      String?
+  education String?
+  email     String?
   photoId   String?
   photoAlt  String?
   // [{ red, url, etiqueta }]
@@ -227,13 +232,13 @@ model Media {
   uploadedById String?
   createdAt    DateTime @default(now())
 
-  uploadedBy     User?          @relation(fields: [uploadedById], references: [id])
-  newsCovers     News[]
-  teamPhotos     TeamMember[]
-  collabLogos    Collaborator[]
-  logoLightOf    SiteSettings[] @relation("LogoLight")
-  logoDarkOf     SiteSettings[] @relation("LogoDark")
-  faviconOf      SiteSettings[] @relation("Favicon")
+  uploadedBy  User?          @relation(fields: [uploadedById], references: [id])
+  newsCovers  News[]
+  teamPhotos  TeamMember[]
+  collabLogos Collaborator[]
+  logoLightOf SiteSettings[] @relation("LogoLight")
+  logoDarkOf  SiteSettings[] @relation("LogoDark")
+  faviconOf   SiteSettings[] @relation("Favicon")
 
   @@map("media")
 }

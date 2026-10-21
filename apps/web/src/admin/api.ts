@@ -144,6 +144,9 @@ export interface Persona {
   name: string;
   position: string;
   bio: string | null;
+  area: string | null;
+  education: string | null;
+  email: string | null;
   photoId: string | null;
   photoAlt: string | null;
   photo: Imagen | null;

@@ -19,26 +19,66 @@ const href = z
   );
 
 const enlace = z.object({ texto: texto(40), href });
-const item = z.object({ titulo: texto(80), texto: texto(400) });
-const encabezado = { titulo: texto(120), intro: textoOpcional(400) };
+
+// Imagen de la biblioteca. Quien edita envía el id, el texto alternativo y si es
+// decorativa; el servidor agrega la URL y el tamaño al guardar (section-images.ts).
+// Sin texto alternativo, solo se acepta si se marca como decorativa (WCAG 1.1.1).
+export const imagenSchema = z
+  .object({
+    mediaId: z.uuid("Elige una imagen."),
+    alt: z.string().trim().max(300).default(""),
+    decorativa: z.boolean().default(false),
+  })
+  .refine((i) => i.decorativa || i.alt.length > 0, {
+    path: ["alt"],
+    message: "Describe la imagen (texto alternativo) o márcala como decorativa.",
+  });
+
+const item = z.object({ titulo: texto(80), texto: texto(400), imagen: imagenSchema.optional() });
+const encabezado = {
+  titulo: texto(120),
+  intro: textoOpcional(400),
+  imagen: imagenSchema.optional(),
+};
+
+// Bloque de imagen y texto, con la imagen a un lado y un botón opcional.
+const imagenTexto = z.object({
+  titulo: texto(120),
+  texto: texto(1200),
+  imagen: imagenSchema.optional(),
+  posicion: z.enum(["izquierda", "derecha"]).default("derecha"),
+  accion: enlace.optional(),
+});
 
 export const sectionSchemas = {
   hero: z.object({
     antetitulo: textoOpcional(60),
     titulo: texto(120),
     bajada: texto(300),
-    accionPrincipal: enlace,
+    // Sin imagen, la portada muestra las ondas de la señal.
+    imagen: imagenSchema.optional(),
+    accionPrincipal: enlace.optional(),
     accionSecundaria: enlace.optional(),
   }),
   "que-es": z.object({
     ...encabezado,
-    pasos: z.array(item).length(3, "Esta sección muestra exactamente 3 pasos."),
+    pasos: z.array(item).min(1, "Agrega al menos un paso.").max(6, "Hasta 6 pasos."),
   }),
   objetivos: z.object({ ...encabezado, items: z.array(item).min(1).max(8) }),
   proyecciones: z.object({ ...encabezado, items: z.array(item).min(1).max(8) }),
-  "nosotros-inicio": z.object({ titulo: texto(120), texto: texto(600), accion: enlace }),
+  // Sin imagen propia, muestra las fotos del equipo.
+  "nosotros-inicio": z.object({
+    titulo: texto(120),
+    texto: texto(600),
+    imagen: imagenSchema.optional(),
+    accion: enlace.optional(),
+  }),
   "noticias-recientes": z.object({ ...encabezado, textoVerTodas: texto(40) }),
-  "quienes-somos": z.object({ titulo: texto(120), cuerpo: richTextSchema }),
+  "quienes-somos": z.object({
+    titulo: texto(120),
+    cuerpo: richTextSchema,
+    imagen: imagenSchema.optional(),
+  }),
   equipo: z.object(encabezado),
   colaboradores: z.object(encabezado),
   noticias: z.object(encabezado),
@@ -47,6 +87,8 @@ export const sectionSchemas = {
     formularioTitulo: texto(80),
     mensajeExito: texto(200),
   }),
+  "imagen-texto-inicio": imagenTexto,
+  "imagen-texto-nosotros": imagenTexto,
 } as const;
 
 export type SectionKey = keyof typeof sectionSchemas;
@@ -57,7 +99,10 @@ interface SectionDefinition<K extends SectionKey> {
   order: number;
   // Nombre que ve quien edita en el panel.
   nombre: string;
-  contenidoInicial: SectionContent<K>;
+  // Las secciones que se agregan al catálogo después nacen ocultas: se muestran
+  // cuando alguien completa su contenido.
+  visibleInicial?: boolean;
+  contenidoInicial: z.input<(typeof sectionSchemas)[K]>;
 }
 
 // Contenido inicial: un punto de partida para editar desde el panel, no texto definitivo.
@@ -196,6 +241,29 @@ export const SECTION_DEFINITIONS: { [K in SectionKey]: SectionDefinition<K> } = 
       intro: "Escríbenos si quieres llevar SIGNAL a tu edificio o colaborar con el proyecto.",
       formularioTitulo: "Envíanos un mensaje",
       mensajeExito: "Recibimos tu mensaje. Te responderemos a la brevedad.",
+    },
+  },
+  "imagen-texto-inicio": {
+    page: "INICIO",
+    order: 7,
+    nombre: "Imagen y texto (inicio)",
+    visibleInicial: false,
+    contenidoInicial: {
+      titulo: "SIGNAL en terreno",
+      texto:
+        "Cuenta aquí una experiencia, un hito o una instalación, acompañada de una fotografía.",
+      posicion: "derecha",
+    },
+  },
+  "imagen-texto-nosotros": {
+    page: "NOSOTROS",
+    order: 4,
+    nombre: "Imagen y texto (nosotros)",
+    visibleInicial: false,
+    contenidoInicial: {
+      titulo: "Cómo trabajamos",
+      texto: "Cuenta aquí cómo trabaja el equipo, acompañado de una fotografía.",
+      posicion: "izquierda",
     },
   },
 };

@@ -21,6 +21,20 @@ try {
     password: "Clave-E2E-Editor-2026",
     role: "EDITOR",
   });
+  // Cinco personas para probar la fila del equipo y su card desplegable.
+  const equipo = ["Ana Rojas", "Luis Pérez", "Sofía Díaz", "Pedro Soto", "Valentina Muñoz"];
+  await db.teamMember.createMany({
+    data: equipo.map((name, i) => ({
+      name,
+      position: i === 0 ? "Coordinación" : "Desarrollo",
+      area: "Ingeniería",
+      education: "Universidad de Chile",
+      bio: "Prueba los mensajes de voz junto a personas usuarias.",
+      email: `persona${i + 1}@e2e.test`,
+      links: [{ red: "LinkedIn", url: `https://www.linkedin.com/in/persona-${i + 1}` }],
+      order: i + 1,
+    })),
+  });
   console.log("Base de pruebas lista.");
 } finally {
   await db.$disconnect();

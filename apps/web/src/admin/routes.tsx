@@ -1,5 +1,6 @@
 import type { ComponentType } from "react";
 import { createBrowserRouter, Link, Navigate, Outlet } from "react-router";
+import { importarConRecarga } from "@shared/recarga";
 import { ToastProvider } from "@shared/ui/Toast";
 import type { Rol } from "./api";
 import { Shell, SoloRol } from "./Shell";
@@ -22,8 +23,13 @@ function basename() {
 }
 
 // Las vistas con el editor de texto enriquecido (el código más pesado) se cargan al entrar.
-const diferida = (cargar: () => Promise<{ default: ComponentType }>) => async () => ({
-  Component: (await cargar()).default,
+// Si el módulo ya no existe (build nuevo), la página se recarga sola: ver @shared/recarga.
+type Modulo = () => Promise<{ default: ComponentType }>;
+const diferida = (cargar: Modulo) => async () => ({
+  Component: (await importarConRecarga(cargar)).default,
+});
+const diferidaAdmin = (cargar: Modulo) => async () => ({
+  element: soloAdmin((await importarConRecarga(cargar)).default),
 });
 
 const soloAdmin = (Vista: ComponentType) => {
@@ -84,23 +90,17 @@ export function crearRouter() {
               { path: "equipo", element: soloAdmin(Equipo) },
               {
                 path: "identidad",
-                lazy: async () => ({
-                  element: soloAdmin((await import("./views/Identidad")).default),
-                }),
+                lazy: diferidaAdmin(() => import("./views/Identidad")),
               },
               { path: "contacto", element: soloAdmin(Contacto) },
               {
                 path: "pie",
-                lazy: async () => ({
-                  element: soloAdmin((await import("./views/Pie")).default),
-                }),
+                lazy: diferidaAdmin(() => import("./views/Pie")),
               },
               { path: "perfil", Component: Perfil },
               {
                 path: "beacons",
-                lazy: async () => ({
-                  element: soloAdmin((await import("./views/Beacons")).default),
-                }),
+                lazy: diferidaAdmin(() => import("./views/Beacons")),
               },
               { path: "usuarios", element: soloAdmin(Usuarios) },
               { path: "bitacora", element: soloAdmin(Bitacora) },

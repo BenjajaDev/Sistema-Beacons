@@ -101,4 +101,6 @@ Por ejemplo, `frontend-design` pide elegir tipografías y paletas «distintivas�
 - Los textos `.visually-hidden` dentro de contenedores con scroll necesitan un ancestro con `position: relative`.
 - Cloudflare Pages redirige `/archivo.html` a `/archivo`; la Function sigue esa redirección para responder en la misma URL. `index.html` nunca se sirve desde Pages: es la plantilla que completa el servidor.
 - Detrás de Pages, el servidor ve el host de Render: el chequeo de `Origin` acepta `SITE_URL` y la IP real llega en `x-signal-client-ip` (`server/src/http/edge-gate.ts`).
+- Una sección nueva del catálogo (`server/src/content/sections.ts`) se crea al arrancar el servidor con `createMissingSections`; ponle `visibleInicial: false` si necesita contenido antes de mostrarse. Toda imagen de sección se guarda con `imagenSchema` y pasa por `resolveSectionImages`: no confíes en la URL que manda el navegador.
+- Las cards del equipo (`apps/web/src/public/EquipoFila.tsx`) quedan cerradas en el layout con `visibility: hidden` para poder medirlas: `.seccion--equipo` lleva `overflow-x: clip` para que no agreguen scroll horizontal.
 - La paleta de una base existente vive en `site_settings`: un cambio de `DEFAULT_PALETTE` solo afecta a bases nuevas. En las existentes, usa «Volver a los colores y tipografías por defecto» en Identidad visual y guarda.

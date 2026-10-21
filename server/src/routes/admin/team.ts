@@ -26,6 +26,18 @@ const teamBase = z.object({
   name: nombre,
   position: z.string("Escribe el cargo.").trim().min(1, "Escribe el cargo.").max(120),
   bio: textoOpcional(600),
+  area: textoOpcional(80),
+  education: textoOpcional(120),
+  email: z
+    .string()
+    .trim()
+    .max(200)
+    .refine(
+      (v) => v === "" || z.email().safeParse(v).success,
+      "Escribe un correo válido, por ejemplo nombre@institucion.cl.",
+    )
+    .nullish()
+    .transform((v) => v || null),
   photoId: imagenId,
   photoAlt: textoOpcional(300),
   links: z.array(enlace).max(6),

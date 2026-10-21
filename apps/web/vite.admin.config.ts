@@ -22,6 +22,9 @@ function spaFallback(): Plugin {
 export default defineConfig({
   ...shared,
   plugins: [...shared.plugins, spaFallback()],
+  // Caché propia: si comparte la de la landing, al correr los dos (npm run dev:all)
+  // cada uno pisa las dependencias del otro y las vistas del panel no cargan.
+  cacheDir: "node_modules/.vite/admin",
   base: "./",
   publicDir: false,
   resolve: {

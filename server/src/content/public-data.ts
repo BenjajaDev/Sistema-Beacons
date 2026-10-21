@@ -2,6 +2,7 @@ import type { Page } from "../generated/prisma/enums.js";
 import type { Db } from "../lib/prisma.js";
 import { SLUG_REGEX } from "../lib/slug.js";
 import { parseFooter } from "./footer.js";
+import { publicSectionImages } from "./section-images.js";
 import { PUBLIC_NEWS_INCLUDE, toNewsCard, toNewsDetail } from "./news-view.js";
 import { FONT_OPTIONS, type Fonts } from "./theme.js";
 
@@ -69,7 +70,12 @@ export async function getPage(db: Db, page: Page) {
     orderBy: { order: "asc" },
     select: { key: true, content: true },
   });
-  return { secciones: secciones.map((s) => ({ key: s.key, content: soloHtml(s.content) })) };
+  return {
+    secciones: secciones.map((s) => ({
+      key: s.key,
+      content: publicSectionImages(soloHtml(s.content)),
+    })),
+  };
 }
 
 export async function getNewsList(
@@ -116,6 +122,9 @@ export async function getTeam(db: Db) {
       name: m.name,
       position: m.position,
       bio: m.bio,
+      area: m.area,
+      education: m.education,
+      email: m.email,
       links: m.links,
       photo: m.photo ? { ...m.photo, alt: m.photoAlt ?? "" } : null,
     })),
