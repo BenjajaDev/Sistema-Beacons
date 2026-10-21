@@ -33,12 +33,19 @@ Por qué funciona sin cambiar el frontend: para el navegador todo sale de **un s
 | Qué                          | Para qué                                     | Costo aproximado                                                     |
 | ---------------------------- | -------------------------------------------- | -------------------------------------------------------------------- |
 | Proyecto de Supabase         | Base de datos e imágenes                     | Gratis (se pausa tras una semana sin uso) o Pro                       |
-| Cuenta de Render             | Servidor Express (plan **Starter** + disco)  | ~7 USD/mes + 0,25 USD/mes por el disco de 1 GB                         |
+| Cuenta de Render             | Servidor Express (plan **Free**)             | Gratis: 750 horas al mes por espacio de trabajo                        |
 | Cuenta de Cloudflare         | Pages, dominio y HTTPS                       | Gratis hasta 100.000 peticiones al día a la Function                  |
 | Un dominio (recomendado)     | La dirección pública y la de la app Android  | Según el registrador; puede estar en Cloudflare                       |
 | El repositorio en GitHub     | Render y Cloudflare despliegan desde `main`  | —                                                                    |
 
-El plan Starter de Render importa: el gratuito se suspende a los 15 minutos sin uso y tarda cerca de un minuto en despertar, y la app Android necesita respuesta inmediata.
+**Límites del plan gratis de Render:**
+
+- **Se suspende** tras 15 minutos sin peticiones y tarda cerca de un minuto en despertar. Mientras despierta, la primera consulta de la app Android o de la página espera. El paso 4.1 explica cómo mantenerlo despierto.
+- **750 horas al mes por espacio de trabajo**, compartidas entre todos sus servicios gratuitos. Un servicio despierto todo el mes gasta unas 744: si mantienes este despierto, no queda cupo para otro servicio gratuito en el mismo espacio de trabajo.
+- **Sin disco persistente:** los respaldos automáticos están desactivados (`BACKUP_INTERVAL_HOURS=0`). Respalda desde tu computador con `npm run backup` usando el `.env` de Supabase. El snapshot de beacons para cuando Supabase no responde se regenera cada vez que el servidor arranca.
+- **512 MB de memoria y CPU compartida:** alcanza para SIGNAL, pero subir imágenes grandes es más lento.
+
+Si más adelante la app necesita respuesta inmediata siempre, cambia `plan: free` por `plan: starter` en `render.yaml` (unos 7 USD al mes, pide tarjeta).
 
 Cada visita a una página pasa por la Function varias veces (el HTML y algunos archivos). Con el plan gratuito de Cloudflare caben del orden de 5.000 a 10.000 páginas vistas al día, más las consultas de la app. Si se acerca al límite, el plan Workers Paid (5 USD/mes) lo sube a 10 millones al mes.
 
@@ -63,7 +70,7 @@ npm run import:beacons   # beacons históricos
 npm run seed             # cuentas del panel (con SEED_* reales y contraseñas temporales), identidad visual y secciones
 ```
 
-Después de esto, Render aplica solo las migraciones nuevas en cada despliegue (`preDeployCommand`). `import:beacons` y `seed` no vuelven a hacer falta.
+Después de esto, Render aplica solo las migraciones nuevas al final de cada build. `import:beacons` y `seed` no vuelven a hacer falta.
 
 ## 3. Generar los secretos de producción
 
@@ -80,7 +87,7 @@ De lo que imprime, para producción usa **solo** `ADMIN_PATH` y `EDGE_PROXY_SECR
 
 ## 4. Crear el servidor en Render
 
-El archivo [`render.yaml`](../render.yaml) del repositorio ya trae toda la configuración (plan, región, comandos, disco y variables fijas).
+El archivo [`render.yaml`](../render.yaml) del repositorio ya trae toda la configuración (plan gratis, región, comandos y variables fijas). Al no tener recursos de pago, no debería pedir tarjeta.
 
 1. En [dashboard.render.com](https://dashboard.render.com), pulsa **New → Blueprint**.
 2. Conecta GitHub si te lo pide y elige el repositorio `Sistema-Beacons`. Branch: **`main`**.
@@ -96,7 +103,7 @@ El archivo [`render.yaml`](../render.yaml) del repositorio ya trae toda la confi
    | `SUPABASE_URL`              | `https://<ref>.supabase.co`                                                             |
    | `SUPABASE_SERVICE_ROLE_KEY` | La clave `service_role`.                                                                |
 
-4. Pulsa **Apply**. Render compila (`npm ci --include=dev && npm run build`), aplica las migraciones (`npm run db:deploy`) y arranca (`npm start`).
+4. Pulsa **Apply**. Render compila (`npm ci --include=dev && npm run build`), aplica las migraciones (`npm run db:deploy`) y arranca (`npm start`). Si las migraciones fallan, el despliegue se cancela y sigue la versión anterior.
 5. Cuando diga **Live**, copia la URL del servicio, por ejemplo `https://signal-api.onrender.com`. Es el `BACKEND_ORIGIN` del paso 5.
 6. Comprueba que responde y que está cerrado al público:
 
@@ -108,6 +115,16 @@ El archivo [`render.yaml`](../render.yaml) del repositorio ya trae toda la confi
    ```
 
 `autoDeployTrigger: checksPass` hace que Render despliegue cada commit de `main` **solo si el CI de GitHub pasó**.
+
+### 4.1 Mantenerlo despierto (recomendado)
+
+Para que la app no espere un minuto cuando el servidor estuvo suspendido, un monitor gratuito lo consulta cada 5 minutos:
+
+1. Crea una cuenta en [UptimeRobot](https://uptimerobot.com) (o un servicio parecido).
+2. **New monitor → HTTP(s)**, con la URL `https://signal-api.onrender.com/api/health/live` (la de tu servicio) y un intervalo de **5 minutos**.
+3. De paso, te avisa por correo si el servidor se cae.
+
+Usa `/api/health/live` y no otra ruta: es la única que responde sin pasar por Cloudflare y no consulta la base. Mantenerlo despierto es una práctica común, pero Render no la garantiza en el plan gratis. Si la app necesita una respuesta inmediata garantizada, usa el plan Starter.
 
 ## 5. Crear el sitio en Cloudflare Pages
 
@@ -175,7 +192,7 @@ En el navegador:
 1. Trabaja en `develop` y abre un pull request a `main`.
 2. Cuando el CI pase y se haga el merge:
    - **Cloudflare Pages** compila y publica la landing.
-   - **Render** espera al CI de `main`, compila, aplica las migraciones nuevas y reemplaza el servidor. Como el servicio tiene disco, Render detiene la versión anterior antes de arrancar la nueva: durante unos segundos las páginas muestran «SIGNAL no responde en este momento» y la app recibe un 502. Por eso conviene publicar en horarios de poco uso.
+   - **Render** espera al CI de `main`, compila, aplica las migraciones nuevas y cambia a la versión nueva cuando esta ya responde, sin cortar el servicio. Las migraciones se aplican antes del cambio, mientras la versión anterior sigue atendiendo: una migración que borre o renombre columnas debe hacerse en dos despliegues (primero el código que ya no las usa, después la migración).
 3. Los dos despliegues terminan en momentos distintos. Mientras tanto no se rompe nada: si el HTML del servidor pide un archivo que Pages todavía no tiene (o ya no tiene), la Function se lo pide al servidor, que tiene los de su propio build.
 
 Para volver atrás: en Pages, **Deployments → la versión anterior → Rollback**; en Render, **Events → el deploy anterior → Rollback**. Las migraciones de base de datos no se deshacen solas.
@@ -200,10 +217,11 @@ Abre `http://localhost:8788`. Para no escribir el secreto en la terminal, ponlo 
 | Todo el sitio responde `{"error":"No encontrado","code":"NOT_FOUND"}`           | `EDGE_PROXY_SECRET` distinto en Render y en Cloudflare.                        | Copia el mismo valor en los dos y vuelve a desplegar Pages (**Retry deployment**).                             |
 | Responde `EDGE_MISCONFIGURED` (500)                                             | Falta `BACKEND_ORIGIN` o `EDGE_PROXY_SECRET` en Pages, o tienen mal formato.   | **Settings → Variables and Secrets** (en Production). El detalle está en **Functions → Real-time logs**.       |
 | Página «SIGNAL no responde en este momento» o `UPSTREAM_UNAVAILABLE` (502)      | Render está caído, desplegando con error o `BACKEND_ORIGIN` apunta mal.         | Revisa **Logs** y **Events** en Render. Comprueba `curl <BACKEND_ORIGIN>/api/health/live`.                     |
-| El build de Render falla en `prisma generate` o `vite`                          | Se cambió el build command y faltan las devDependencies.                       | Debe ser `npm ci --include=dev && npm run build`.                                                              |
-| `preDeployCommand` falla con `P1001` o se queda colgado                         | `DIRECT_URL` falta, usa la «Direct connection» o el puerto 6543.               | Usa el Session pooler, puerto 5432 ([`docs/supabase.md`](supabase.md), paso 3).                                 |
+| El build de Render falla en `prisma generate` o `vite`                          | Se cambió el build command y faltan las devDependencies.                       | Debe ser `npm ci --include=dev && npm run build && npm run db:deploy`.                                                              |
+| El build de Render falla en `db:deploy` con `P1001` o se queda colgado          | `DIRECT_URL` falta, usa la «Direct connection» o el puerto 6543.               | Usa el Session pooler, puerto 5432 ([`docs/supabase.md`](supabase.md), paso 3).                                 |
 | El servidor no arranca: `Configuración inválida en server/.env`                 | Falta o sobra una variable en Render.                                          | La lista dice cuál. Las variables están en **Environment** del servicio.                                       |
 | El ingreso al panel responde `ORIGIN_NOT_ALLOWED`                               | Entraste por una dirección distinta de `SITE_URL`.                             | Entra por el dominio de `SITE_URL`, o corrige `SITE_URL` en Render.                                            |
+| La primera petición tarda cerca de un minuto                                    | El servidor gratis estaba suspendido.                                          | Configura el monitor del paso 4.1.                                                                             |
 | `/api/health` dice `"db":"sin conexión"`                                        | Supabase pausado (plan gratuito) o credenciales cambiadas.                     | Reanuda el proyecto en Supabase o actualiza `DATABASE_URL`. La app sigue respondiendo desde el snapshot.        |
 | Cloudflare avisa que te acercas al límite diario de la Function                 | Mucho tráfico en el plan gratuito.                                             | Pasa la cuenta a Workers Paid.                                                                                 |
 
