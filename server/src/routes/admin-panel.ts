@@ -11,11 +11,14 @@ export function adminPanel({
   adminPath,
   distDir,
   getThemeCss,
+  getFavicon,
 }: {
   adminPath: string;
   distDir: string;
   // CSS de Identidad visual (colores y fuentes) para inyectar antes del primer pintado.
   getThemeCss?: () => Promise<string | null>;
+  // URL del favicon de Identidad visual; sin él queda el del build (el de la landing).
+  getFavicon?: () => Promise<string | null>;
 }) {
   const base = `/${adminPath}`;
   // Sensible a mayúsculas: /<ADMIN_PATH> en otra capitalización es otra ruta (404).
@@ -37,7 +40,7 @@ export function adminPanel({
         .send("El panel no está compilado. Ejecuta `npm run build` y reinicia el servidor.");
       return;
     }
-    const tema = (await getThemeCss?.()) ?? "";
+    const [tema, favicon] = await Promise.all([getThemeCss?.(), getFavicon?.()]);
     // <base> al inicio: las rutas relativas de los assets dependen de él. El tema al
     // final: tiene que ir después del CSS del build, que trae los colores por defecto
     // con los mismos selectores; si va antes, los de Identidad visual nunca se aplican.
@@ -49,6 +52,9 @@ export function adminPanel({
       .send(
         html
           .replace(/<head(\s[^>]*)?>/i, (m) => m + cabecera)
+          .replace(/<link rel="icon"[^>]*>/i, (m) =>
+            favicon ? `<link rel="icon" href="${favicon.replaceAll('"', "&quot;")}">` : m,
+          )
           .replace(/<\/head>/i, (m) => estilos + m),
       );
   }

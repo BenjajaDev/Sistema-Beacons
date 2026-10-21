@@ -1,4 +1,5 @@
 import { apiFetch, ApiError, type ApiFetchOptions } from "@shared/api";
+import type { Encuadre } from "../public/data";
 
 // Cliente de /api/admin. Agrega el token CSRF en las peticiones que modifican,
 // lo renueva una vez si caducó, y avisa a la app cuando la sesión expiró o
@@ -150,6 +151,7 @@ export interface Persona {
   photoId: string | null;
   photoAlt: string | null;
   photo: Imagen | null;
+  photoFrame: Encuadre | null;
   links: Enlace[];
   order: number;
   visible: boolean;

@@ -15,6 +15,7 @@ const persona = (name: string, extra: Partial<Persona> = {}): Persona => ({
   email: null,
   links: [],
   photo: null,
+  photoFrame: null,
   ...extra,
 });
 
@@ -206,6 +207,76 @@ describe("equipo en «Nosotros»: tarjetas grandes en una fila", () => {
       "href",
       "mailto:ana@signal.cl",
     );
+    await expectNoAxeViolations(container);
+  });
+});
+
+describe("encuadre de la foto", () => {
+  const foto = { url: "/uploads/a.webp", alt: "Ana sonriendo", width: 800, height: 600 };
+
+  it("aplica el punto de enfoque y el zoom sin recortar el archivo", async () => {
+    const { FotoPersona } = await import("../src/public/FotoPersona");
+    const { container } = render(
+      <FotoPersona
+        persona={{ name: "Ana", photo: foto, photoFrame: { x: 30, y: 20, zoom: 1.5 } }}
+        className="persona__foto"
+        claseInicial="persona__inicial"
+      />,
+    );
+    const img = container.querySelector("img")!;
+    expect(img).toHaveAttribute("src", "/uploads/a.webp");
+    expect(img.style.objectPosition).toBe("30% 20%");
+    expect(img.style.transformOrigin).toBe("30% 20%");
+    expect(img.style.getPropertyValue("--zoom")).toBe("1.5");
+    expect(img).toHaveAttribute("alt", "Ana sonriendo");
+  });
+
+  it("sin encuadre queda centrada; sin foto muestra la inicial", async () => {
+    const { FotoPersona } = await import("../src/public/FotoPersona");
+    const { container, rerender } = render(
+      <FotoPersona
+        persona={{ name: "Ana", photo: foto, photoFrame: null }}
+        className="f"
+        claseInicial="i"
+        decorativa
+      />,
+    );
+    expect(container.querySelector("img")!.style.objectPosition).toBe("50% 50%");
+    expect(container.querySelector("img")).toHaveAttribute("alt", "");
+    rerender(
+      <FotoPersona
+        persona={{ name: "luis", photo: null, photoFrame: null }}
+        className="f"
+        claseInicial="i"
+      />,
+    );
+    expect(container.textContent).toBe("L");
+  });
+
+  it("la vista previa del panel muestra los tres marcos y ajusta el encuadre", async () => {
+    const { VistaPreviaPersona } = await import("../src/admin/VistaPreviaPersona");
+    const cambios: unknown[] = [];
+    const { container } = render(
+      <VistaPreviaPersona
+        persona={{ ...EQUIPO[0]!, photo: foto, photoFrame: { x: 50, y: 50, zoom: 1 } }}
+        onEncuadre={(e) => cambios.push(e)}
+      />,
+    );
+    expect(screen.getByText("Inicio: círculo")).toBeInTheDocument();
+    expect(screen.getByText("Inicio: card al apuntar")).toBeInTheDocument();
+    expect(screen.getByText("Nosotros: tarjeta")).toBeInTheDocument();
+    expect(container.querySelectorAll("img")).toHaveLength(3);
+
+    const horizontal = screen.getByLabelText("Enfoque horizontal");
+    expect(horizontal).toHaveAttribute("aria-valuetext", "50 % desde la izquierda");
+    fireEvent.change(horizontal, { target: { value: "20" } });
+    fireEvent.change(screen.getByLabelText("Zoom"), { target: { value: "2" } });
+    expect(cambios).toEqual([
+      { x: 20, y: 50, zoom: 1 },
+      { x: 50, y: 50, zoom: 2 },
+    ]);
+    await userEvent.setup().click(screen.getByRole("button", { name: "Centrar y quitar el zoom" }));
+    expect(cambios.at(-1)).toBeNull();
     await expectNoAxeViolations(container);
   });
 });

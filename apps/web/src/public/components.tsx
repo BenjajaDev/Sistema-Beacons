@@ -1,4 +1,4 @@
-import type { ReactNode, Ref } from "react";
+import type { CSSProperties, ReactNode, Ref } from "react";
 import { Link } from "react-router";
 import type { Imagen, NoticiaResumen, RedSocial, Sitio } from "./data";
 import { detectarRed, IconoRed } from "./IconosRedes";
@@ -83,10 +83,12 @@ export function Img({
   imagen,
   prioridad = false,
   className,
+  style,
 }: {
   imagen: Imagen;
   prioridad?: boolean;
   className?: string;
+  style?: CSSProperties;
 }) {
   return (
     <img
@@ -98,6 +100,7 @@ export function Img({
       decoding="async"
       fetchPriority={prioridad ? "high" : undefined}
       className={className}
+      style={style}
     />
   );
 }
