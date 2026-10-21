@@ -787,12 +787,14 @@ main:focus {
   }
 }
 
+/* La card nace del círculo: aparece encima de la persona, desde su centro
+   superior, y crece hasta ser un rectángulo con la foto y la información. */
 .integrante__card {
   position: absolute;
-  top: calc(100% + var(--space-3));
+  top: 0;
   left: 50%;
-  width: min(20rem, calc(100vw - 2rem));
-  padding: var(--space-5);
+  width: min(18rem, calc(100vw - 2rem));
+  padding: var(--space-4);
   border: 1px solid var(--color-border);
   border-top: 3px solid var(--color-primary);
   border-radius: var(--radius-lg);
@@ -800,7 +802,7 @@ main:focus {
   box-shadow: var(--sombra-alta);
   text-align: start;
   translate: calc(-50% + var(--ajuste, 0px)) 0;
-  transform-origin: calc(50% - var(--ajuste, 0px)) 0;
+  transform-origin: calc(50% - var(--ajuste, 0px)) 4rem;
   visibility: hidden;
   opacity: 0;
   /* Salida más rápida que la entrada; visibility cambia al terminar. */
@@ -809,34 +811,12 @@ main:focus {
     transform var(--dur-rapida) var(--curva),
     visibility 0s linear var(--dur-rapida);
 }
-/* Puente invisible sobre el espacio entre la persona y su card: el puntero
-   puede bajar a la card sin que se cierre. */
-.integrante__card::before {
-  content: "";
-  position: absolute;
-  inset: calc(-1 * var(--space-3) - 3px) 0 auto;
-  height: var(--space-3);
-}
-/* Flecha hacia la persona, que sigue apuntándola aunque la card se corra. */
-.integrante__card::after {
-  content: "";
-  position: absolute;
-  top: calc(-0.5rem - 2px);
-  left: calc(50% - var(--ajuste, 0px));
-  width: 0.9rem;
-  height: 0.9rem;
-  border-top: 3px solid var(--color-primary);
-  border-left: 3px solid var(--color-primary);
-  background: var(--color-surface);
-  translate: -50% 0;
-  rotate: 45deg;
-}
 .integrante[data-abierta] .integrante__card {
   visibility: visible;
   opacity: 1;
   transition:
     opacity var(--dur) var(--curva),
-    transform var(--dur) var(--curva),
+    transform var(--dur-lenta) var(--curva),
     visibility 0s;
 }
 .integrante__card[data-instantanea] {
@@ -844,8 +824,9 @@ main:focus {
   transition-delay: 0s;
 }
 @media (prefers-reduced-motion: no-preference) {
+  /* Del tamaño del círculo (≈ la mitad de la card) a la card completa. */
   .integrante__card {
-    transform: translateY(-0.25rem) scale(0.98);
+    transform: scale(0.5);
   }
   .integrante[data-abierta] .integrante__card {
     transform: none;
@@ -855,6 +836,14 @@ main:focus {
   .integrante__card {
     transition-delay: 0s;
   }
+}
+.integrante__card-marco {
+  display: block;
+  overflow: hidden;
+  aspect-ratio: 4 / 3;
+  margin-bottom: var(--space-3);
+  border-radius: var(--radius);
+  background: color-mix(in srgb, var(--color-primary) 10%, var(--color-surface));
 }
 .integrante__card > * {
   margin: 0;
@@ -889,6 +878,115 @@ main:focus {
 }
 .integrante__card .redes {
   margin-top: var(--space-3);
+}
+
+/* --- Nosotros: tarjetas grandes de persona, todas en una fila ---
+   Si no caben, la fila se desplaza de lado (useDesborde la vuelve enfocable). */
+
+.personas-fila {
+  /* Su ancho no depende de las tarjetas: así desplaza en vez de ensanchar la página. */
+  contain: inline-size;
+  /* Ancla los textos .visually-hidden de las redes: sin esto se escapan del
+     scroll y ensanchan la página (ver «Trampas conocidas» en CLAUDE.md). */
+  position: relative;
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+  scroll-snap-type: x proximity;
+  /* Espacio para el foco y para que la tarjeta suba al apuntar sin cortarse. */
+  padding: var(--space-2) var(--space-1) var(--space-4);
+}
+.personas {
+  display: grid;
+  grid-auto-flow: column;
+  /* 5 tarjetas caben en el ancho máximo (72rem); con más, o en pantallas angostas, desplaza. */
+  grid-auto-columns: minmax(11.5rem, 1fr);
+  gap: var(--space-5);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.persona {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  scroll-snap-align: start;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  background: var(--color-surface);
+  transition:
+    border-color var(--dur) ease,
+    transform var(--dur) var(--curva);
+}
+.persona > :not(.persona__marco) {
+  margin-inline: var(--space-5);
+}
+.persona > :last-child {
+  margin-bottom: var(--space-5);
+}
+/* La foto llena un marco cuadrado (object-fit), así una foto vertical u
+   horizontal no deforma la tarjeta. El panel ofrece encuadrarla. */
+.persona__marco {
+  position: relative;
+  overflow: hidden;
+  aspect-ratio: 1 / 1;
+  margin-bottom: var(--space-4);
+  background: color-mix(in srgb, var(--color-primary) 10%, var(--color-surface));
+}
+.persona__foto {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform var(--dur-lenta) var(--curva);
+}
+/* Sin foto: la inicial sobre las ondas de la señal. */
+.persona__inicial {
+  display: grid;
+  place-items: center;
+  height: 100%;
+  background: repeating-radial-gradient(
+    circle at 50% 50%,
+    transparent 0 1.6rem,
+    color-mix(in srgb, var(--color-primary) 16%, transparent) 1.6rem 1.75rem
+  );
+  color: var(--color-primary);
+  font-family: var(--font-heading);
+  font-size: 3.5rem;
+  font-weight: 800;
+}
+.persona__nombre {
+  margin-bottom: var(--space-1);
+  font-size: var(--text-lg);
+}
+.persona__cargo {
+  align-self: flex-start;
+  margin-bottom: var(--space-3);
+  padding: var(--space-1) var(--space-3);
+  border-radius: var(--radius-pill);
+  background: color-mix(in srgb, var(--color-primary) 10%, transparent);
+  color: var(--color-link);
+  font-size: var(--text-sm);
+  font-weight: var(--peso-fuerte);
+}
+.persona__detalle {
+  font-size: var(--text-sm);
+  font-weight: var(--peso-medio);
+}
+.persona__bio {
+  color: var(--color-text-muted);
+}
+.persona__correo {
+  overflow-wrap: anywhere;
+}
+.persona:hover {
+  border-color: var(--color-primary);
+}
+@media (hover: hover) and (pointer: fine) and (prefers-reduced-motion: no-preference) {
+  .persona:hover {
+    transform: translateY(-4px);
+  }
+  .persona:hover .persona__foto {
+    transform: scale(1.06);
+  }
 }
 
 /* --- Imágenes de las secciones --- */

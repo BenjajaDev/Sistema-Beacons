@@ -58,7 +58,8 @@ describe("equipo en fila con card desplegable", () => {
     expect(ana).toHaveTextContent("Diseño · Universidad de Chile");
     expect(ana).toHaveTextContent("Diseña los mensajes de voz.");
     expect(ana.querySelector('a[href="mailto:ana@signal.cl"]')).not.toBeNull();
-    expect(card("Luis").textContent).toBe("LuisDiseño UX");
+    // Sin foto, la card muestra la inicial (decorativa) y solo nombre y cargo.
+    expect(card("Luis").textContent).toBe("LLuisDiseño UX");
   });
 
   it("un clic la abre y la fija; otro clic la cierra", async () => {
@@ -183,6 +184,28 @@ describe("equipo en el inicio", () => {
     expect(screen.getAllByRole("button", { expanded: false })).toHaveLength(5);
     await userEvent.setup().click(boton("Ana"));
     expect(abierta("Ana")).toBe(true);
+    await expectNoAxeViolations(container);
+  });
+});
+
+describe("equipo en «Nosotros»: tarjetas grandes en una fila", () => {
+  it("muestra a todas las personas con su información a la vista", async () => {
+    const { EquipoTarjetas } = await import("../src/public/EquipoTarjetas");
+    const { container } = render(<EquipoTarjetas personas={EQUIPO} />);
+    const tarjetas = screen
+      .getAllByRole("listitem")
+      .filter((li) => li.classList.contains("persona"));
+    expect(tarjetas).toHaveLength(5);
+    expect(screen.getAllByRole("heading", { level: 3 }).map((h) => h.textContent)).toEqual(
+      EQUIPO.map((p) => p.name),
+    );
+    // Sin botones ni cards ocultas: la información está siempre visible.
+    expect(screen.queryByRole("button")).toBeNull();
+    expect(screen.getByText("Diseño · Universidad de Chile")).toBeVisible();
+    expect(screen.getByRole("link", { name: "ana@signal.cl" })).toHaveAttribute(
+      "href",
+      "mailto:ana@signal.cl",
+    );
     await expectNoAxeViolations(container);
   });
 });
