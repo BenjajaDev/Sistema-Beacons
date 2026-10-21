@@ -73,9 +73,14 @@ test.describe("landing pública", () => {
     const card = page.locator(`[id="${await ultima.getAttribute("aria-controls")}"]`);
     await expect(card).toBeVisible();
     await expect(card.getByRole("link", { name: "persona5@e2e.test" })).toBeVisible();
-    // La card nace sobre el círculo: empieza a la misma altura que la persona.
-    const [cajaCard, cajaBoton] = [(await card.boundingBox())!, (await ultima.boundingBox())!];
-    expect(Math.abs(cajaCard.y - cajaBoton.y)).toBeLessThan(4);
+    // La card nace sobre el círculo: al terminar de crecer, su borde superior queda a
+    // la altura de la persona. Se espera a que termine la animación de entrada.
+    await expect
+      .poll(async () => {
+        const [cajaCard, cajaBoton] = [(await card.boundingBox())!, (await ultima.boundingBox())!];
+        return Math.abs(cajaCard.y - cajaBoton.y);
+      })
+      .toBeLessThan(2);
     await sinViolaciones(page, "/ con una card abierta");
     await page.keyboard.press("Escape");
     await expect(ultima).toHaveAttribute("aria-expanded", "false");
