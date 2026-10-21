@@ -56,23 +56,63 @@
     display: block;
   }
 }
-.logo__texto {
-  font-family: var(--font-heading);
-  font-size: var(--text-xl);
-  font-weight: 800;
-  letter-spacing: 0.02em;
+/* El isotipo vectorial, en un marco redondeado con los colores del tema. */
+.logo__marca {
+  display: inline-flex;
+  align-items: center;
+  padding: var(--space-1) var(--space-2);
+  border: 2px solid color-mix(in srgb, var(--color-primary) 35%, transparent);
+  border-radius: var(--radius-lg);
 }
-/* El punto de luz del beacon antes del nombre. */
-.logo__texto::before {
-  content: "";
-  display: inline-block;
-  width: 0.55em;
-  height: 0.55em;
-  margin-inline-end: 0.35em;
-  border-radius: 50%;
-  background: var(--color-primary);
-  box-shadow: 0 0 0 0.18em color-mix(in srgb, var(--color-primary) 25%, transparent);
-  vertical-align: 0.08em;
+.isotipo {
+  display: block;
+  height: 2.25rem;
+  width: auto;
+  overflow: visible;
+}
+.isotipo__beacon {
+  fill: var(--color-primary);
+  stroke: var(--color-primary);
+  stroke-width: 6;
+  stroke-linejoin: round;
+}
+.isotipo__facetas {
+  fill: none;
+  stroke: var(--color-bg);
+  stroke-width: 2;
+  stroke-linecap: round;
+  opacity: 0.35;
+}
+.isotipo__brillo {
+  fill: var(--color-bg);
+  opacity: 0.3;
+}
+.isotipo__luz {
+  fill: var(--color-bg);
+}
+.isotipo__onda,
+.isotipo__voz {
+  fill: none;
+  stroke: var(--color-primary);
+  stroke-linecap: round;
+}
+.isotipo__onda {
+  stroke-width: 5;
+}
+.isotipo__onda--2 {
+  opacity: 0.7;
+}
+.isotipo__onda--3 {
+  opacity: 0.45;
+}
+.isotipo__telefono {
+  fill: none;
+  stroke: var(--color-text);
+  stroke-width: 4;
+  stroke-linecap: round;
+}
+.isotipo__voz {
+  stroke-width: 3.5;
 }
 
 .encabezado__menu {
@@ -715,6 +755,24 @@ main:focus {
   margin: 0;
   font-size: inherit;
 }
+/* Al abrirse una card, las demás personas de la fila se corren hacia afuera y
+   se achican, como si la card las empujara: así no quedan tapadas a medias. Solo
+   en la fila de cinco (en pantallas angostas las cards ocupan casi todo el
+   ancho) y solo con puntero fino: lo abre apuntar con el mouse. Se corre el
+   título y no el <li>, que es la zona de apuntado y no debe moverse. */
+@media (min-width: 56rem) and (hover: hover) and (pointer: fine) and (prefers-reduced-motion: no-preference) {
+  .integrante__titulo {
+    --empuje: 3rem;
+    transform-origin: 50% 0;
+    transition: transform var(--dur-lenta) var(--curva);
+  }
+  .integrante[data-abierta] ~ .integrante .integrante__titulo {
+    transform: translateX(var(--empuje)) scale(0.8);
+  }
+  .integrante:has(~ .integrante[data-abierta]) .integrante__titulo {
+    transform: translateX(calc(-1 * var(--empuje))) scale(0.8);
+  }
+}
 .integrante__boton {
   display: grid;
   justify-items: center;
@@ -794,7 +852,8 @@ main:focus {
   position: absolute;
   top: 0;
   left: 50%;
-  width: min(18rem, calc(100vw - 2rem));
+  /* Ancha para que un correo largo quepa en una línea. */
+  width: min(22rem, calc(100vw - 2rem));
   padding: var(--space-4);
   border: 1px solid var(--color-border);
   border-top: 3px solid var(--color-primary);
@@ -841,7 +900,7 @@ main:focus {
 .integrante__card-marco {
   display: block;
   overflow: hidden;
-  aspect-ratio: 4 / 3;
+  aspect-ratio: 3 / 2;
   margin-bottom: var(--space-3);
   border-radius: var(--radius);
   background: color-mix(in srgb, var(--color-primary) 10%, var(--color-surface));

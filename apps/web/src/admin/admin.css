@@ -1323,7 +1323,7 @@
 .vista-persona .integrante__card--estatica {
   position: static;
   width: 100%;
-  max-width: 18rem;
+  max-width: 22rem;
   justify-self: center;
   visibility: visible;
   opacity: 1;
