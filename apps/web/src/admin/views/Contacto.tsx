@@ -8,6 +8,7 @@ import { TextArea, TextField } from "@shared/ui/Field";
 import { Cargando, EmptyState, ErrorState, Skeleton } from "@shared/ui/States";
 import { useToast } from "@shared/ui/Toast";
 import { adminFetch, type Ajustes, type Enlace, type Mensaje } from "../api";
+import { ResponderCorreo } from "../ResponderCorreo";
 import { AvisoCambiosSinGuardar, Cabecera, formatoFecha, usePanelPage } from "../ui";
 
 interface FormContacto {
@@ -257,12 +258,11 @@ function Mensajes() {
                 </p>
                 <p className="mensaje__texto">{m.message}</p>
                 <div className="fila-botones">
-                  <a
-                    className="btn btn--secundario"
-                    href={`mailto:${m.email}?subject=${encodeURIComponent(`Re: ${m.subject ?? "Tu mensaje a SIGNAL"}`)}`}
-                  >
-                    Responder por correo<span className="visually-hidden"> a {m.name}</span>
-                  </a>
+                  <ResponderCorreo
+                    correo={m.email}
+                    nombre={m.name}
+                    asunto={`Re: ${m.subject ?? "Tu mensaje a SIGNAL"}`}
+                  />
                   <Button
                     variante="fantasma"
                     onClick={() => leido.mutate({ id: m.id, valor: !m.readAt })}

@@ -85,6 +85,7 @@ test.describe("landing pública", () => {
       [primera, ultima].map(async (b) => (await b.boundingBox())!.y),
     );
     expect(Math.abs(y1! - y5!)).toBeLessThan(2);
+    const antes = (await primera.boundingBox())!;
 
     await ultima.hover();
     await expect(ultima).toHaveAttribute("aria-expanded", "true");
@@ -99,6 +100,13 @@ test.describe("landing pública", () => {
         return Math.abs(cajaCard.y - cajaBoton.y);
       })
       .toBeLessThan(2);
+    // Las demás personas se corren hacia afuera (aquí, a la izquierda) y se achican.
+    await expect
+      .poll(async () => {
+        const despues = (await primera.boundingBox())!;
+        return [despues.width / antes.width < 0.85, despues.x < antes.x];
+      })
+      .toEqual([true, true]);
     await sinViolaciones(page, "/ con una card abierta");
     await page.keyboard.press("Escape");
     await expect(ultima).toHaveAttribute("aria-expanded", "false");

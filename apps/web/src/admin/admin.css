@@ -934,6 +934,48 @@
 .mensaje__texto {
   white-space: pre-wrap;
 }
+.responder {
+  position: relative;
+}
+.responder__opciones {
+  position: absolute;
+  top: calc(100% + var(--space-1));
+  left: 0;
+  z-index: 10;
+  display: grid;
+  min-width: 15rem;
+  margin: 0;
+  padding: var(--space-1);
+  list-style: none;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  box-shadow: var(--sombra-alta);
+}
+.responder__opciones[hidden] {
+  display: none;
+}
+.responder__opciones a,
+.responder__opciones button {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  min-height: 44px;
+  padding: var(--space-2) var(--space-3);
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: none;
+  color: var(--color-text);
+  font: inherit;
+  text-align: start;
+  text-decoration: none;
+  cursor: pointer;
+}
+.responder__opciones a:hover,
+.responder__opciones button:hover {
+  background: var(--color-bg);
+  color: var(--color-primary);
+}
 
 /* --- Beacons --- */
 
@@ -1281,7 +1323,7 @@
 .vista-persona .integrante__card--estatica {
   position: static;
   width: 100%;
-  max-width: 18rem;
+  max-width: 22rem;
   justify-self: center;
   visibility: visible;
   opacity: 1;

@@ -200,8 +200,9 @@ export function Redes({
   );
 }
 
-// El logo es un enlace al inicio. Si hay logos claro y oscuro, el CSS muestra el
-// del tema activo; la imagen es decorativa porque el enlace ya tiene nombre.
+// El logo es un enlace al inicio. Si se subieron logos en Identidad visual, el CSS
+// muestra el del tema activo; si no, el isotipo vectorial. Las imágenes son
+// decorativas porque el enlace ya tiene nombre.
 export function Logo({ sitio }: { sitio: Sitio | undefined }) {
   const nombre = sitio?.siteName ?? "SIGNAL";
   const { claro, oscuro } = sitio?.logos ?? { claro: null, oscuro: null };
@@ -217,8 +218,41 @@ export function Logo({ sitio }: { sitio: Sitio | undefined }) {
           {oscuro && <img src={oscuro.url} alt="" className="logo__img logo__img--oscuro" />}
         </>
       ) : (
-        <span className="logo__texto">{nombre}</span>
+        <span className="logo__marca">
+          <Isotipo />
+        </span>
       )}
     </Link>
+  );
+}
+
+// El isotipo de SIGNAL: el beacon con su luz, las ondas de la señal y el teléfono
+// que la convierte en voz. Sin fondo y con los colores del tema (variables CSS),
+// así que el mismo dibujo sirve en claro y en oscuro.
+const BARRAS_DE_VOZ = [10, 22, 34, 26, 16, 8];
+function arcoDeOnda(r: number) {
+  const a = (40 * Math.PI) / 180;
+  const x = (66 + r * Math.cos(a)).toFixed(1);
+  return `M${x} ${(54 - r * Math.sin(a)).toFixed(1)}A${r} ${r} 0 0 1 ${x} ${(54 + r * Math.sin(a)).toFixed(1)}`;
+}
+export function Isotipo({ className = "isotipo" }: { className?: string }) {
+  return (
+    <svg className={className} viewBox="0 0 150 96" aria-hidden="true" focusable="false">
+      <path
+        className="isotipo__beacon"
+        d="M18 30 34 22 50 26 60 44 58 72 46 86 24 86 10 72 8 46Z"
+      />
+      <path className="isotipo__facetas" d="M30 50 8 46M30 50 60 44M30 50 46 86" />
+      <circle className="isotipo__brillo" cx="42" cy="38" r="8" />
+      <circle className="isotipo__luz" cx="42" cy="38" r="4" />
+      {[9, 17, 25].map((r, i) => (
+        <path key={r} className={`isotipo__onda isotipo__onda--${i + 1}`} d={arcoDeOnda(r)} />
+      ))}
+      <rect className="isotipo__telefono" x="100" y="8" width="42" height="80" rx="9" />
+      <path className="isotipo__telefono" d="M114 15h14" />
+      {BARRAS_DE_VOZ.map((alto, i) => (
+        <path key={i} className="isotipo__voz" d={`M${108 + i * 5} ${50 - alto / 2}v${alto}`} />
+      ))}
+    </svg>
   );
 }
