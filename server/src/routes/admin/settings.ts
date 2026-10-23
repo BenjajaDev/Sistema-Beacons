@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { footerSchema, parseFooter } from "../../content/footer.js";
+import { parseVoice, voiceSchema } from "../../content/voice.js";
 import { resolveSectionImages } from "../../content/section-images.js";
 import { checkPaletteContrast, fontsSchema, paletteSchema } from "../../content/theme.js";
 import { ApiError, parseOrThrow } from "../../http/errors.js";
@@ -180,6 +181,25 @@ export function settingsRoutes({ db, audit }: AdminDeps): AdminRoute[] {
         });
         await audit(req, {
           action: "SETTINGS_FOOTER_UPDATE",
+          entity: "SiteSettings",
+          meta: { campos: changedFields(antes, d) },
+        });
+        res.json({ settings: await actual() });
+      },
+    },
+    {
+      roles: ANY_ROLE,
+      method: "put",
+      path: "/settings/voice",
+      handler: async (req, res) => {
+        const antes = parseVoice((await actual()).voice);
+        const d = parseOrThrow(voiceSchema, req.body);
+        await db.siteSettings.update({
+          where: { id: 1 },
+          data: { voice: asJson(d), updatedById: req.user!.id },
+        });
+        await audit(req, {
+          action: "SETTINGS_VOICE_UPDATE",
           entity: "SiteSettings",
           meta: { campos: changedFields(antes, d) },
         });

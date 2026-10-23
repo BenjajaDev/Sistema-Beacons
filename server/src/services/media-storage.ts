@@ -1,6 +1,7 @@
 import { mkdir, readFile, rm, writeFile } from "node:fs/promises";
 import path from "node:path";
 import type { ServerEnv } from "../config/env.js";
+import { ApiError } from "../http/errors.js";
 
 // Dónde se guardan los archivos subidos. En desarrollo, en disco (server/uploads,
 // servido en /uploads). En producción, en un bucket público de Supabase Storage.
@@ -29,6 +30,39 @@ export function localStorage(dir: string): MediaStorage {
   };
 }
 
+// Un fallo de Supabase Storage se informa con su motivo (lo que responde Storage,
+// sin la clave), para poder corregir la configuración desde el panel: bucket
+// inexistente o privado, clave equivocada, cuota llena. 503 (y no 502): la
+// Function de Cloudflare cambia los 502 por la página «sin servidor».
+async function falloDeStorage(accion: string, res: Response): Promise<ApiError> {
+  const cuerpo = await res.text().catch(() => "");
+  let motivo = cuerpo;
+  try {
+    const json = JSON.parse(cuerpo) as { message?: unknown; error?: unknown };
+    motivo = String(json.message ?? json.error ?? cuerpo);
+  } catch {
+    // No era JSON: queda el texto tal cual.
+  }
+  motivo = motivo.replace(/\s+/g, " ").trim().slice(0, 200) || "sin detalle";
+  return new ApiError(
+    503,
+    "STORAGE_FAILED",
+    `El almacenamiento de imágenes (Supabase Storage) no pudo ${accion}: ${res.status} ${motivo}. Revisa en Supabase que exista el bucket público y que la clave del servidor sea la service_role.`,
+  );
+}
+
+async function pedir(fetchFn: typeof fetch, url: string, init: RequestInit) {
+  try {
+    return await fetchFn(url, init);
+  } catch {
+    throw new ApiError(
+      503,
+      "STORAGE_UNREACHABLE",
+      "No se pudo conectar con el almacenamiento de imágenes (Supabase Storage). Revisa SUPABASE_URL en el servidor e intenta de nuevo.",
+    );
+  }
+}
+
 // Usa la API REST de Storage directamente (sin SDK). La service role key solo vive
 // en el servidor: nunca debe llegar al navegador.
 export function supabaseStorage(
@@ -42,7 +76,7 @@ export function supabaseStorage(
   };
   return {
     async put(key, data, contentType) {
-      const res = await fetchFn(`${base}/storage/v1/object/${config.bucket}/${key}`, {
+      const res = await pedir(fetchFn, `${base}/storage/v1/object/${config.bucket}/${key}`, {
         method: "POST",
         headers: {
           ...headers,
@@ -52,27 +86,23 @@ export function supabaseStorage(
         },
         body: new Uint8Array(data),
       });
-      if (!res.ok) {
-        throw new Error(`Supabase Storage respondió ${res.status}: ${await res.text()}`);
-      }
+      if (!res.ok) throw await falloDeStorage("guardar la imagen", res);
       return { url: `${base}/storage/v1/object/public/${config.bucket}/${key}` };
     },
     async get(key) {
-      const res = await fetchFn(`${base}/storage/v1/object/${config.bucket}/${key}`, { headers });
-      if (!res.ok) {
-        throw new Error(`Supabase Storage respondió ${res.status} al leer: ${await res.text()}`);
-      }
+      const res = await pedir(fetchFn, `${base}/storage/v1/object/${config.bucket}/${key}`, {
+        headers,
+      });
+      if (!res.ok) throw await falloDeStorage("leer la imagen", res);
       return Buffer.from(await res.arrayBuffer());
     },
     async remove(key) {
-      const res = await fetchFn(`${base}/storage/v1/object/${config.bucket}`, {
+      const res = await pedir(fetchFn, `${base}/storage/v1/object/${config.bucket}`, {
         method: "DELETE",
         headers: { ...headers, "Content-Type": "application/json" },
         body: JSON.stringify({ prefixes: [key] }),
       });
-      if (!res.ok) {
-        throw new Error(`Supabase Storage respondió ${res.status} al borrar: ${await res.text()}`);
-      }
+      if (!res.ok) throw await falloDeStorage("borrar la imagen", res);
     },
   };
 }

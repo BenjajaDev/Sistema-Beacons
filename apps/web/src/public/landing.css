@@ -1001,6 +1001,7 @@ main:focus {
 }
 .carrusel__controles {
   display: flex;
+  align-items: center;
   justify-content: flex-end;
   gap: var(--space-3);
   margin-top: var(--space-3);
@@ -1025,6 +1026,11 @@ main:focus {
   width: 2.125rem;
   height: 2.125rem;
   overflow: visible;
+}
+/* Pausar/Reanudar el avance automático: mismo botón redondo, ícono de trazo. */
+.carrusel__pausa svg {
+  width: 1.5rem;
+  height: 1.5rem;
 }
 /* «Anterior» es el mismo beacon, emitiendo hacia la izquierda. */
 .carrusel__flecha--anterior svg {

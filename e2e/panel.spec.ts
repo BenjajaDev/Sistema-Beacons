@@ -38,6 +38,7 @@ test("el editor solo ve lo suyo y escribe una nota que envía a revisión", asyn
     "Noticias",
     "Identidad visual",
     "Pie de página",
+    "Audiodescriptor",
   ]);
   await sinViolaciones(page, "resumen (editor)");
   await page.getByRole("link", { name: "Equipo y colaboradores" }).click();
@@ -151,6 +152,7 @@ test("todas las vistas del panel pasan axe en claro y oscuro", async ({ page }) 
     ["/equipo", "Equipo y colaboradores"],
     ["/identidad", "Identidad visual"],
     ["/pie", "Pie de página"],
+    ["/audiodescriptor", "Audiodescriptor"],
     ["/contacto", "Mensajes"],
     ["/perfil", "Mi perfil"],
     ["/beacons", "Beacons"],
