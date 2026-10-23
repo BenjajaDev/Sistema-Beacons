@@ -3,7 +3,8 @@ import { useId, type ComponentType, type ReactNode, type Ref } from "react";
 import { Link } from "react-router";
 import { mensajeDeError } from "@shared/api";
 import { Cargando, EmptyState, ErrorState, Reveal, Skeleton } from "@shared/ui/States";
-import { EnlaceEditable, Img, TarjetaNoticia, Titulo, type Nivel } from "./components";
+import { BotonVoz } from "@shared/voz/BotonVoz";
+import { EnlaceEditable, Img, TarjetaNoticia, Titulo, VozDeImagen, type Nivel } from "./components";
 import {
   consultas,
   NOTICIAS_EN_INICIO,
@@ -30,6 +31,7 @@ interface Encabezado {
   titulo: string;
   intro?: string;
   imagen?: Imagen;
+  audiodescripcion?: string;
 }
 
 interface PropsSeccion<C> {
@@ -59,9 +61,33 @@ function ImagenSeccion({
   className: string;
 }) {
   return (
-    <figure className={className}>
+    <figure className={`${className} con-voz`}>
       <Img imagen={imagen} prioridad={nivel === 1} />
+      <VozDeImagen imagen={imagen} />
     </figure>
+  );
+}
+
+// «Escuchar esta sección»: lee la audiodescripción que se escribe en el panel.
+// Va después del título; sin texto no aparece.
+function AudioSeccion({ texto }: { texto?: string }) {
+  return (
+    <BotonVoz
+      texto={texto ?? ""}
+      etiqueta="Escuchar esta sección"
+      variante="texto"
+      className="audio-seccion"
+    />
+  );
+}
+
+// Imagen de un paso o una tarjeta, con su botón de voz en la esquina.
+function ImagenDeItem({ imagen }: { imagen: Imagen }) {
+  return (
+    <div className="con-voz">
+      <Img imagen={imagen} className="item__imagen" />
+      <VozDeImagen imagen={imagen} />
+    </div>
   );
 }
 
@@ -71,6 +97,7 @@ function Cabecera({ contenido, nivel, refH1, idTitulo }: PropsSeccion<Encabezado
       <Titulo nivel={nivel} refH1={refH1} id={idTitulo}>
         {contenido.titulo}
       </Titulo>
+      <AudioSeccion texto={contenido.audiodescripcion} />
       {contenido.intro && <p className="seccion__intro">{contenido.intro}</p>}
       {contenido.imagen && (
         <ImagenSeccion imagen={contenido.imagen} nivel={nivel} className="seccion__imagen" />
@@ -89,6 +116,7 @@ function Hero(
     imagen?: Imagen;
     accionPrincipal?: Enlace;
     accionSecundaria?: Enlace;
+    audiodescripcion?: string;
   }>,
 ) {
   const c = p.contenido;
@@ -100,6 +128,7 @@ function Hero(
         <Titulo nivel={p.nivel} refH1={p.refH1} id={p.idTitulo} className="hero__titulo">
           {c.titulo}
         </Titulo>
+        <AudioSeccion texto={c.audiodescripcion} />
         <p className="hero__bajada">{c.bajada}</p>
         {hayAcciones && (
           <div className="hero__acciones">
@@ -151,7 +180,7 @@ function Pasos(p: PropsSeccion<Encabezado & { pasos: Item[] }>) {
       <ol className="pasos" data-columnas={columnasDePasos(p.contenido.pasos.length)}>
         {p.contenido.pasos.map((paso, i) => (
           <li key={i} className="pasos__item">
-            {paso.imagen && <Img imagen={paso.imagen} className="item__imagen" />}
+            {paso.imagen && <ImagenDeItem imagen={paso.imagen} />}
             <span className="pasos__numero" aria-hidden="true">
               {i + 1}
             </span>
@@ -171,7 +200,7 @@ function Tarjetas(p: PropsSeccion<Encabezado & { items: Item[] }>) {
       <ul className="tarjetas">
         {p.contenido.items.map((item, i) => (
           <li key={i} className="tarjeta">
-            {item.imagen && <Img imagen={item.imagen} className="item__imagen" />}
+            {item.imagen && <ImagenDeItem imagen={item.imagen} />}
             <h3>{item.titulo}</h3>
             <p>{item.texto}</p>
           </li>
@@ -220,7 +249,12 @@ function NoticiasRecientes(p: PropsSeccion<Encabezado & { textoVerTodas: string 
 }
 
 function QuienesSomos(
-  p: PropsSeccion<{ titulo: string; cuerpo: { html: string }; imagen?: Imagen }>,
+  p: PropsSeccion<{
+    titulo: string;
+    cuerpo: { html: string };
+    imagen?: Imagen;
+    audiodescripcion?: string;
+  }>,
 ) {
   const { imagen } = p.contenido;
   return (
@@ -229,6 +263,7 @@ function QuienesSomos(
         <Titulo nivel={p.nivel} refH1={p.refH1} id={p.idTitulo}>
           {p.contenido.titulo}
         </Titulo>
+        <AudioSeccion texto={p.contenido.audiodescripcion} />
         {/* HTML generado y saneado por el servidor (server/src/content/rich-text.ts). */}
         <div className="prosa" dangerouslySetInnerHTML={{ __html: p.contenido.cuerpo.html }} />
       </div>
@@ -296,7 +331,13 @@ function Equipo(p: PropsSeccion<Encabezado>) {
 // Presenta al equipo en el inicio: texto, botón opcional, una imagen opcional al
 // lado y debajo la fila del equipo con sus cards (los datos llegan con el HTML inicial).
 function NosotrosInicio(
-  p: PropsSeccion<{ titulo: string; texto: string; imagen?: Imagen; accion?: Enlace }>,
+  p: PropsSeccion<{
+    titulo: string;
+    texto: string;
+    imagen?: Imagen;
+    accion?: Enlace;
+    audiodescripcion?: string;
+  }>,
 ) {
   const { data } = useQuery(consultas.equipo());
   const { imagen } = p.contenido;
@@ -308,6 +349,7 @@ function NosotrosInicio(
           <Titulo nivel={p.nivel} refH1={p.refH1} id={p.idTitulo}>
             {p.contenido.titulo}
           </Titulo>
+          <AudioSeccion texto={p.contenido.audiodescripcion} />
           <p className="seccion__intro">{p.contenido.texto}</p>
           {p.contenido.accion && <Accion enlace={p.contenido.accion} variante="primario" />}
         </div>

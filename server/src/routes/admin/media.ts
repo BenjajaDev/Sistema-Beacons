@@ -149,18 +149,22 @@ export function mediaRoutes({ db, env, audit, storage, logger }: AdminDeps): Adm
 
 // Dónde se usa una imagen: como portada, foto, logo, o dentro de un texto enriquecido.
 async function mediaUsages(db: AdminDeps["db"], id: string, url: string) {
-  const [noticias, equipo, colaboradores, ajustes, enCuerpos, enSecciones] = await Promise.all([
-    db.news.findMany({ where: { coverId: id }, select: { title: true } }),
-    db.teamMember.findMany({ where: { photoId: id }, select: { name: true } }),
-    db.collaborator.findMany({ where: { logoId: id }, select: { name: true } }),
-    db.siteSettings.count({
-      where: { OR: [{ logoLightId: id }, { logoDarkId: id }, { faviconId: id }] },
-    }),
-    db.news.findMany({ where: { bodyHtml: { contains: url } }, select: { title: true } }),
-    db.$queryRaw<{ key: string }[]>`
+  const [noticias, equipo, colaboradores, ajustes, enCuerpos, enSecciones, enPie] =
+    await Promise.all([
+      db.news.findMany({ where: { coverId: id }, select: { title: true } }),
+      db.teamMember.findMany({ where: { photoId: id }, select: { name: true } }),
+      db.collaborator.findMany({ where: { logoId: id }, select: { name: true } }),
+      db.siteSettings.count({
+        where: { OR: [{ logoLightId: id }, { logoDarkId: id }, { faviconId: id }] },
+      }),
+      db.news.findMany({ where: { bodyHtml: { contains: url } }, select: { title: true } }),
+      db.$queryRaw<{ key: string }[]>`
       SELECT key FROM sections
       WHERE content::text LIKE ${"%" + url + "%"} OR "draftContent"::text LIKE ${"%" + url + "%"}`,
-  ]);
+      // Logo e imagen del pie de página (JSON en site_settings.footer).
+      db.$queryRaw<{ id: number }[]>`
+      SELECT id FROM site_settings WHERE footer::text LIKE ${"%" + url + "%"}`,
+    ]);
   return [
     ...noticias.map((n) => `la portada de «${n.title}»`),
     ...enCuerpos.map((n) => `el cuerpo de «${n.title}»`),
@@ -168,5 +172,6 @@ async function mediaUsages(db: AdminDeps["db"], id: string, url: string) {
     ...colaboradores.map((c) => `el logo de ${c.name}`),
     ...(ajustes ? ["la identidad visual"] : []),
     ...enSecciones.map((s) => `la sección «${s.key}»`),
+    ...(enPie.length ? ["el pie de página"] : []),
   ];
 }

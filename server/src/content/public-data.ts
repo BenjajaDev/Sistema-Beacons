@@ -1,8 +1,9 @@
 import type { Page } from "../generated/prisma/enums.js";
 import type { Db } from "../lib/prisma.js";
 import { SLUG_REGEX } from "../lib/slug.js";
-import { parseFooter } from "./footer.js";
-import { publicSectionImages } from "./section-images.js";
+import { parseFooter, type Footer } from "./footer.js";
+import { publicSectionImages, type ImagenPublica } from "./section-images.js";
+import { conAudiodescripcionInicial } from "./sections.js";
 import { PUBLIC_NEWS_INCLUDE, toNewsCard, toNewsDetail } from "./news-view.js";
 import { FONT_OPTIONS, type Fonts } from "./theme.js";
 
@@ -31,6 +32,11 @@ function soloHtml(valor: unknown): unknown {
   return valor;
 }
 
+type PiePublico = Omit<Footer, "logo" | "imagen"> & {
+  logo?: ImagenPublica;
+  imagen?: ImagenPublica;
+};
+
 export async function getSite(db: Db) {
   const s = await db.siteSettings.findUnique({
     where: { id: 1 },
@@ -58,7 +64,8 @@ export async function getSite(db: Db) {
       redes: s.socials,
     },
     accesibilidad: s.accessibilityStatement,
-    pie: parseFooter(s.footer),
+    // Logo e imagen del pie como en las secciones: URL, tamaño y alt, sin ids internos.
+    pie: publicSectionImages(parseFooter(s.footer)) as PiePublico,
   };
 }
 
@@ -73,7 +80,7 @@ export async function getPage(db: Db, page: Page) {
   return {
     secciones: secciones.map((s) => ({
       key: s.key,
-      content: publicSectionImages(soloHtml(s.content)),
+      content: publicSectionImages(soloHtml(conAudiodescripcionInicial(s.key, s.content))),
     })),
   };
 }

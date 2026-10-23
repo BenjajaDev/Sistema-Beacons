@@ -18,9 +18,10 @@ import { RichTextEditor } from "../editor/RichTextEditor";
 import {
   AvisoCambiosSinGuardar,
   Cabecera,
+  CampoImagen,
   formatoFecha,
-  SelectorImagen,
   usePanelPage,
+  type ImagenValor,
 } from "../ui";
 import { estadoSeccion } from "./Secciones";
 
@@ -35,6 +36,8 @@ type Campo =
       opcional?: boolean;
       multilinea?: boolean;
       ayuda?: string;
+      // Vacío se guarda como "" (y no se omite): así no vuelve un texto inicial.
+      conservarVacio?: boolean;
     }
   | { tipo: "enlace"; clave: string; etiqueta: string; opcional?: boolean }
   | {
@@ -110,6 +113,19 @@ const camposImagenTexto: Campo[] = [
   { tipo: "enlace", clave: "accion", etiqueta: "Botón", opcional: true },
 ];
 
+// Lo que se lee al presionar «Escuchar esta sección» (solo en las principales).
+const audiodescripcion: Campo = {
+  tipo: "texto",
+  clave: "audiodescripcion",
+  etiqueta: "Audiodescripción",
+  max: 1200,
+  opcional: true,
+  multilinea: true,
+  conservarVacio: true,
+  ayuda:
+    "Se lee en voz alta cuando alguien presiona «Escuchar esta sección». Describe en pocas frases lo que se ve y para qué sirve. Si lo dejas vacío, el botón no aparece.",
+};
+
 const CAMPOS: Record<string, Campo[]> = {
   hero: [
     {
@@ -130,6 +146,7 @@ const CAMPOS: Record<string, Campo[]> = {
     },
     { tipo: "enlace", clave: "accionPrincipal", etiqueta: "Botón principal", opcional: true },
     { tipo: "enlace", clave: "accionSecundaria", etiqueta: "Botón secundario", opcional: true },
+    audiodescripcion,
   ],
   "que-es": [
     titulo,
@@ -144,6 +161,7 @@ const CAMPOS: Record<string, Campo[]> = {
       max: 6,
       conImagen: true,
     },
+    audiodescripcion,
   ],
   objetivos: [
     titulo,
@@ -191,6 +209,7 @@ const CAMPOS: Record<string, Campo[]> = {
       marco: CUATRO_TERCIOS,
     },
     { tipo: "enlace", clave: "accion", etiqueta: "Botón", opcional: true },
+    audiodescripcion,
   ],
   "noticias-recientes": [
     titulo,
@@ -198,7 +217,12 @@ const CAMPOS: Record<string, Campo[]> = {
     imagenEncabezado,
     { tipo: "texto", clave: "textoVerTodas", etiqueta: "Texto del enlace «ver todas»", max: 40 },
   ],
-  "quienes-somos": [titulo, { tipo: "rico", clave: "cuerpo", etiqueta: "Texto" }, imagenAlLado],
+  "quienes-somos": [
+    titulo,
+    { tipo: "rico", clave: "cuerpo", etiqueta: "Texto" },
+    imagenAlLado,
+    audiodescripcion,
+  ],
   equipo: [titulo, intro, imagenEncabezado],
   colaboradores: [titulo, intro, imagenEncabezado],
   noticias: [titulo, intro, imagenEncabezado],
@@ -215,6 +239,7 @@ const CAMPOS: Record<string, Campo[]> = {
       multilinea: true,
       ayuda: "Lo que lee la persona después de enviar el formulario.",
     },
+    audiodescripcion,
   ],
   "imagen-texto-inicio": camposImagenTexto,
   "imagen-texto-nosotros": camposImagenTexto,
@@ -222,14 +247,6 @@ const CAMPOS: Record<string, Campo[]> = {
 
 type Contenido = Record<string, unknown>;
 // Imagen tal como la guarda el servidor (server/src/content/section-images.ts).
-interface ImagenValor {
-  mediaId: string;
-  url: string;
-  alt: string;
-  decorativa: boolean;
-  width?: number | null;
-  height?: number | null;
-}
 type Item = { titulo: string; texto: string; imagen?: ImagenValor };
 
 // En la vista previa, una imagen decorativa se muestra con alt vacío, como en el sitio.
@@ -569,13 +586,15 @@ function CampoSeccion({
       ayuda: [campo.ayuda, `${v.length} de ${campo.max} caracteres.`].filter(Boolean).join(" "),
       error: errores[id],
       onChange: (e: { target: { value: string } }) =>
-        onCambiar(campo.opcional && !e.target.value ? undefined : e.target.value),
+        onCambiar(
+          campo.opcional && !campo.conservarVacio && !e.target.value ? undefined : e.target.value,
+        ),
     };
     return campo.multilinea ? <TextArea {...props} rows={3} /> : <TextField {...props} />;
   }
   if (campo.tipo === "imagen") {
     return (
-      <CampoImagen
+      <CampoImagenSeccion
         ruta={campo.clave}
         etiqueta={campo.etiqueta}
         marco={campo.marco}
@@ -685,7 +704,7 @@ function CampoSeccion({
                   onChange={(e) => cambiarItem(i, { texto: e.target.value })}
                 />
                 {campo.conImagen && (
-                  <CampoImagen
+                  <CampoImagenSeccion
                     ruta={`${campo.clave}.${i}.imagen`}
                     etiqueta={`Imagen del ${campo.elemento.toLowerCase()} ${i + 1} (opcional)`}
                     marco={TRES_MEDIOS}
@@ -752,7 +771,7 @@ function CampoSeccion({
 
 // Imagen de una sección: se sube o se elige de la biblioteca, con su texto
 // alternativo o marcada como decorativa. El servidor completa su URL y tamaño.
-function CampoImagen({
+function CampoImagenSeccion({
   ruta,
   etiqueta,
   marco,
@@ -770,29 +789,11 @@ function CampoImagen({
   const idAlt = idDe(`${ruta}.alt`);
   const idBoton = idDe(`${ruta}.mediaId`);
   return (
-    <SelectorImagen
+    <CampoImagen
       etiqueta={etiqueta}
       marco={marco}
-      imagen={valor ? { id: valor.mediaId, url: valor.url } : null}
-      alt={valor?.alt ?? ""}
-      onCambiar={(img, alt) =>
-        onCambiar(
-          img
-            ? {
-                mediaId: img.id,
-                url: img.url,
-                alt,
-                decorativa: valor?.mediaId === img.id ? valor.decorativa : false,
-              }
-            : undefined,
-        )
-      }
-      decorativa={
-        valor && {
-          valor: valor.decorativa,
-          onCambiar: (decorativa) => onCambiar({ ...valor, decorativa }),
-        }
-      }
+      valor={valor}
+      onCambiar={onCambiar}
       idAlt={idAlt}
       idBoton={idBoton}
       errorAlt={errores[idAlt]}

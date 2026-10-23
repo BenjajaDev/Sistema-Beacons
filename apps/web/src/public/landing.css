@@ -14,7 +14,11 @@
 
 /* --- Encabezado --- */
 
+/* El menú se despliega en línea según el ancho del encabezado, no el de la
+   pantalla: así, con Zoom+ o A+ (que achican el espacio útil) pasa solo al botón
+   «Menú» en vez de apilarse. */
 .encabezado {
+  container: encabezado / inline-size;
   border-bottom: 1px solid var(--color-border);
   background: var(--color-bg);
 }
@@ -25,6 +29,11 @@
   justify-content: space-between;
   gap: var(--space-3);
   padding-block: var(--space-3);
+}
+/* Con el menú plegado: logo a la izquierda y, a la derecha, «Menú» y el zoom
+   (que en pantallas angostas baja a la línea siguiente). */
+.encabezado__menu-boton {
+  margin-inline-start: auto;
 }
 
 .logo {
@@ -64,36 +73,40 @@
   border: 2px solid color-mix(in srgb, var(--color-primary) 35%, transparent);
   border-radius: var(--radius-lg);
 }
+/* Colores del isotipo: los del tema, salvo donde el fondo cambia (el pie). */
 .isotipo {
+  --iso-senal: var(--color-primary);
+  --iso-trazo: var(--color-text);
+  --iso-luz: var(--color-bg);
   display: block;
   height: 2.25rem;
   width: auto;
   overflow: visible;
 }
 .isotipo__beacon {
-  fill: var(--color-primary);
-  stroke: var(--color-primary);
+  fill: var(--iso-senal);
+  stroke: var(--iso-senal);
   stroke-width: 6;
   stroke-linejoin: round;
 }
 .isotipo__facetas {
   fill: none;
-  stroke: var(--color-bg);
+  stroke: var(--iso-luz);
   stroke-width: 2;
   stroke-linecap: round;
   opacity: 0.35;
 }
 .isotipo__brillo {
-  fill: var(--color-bg);
+  fill: var(--iso-luz);
   opacity: 0.3;
 }
 .isotipo__luz {
-  fill: var(--color-bg);
+  fill: var(--iso-luz);
 }
 .isotipo__onda,
 .isotipo__voz {
   fill: none;
-  stroke: var(--color-primary);
+  stroke: var(--iso-senal);
   stroke-linecap: round;
 }
 .isotipo__onda {
@@ -107,7 +120,7 @@
 }
 .isotipo__telefono {
   fill: none;
-  stroke: var(--color-text);
+  stroke: var(--iso-trazo);
   stroke-width: 4;
   stroke-linecap: round;
 }
@@ -181,7 +194,7 @@
   gap: var(--space-3);
 }
 
-@media (min-width: 60rem) {
+@container encabezado (min-width: 72rem) {
   .encabezado__menu-boton {
     display: none;
   }
@@ -230,10 +243,11 @@ main:focus {
 
 /* --- Hero: lo único que se mueve solo, una vez --- */
 
+/* Mismo fondo que la página, en claro y en oscuro. */
 .seccion--hero {
   position: relative;
   overflow: hidden;
-  background: var(--color-surface);
+  background: var(--color-bg);
   padding-block: var(--space-8);
 }
 .hero {
@@ -1189,6 +1203,29 @@ main:focus {
   border-radius: var(--radius);
 }
 
+/* «Escuchar esta sección», bajo el título. */
+.audio-seccion {
+  margin-block: var(--space-2) var(--space-4);
+}
+
+/* Botón de voz en la esquina de una imagen: lee su texto alternativo. Fondo
+   opaco y borde para distinguirse sobre cualquier foto (WCAG 1.4.11). */
+.con-voz {
+  position: relative;
+}
+.con-voz__boton {
+  position: absolute;
+  top: var(--space-2);
+  inset-inline-end: var(--space-2);
+  z-index: 1;
+  border: 1px solid var(--color-border-control);
+  background: var(--color-surface);
+  box-shadow: var(--sombra);
+}
+.con-voz__boton:hover {
+  background: color-mix(in srgb, var(--color-primary) 12%, var(--color-surface));
+}
+
 /* Texto e imagen lado a lado en pantallas anchas; la imagen debajo en las angostas. */
 .dos-columnas {
   display: grid;
@@ -1355,6 +1392,8 @@ main:focus {
 .pie {
   --pie-fondo: var(--color-text);
   --pie-texto: var(--color-bg);
+  /* La señal del isotipo sobre la franja de tinta: el azul claro de la paleta. */
+  --pie-senal: var(--color-accent);
   --pie-suave: color-mix(in srgb, var(--color-bg) 78%, var(--color-text));
   --pie-linea: color-mix(in srgb, var(--color-bg) 20%, var(--color-text));
   margin-top: var(--space-8);
@@ -1368,6 +1407,7 @@ main:focus {
   --pie-texto: var(--color-text);
   --pie-suave: var(--color-text-muted);
   --pie-linea: var(--color-border);
+  --pie-senal: var(--color-primary);
 }
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) .pie {
@@ -1375,6 +1415,7 @@ main:focus {
     --pie-texto: var(--color-text);
     --pie-suave: var(--color-text-muted);
     --pie-linea: var(--color-border);
+    --pie-senal: var(--color-primary);
   }
 }
 .pie__rejilla {
@@ -1409,6 +1450,32 @@ main:focus {
   background: var(--color-accent);
   vertical-align: 0.1em;
 }
+/* Logo del pie: el subido en «Pie de página» o el isotipo con los colores del pie. */
+.pie__logo,
+.pie__isotipo {
+  display: block;
+  height: 3rem;
+  width: auto;
+  max-width: 12rem;
+  margin-bottom: var(--space-3);
+  object-fit: contain;
+}
+.pie__isotipo {
+  --iso-senal: var(--pie-senal);
+  --iso-trazo: var(--pie-texto);
+  --iso-luz: var(--pie-fondo);
+}
+.pie__imagen {
+  max-width: 22rem;
+  margin: var(--space-4) 0 0;
+}
+.pie__imagen img {
+  display: block;
+  width: 100%;
+  height: auto;
+  border-radius: var(--radius-lg);
+}
+
 .pie__descripcion {
   max-width: 40ch;
   color: var(--pie-suave);

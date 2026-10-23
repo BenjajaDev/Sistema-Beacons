@@ -1,7 +1,12 @@
 import type { Request } from "express";
 import { z } from "zod";
 import { resolveSectionImages } from "../../content/section-images.js";
-import { isSectionKey, SECTION_DEFINITIONS, sectionSchemas } from "../../content/sections.js";
+import {
+  conAudiodescripcionInicial,
+  isSectionKey,
+  SECTION_DEFINITIONS,
+  sectionSchemas,
+} from "../../content/sections.js";
 import { Prisma } from "../../generated/prisma/client.js";
 import type { Page } from "../../generated/prisma/enums.js";
 import { ApiError, forbidden, notFound, parseOrThrow } from "../../http/errors.js";
@@ -40,8 +45,17 @@ export function sectionRoutes({ db, audit }: AdminDeps): AdminRoute[] {
     return { key, seccion };
   }
 
-  const conNombre = <T extends { key: string }>(s: T) => ({
+  // Con su nombre para el panel y, si aún no tiene audiodescripción, la inicial
+  // (así el editor la muestra y se puede ajustar).
+  const conNombre = <T extends { key: string; content?: unknown; draftContent?: unknown }>(
+    s: T,
+  ) => ({
     ...s,
+    ...("content" in s && { content: conAudiodescripcionInicial(s.key, s.content) }),
+    ...("draftContent" in s &&
+      s.draftContent != null && {
+        draftContent: conAudiodescripcionInicial(s.key, s.draftContent),
+      }),
     nombre: isSectionKey(s.key) ? SECTION_DEFINITIONS[s.key].nombre : s.key,
   });
 

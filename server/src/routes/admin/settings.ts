@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { footerSchema, parseFooter } from "../../content/footer.js";
+import { resolveSectionImages } from "../../content/section-images.js";
 import { checkPaletteContrast, fontsSchema, paletteSchema } from "../../content/theme.js";
 import { ApiError, parseOrThrow } from "../../http/errors.js";
 import { asJson } from "../../lib/json.js";
@@ -172,7 +173,7 @@ export function settingsRoutes({ db, audit }: AdminDeps): AdminRoute[] {
       path: "/settings/footer",
       handler: async (req, res) => {
         const antes = parseFooter((await actual()).footer);
-        const d = parseOrThrow(footerSchema, req.body);
+        const d = await resolveSectionImages(db, parseOrThrow(footerSchema, req.body));
         await db.siteSettings.update({
           where: { id: 1 },
           data: { footer: asJson(d), updatedById: req.user!.id },

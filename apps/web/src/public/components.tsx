@@ -1,5 +1,6 @@
 import type { CSSProperties, ReactNode, Ref } from "react";
 import { Link } from "react-router";
+import { BotonVoz } from "@shared/voz/BotonVoz";
 import type { Imagen, NoticiaResumen, RedSocial, Sitio } from "./data";
 import { detectarRed, IconoRed } from "./IconosRedes";
 
@@ -101,6 +102,19 @@ export function Img({
       fetchPriority={prioridad ? "high" : undefined}
       className={className}
       style={style}
+    />
+  );
+}
+
+// Botón para escuchar el texto alternativo de una imagen con la voz del
+// dispositivo. Va dentro de un contenedor .con-voz (posición relativa), en la
+// esquina de la imagen. Sin texto alternativo (imagen decorativa) no aparece.
+export function VozDeImagen({ imagen }: { imagen: Imagen }) {
+  return (
+    <BotonVoz
+      texto={imagen.alt}
+      etiqueta="Escuchar la descripción de la imagen"
+      className="con-voz__boton"
     />
   );
 }

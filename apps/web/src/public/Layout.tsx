@@ -1,10 +1,10 @@
 import { useQuery } from "@tanstack/react-query";
 import { useEffect, useId, useRef, useState, useSyncExternalStore } from "react";
 import { NavLink, Outlet, ScrollRestoration, useLocation } from "react-router";
-import { TextSizeControl, ThemeSwitcher } from "@shared/theme/Controls";
+import { ThemeSwitcher, ZoomControl } from "@shared/theme/Controls";
 import { IconoCerrar, IconoMenu } from "@shared/ui/Icons";
 import { ToastProvider } from "@shared/ui/Toast";
-import { EnlaceEditable, Logo, Redes } from "./components";
+import { EnlaceEditable, Img, Isotipo, Logo, Redes, VozDeImagen } from "./components";
 import { consultas, PIE_POR_DEFECTO } from "./data";
 
 const NAVEGACION = [
@@ -69,6 +69,11 @@ function Encabezado() {
           {abierto ? <IconoCerrar /> : <IconoMenu />}
           <span className="visually-hidden">Menú</span>
         </button>
+        {/* Fuera del menú: al agrandar, el encabezado pasa a «Menú» y el control
+            tiene que seguir a mano para poder volver atrás. */}
+        <div className="encabezado__zoom">
+          <ZoomControl />
+        </div>
         <div
           id={menuId}
           className={`encabezado__menu ${abierto ? "encabezado__menu--abierto" : ""}`}
@@ -85,7 +90,6 @@ function Encabezado() {
             </ul>
           </nav>
           <div className="encabezado__ajustes">
-            <TextSizeControl />
             <ThemeSwitcher />
           </div>
         </div>
@@ -107,8 +111,19 @@ function Pie() {
     <footer className="pie">
       <div className="container pie__rejilla">
         <div className="pie__marca">
+          {pie.logo ? (
+            <Img imagen={pie.logo} className="pie__logo" />
+          ) : (
+            <Isotipo className="isotipo pie__isotipo" />
+          )}
           <p className="pie__nombre">{sitio.siteName}</p>
           {pie.descripcion && <p className="pie__descripcion">{pie.descripcion}</p>}
+          {pie.imagen && (
+            <figure className="pie__imagen con-voz">
+              <Img imagen={pie.imagen} />
+              <VozDeImagen imagen={pie.imagen} />
+            </figure>
+          )}
           {hayRedes && <Redes redes={redes} etiqueta="Redes sociales" variante="iconos" />}
         </div>
         {pie.columnas.map((col, i) => (

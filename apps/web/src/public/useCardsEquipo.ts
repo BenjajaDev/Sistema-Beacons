@@ -96,6 +96,14 @@ export function useCardsEquipo(contenedor: RefObject<HTMLElement | null>) {
   return { abierta, alApuntar, alRetirar, alActivar, cerrar };
 }
 
+// Zoom efectivo del elemento (control Zoom−/Zoom+, que aplica zoom al <body>).
+// getBoundingClientRect mide en píxeles de pantalla; offsetWidth y los px del
+// CSS del elemento, sin el zoom. Sin soporte, se asume 1.
+export function zoomEfectivo(el: Element): number {
+  const zoom = (el as Element & { currentCSSZoom?: number }).currentCSSZoom;
+  return typeof zoom === "number" && zoom > 0 ? zoom : 1;
+}
+
 // Desplazamiento horizontal (en px) para que la card no se salga de la pantalla
 // por los bordes. `rect` es la posición de la card centrada bajo la persona.
 export function ajusteDentroDePantalla(

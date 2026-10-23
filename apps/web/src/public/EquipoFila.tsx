@@ -2,7 +2,12 @@ import { useEffect, useId, useLayoutEffect, useRef } from "react";
 import { Redes } from "./components";
 import type { Persona } from "./data";
 import { FotoPersona } from "./FotoPersona";
-import { ajusteDentroDePantalla, useCardsEquipo, type CardAbierta } from "./useCardsEquipo";
+import {
+  ajusteDentroDePantalla,
+  useCardsEquipo,
+  zoomEfectivo,
+  type CardAbierta,
+} from "./useCardsEquipo";
 
 // El equipo en el inicio: una fila de círculos (5 por fila en pantallas anchas).
 // Cada persona es un botón de divulgación: al apuntar con el mouse, el círculo
@@ -52,20 +57,22 @@ function Integrante({
 
   // Al abrir, corre la card lo justo para que no se salga de la pantalla. Se mide
   // con el ancho de layout y el centro de la persona: la card cerrada está
-  // escalada y su caja en pantalla no es la final. Se escribe directo en el
-  // elemento: es solo posición y no necesita otro render.
+  // escalada y su caja en pantalla no es la final. Se calcula en píxeles de
+  // pantalla y se vuelve a los del CSS de la card dividiendo por el zoom.
+  // Se escribe directo en el elemento: es solo posición y no necesita otro render.
   useLayoutEffect(() => {
     const el = card.current;
     const li = zona.current;
     if (!abierta || !el || !li) return;
+    const zoom = zoomEfectivo(el);
     const persona = li.getBoundingClientRect();
     const centro = persona.left + persona.width / 2;
-    const mitad = el.offsetWidth / 2;
+    const mitad = (el.offsetWidth * zoom) / 2;
     const ajuste = ajusteDentroDePantalla(
       { left: centro - mitad, right: centro + mitad },
       document.documentElement.clientWidth,
     );
-    el.style.setProperty("--ajuste", `${ajuste}px`);
+    el.style.setProperty("--ajuste", `${ajuste / zoom}px`);
   }, [abierta]);
 
   // La persona y su card son la zona de apuntado; el control es el botón. Por eso

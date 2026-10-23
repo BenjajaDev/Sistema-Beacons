@@ -1,6 +1,6 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useMemo, useState } from "react";
-import { DEFAULT_FOOTER, footerSchema, type Footer } from "@server-footer";
+import { DEFAULT_FOOTER, footerSchema, parseFooter, type Footer } from "@server-footer";
 import { ApiError, mensajeDeError } from "@shared/api";
 import { Button, IconButton } from "@shared/ui/Button";
 import { ErrorSummary } from "@shared/ui/ErrorSummary";
@@ -8,18 +8,35 @@ import { TextArea, TextField } from "@shared/ui/Field";
 import { Cargando, ErrorState, Skeleton } from "@shared/ui/States";
 import { useToast } from "@shared/ui/Toast";
 import { adminFetch, type Ajustes } from "../api";
-import { AvisoCambiosSinGuardar, Cabecera, usePanelPage } from "../ui";
+import {
+  AvisoCambiosSinGuardar,
+  Cabecera,
+  CampoImagen,
+  usePanelPage,
+  type ImagenValor,
+} from "../ui";
 import { DatosContacto } from "./Contacto";
+
+// El formulario: el pie con sus imágenes como las guarda el servidor (con URL,
+// para la miniatura). Al enviarlo, el esquema deja solo id, alt y decorativa.
+type FormularioPie = Omit<Footer, "logo" | "imagen"> & {
+  logo?: ImagenValor;
+  imagen?: ImagenValor;
+};
+
+type ImagenGuardada = ReturnType<typeof parseFooter>["logo"];
+const comoValor = (i: ImagenGuardada): ImagenValor | undefined =>
+  i && { mediaId: i.mediaId, url: i.url ?? "", alt: i.alt, decorativa: i.decorativa };
 
 // Bases anteriores al pie editable guardan {}: se completa con el pie por defecto,
 // igual que hace el servidor al publicarlo.
-function desde(a: Ajustes): Footer {
-  const r = footerSchema.safeParse(a.footer);
-  return r.success ? r.data : DEFAULT_FOOTER;
+function desde(a: Ajustes): FormularioPie {
+  const pie = parseFooter(a.footer);
+  return { ...pie, logo: comoValor(pie.logo), imagen: comoValor(pie.imagen) };
 }
 
 // Los campos vacíos opcionales no se envían (el esquema los trata como ausentes).
-function limpio(f: Footer): Footer {
+function limpio(f: FormularioPie): FormularioPie {
   return {
     ...f,
     descripcion: f.descripcion?.trim() || undefined,
@@ -87,6 +104,35 @@ function FormPie({ ajustes }: { ajustes: Ajustes }) {
           void guardar();
         }}
       >
+        <fieldset className="grupo-campos">
+          <legend>Logo e imagen</legend>
+          <p className="campo__ayuda">
+            Sin logo, el pie muestra el isotipo de SIGNAL con los colores del pie, en tema claro y
+            oscuro. La imagen va bajo la descripción y se puede escuchar su texto alternativo.
+          </p>
+          <div className="rejilla-panel">
+            <CampoImagen
+              etiqueta="Logo (opcional)"
+              valor={form.logo}
+              onCambiar={(logo) => setForm({ ...form, logo })}
+              idAlt={id("logo.alt")}
+              idBoton={id("logo.mediaId")}
+              errorAlt={errores["logo.alt"]}
+              errorImagen={errores["logo.mediaId"]}
+              ayudaAlt="Normalmente basta con el nombre: «SIGNAL». Como el nombre aparece al lado, también puedes marcarlo como decorativo."
+            />
+            <CampoImagen
+              etiqueta="Imagen bajo la descripción (opcional)"
+              valor={form.imagen}
+              onCambiar={(imagen) => setForm({ ...form, imagen })}
+              idAlt={id("imagen.alt")}
+              idBoton={id("imagen.mediaId")}
+              errorAlt={errores["imagen.alt"]}
+              errorImagen={errores["imagen.mediaId"]}
+            />
+          </div>
+        </fieldset>
+
         <TextArea
           id={id("descripcion")}
           label="Descripción"
@@ -258,7 +304,11 @@ function FormPie({ ajustes }: { ajustes: Ajustes }) {
           <Button type="submit" cargando={guardando} textoCargando="Guardando…">
             {sucio ? "Guardar pie de página" : "Sin cambios por guardar"}
           </Button>
-          <Button variante="fantasma" onClick={() => setForm(DEFAULT_FOOTER)}>
+          {/* Vuelve a los textos y enlaces por defecto; el logo y la imagen se mantienen. */}
+          <Button
+            variante="fantasma"
+            onClick={() => setForm({ ...DEFAULT_FOOTER, logo: form.logo, imagen: form.imagen })}
+          >
             Volver al pie por defecto
           </Button>
         </div>
