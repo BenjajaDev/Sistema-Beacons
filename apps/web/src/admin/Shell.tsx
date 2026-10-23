@@ -38,6 +38,7 @@ export const MENU: GrupoMenu[] = [
       { to: "/noticias", texto: "Noticias", roles: TODOS },
       { to: "/identidad", texto: "Identidad visual", roles: TODOS },
       { to: "/pie", texto: "Pie de página", roles: TODOS },
+      { to: "/audiodescriptor", texto: "Audiodescriptor", roles: TODOS },
     ],
   },
   { titulo: "CMS", items: [{ to: "/beacons", texto: "Beacons", roles: ADMIN }] },

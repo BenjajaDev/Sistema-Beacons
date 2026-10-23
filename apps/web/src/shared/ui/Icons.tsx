@@ -88,3 +88,15 @@ export const IconoDetener = (p: Props) => (
     <rect x="6.5" y="6.5" width="11" height="11" rx="2" />
   </Base>
 );
+
+export const IconoPausa = (p: Props) => (
+  <Base {...p}>
+    <path d="M9 6v12M15 6v12" />
+  </Base>
+);
+
+export const IconoReanudar = (p: Props) => (
+  <Base {...p}>
+    <path d="M8 5.5v13l10.5-6.5z" />
+  </Base>
+);

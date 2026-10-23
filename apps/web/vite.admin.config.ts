@@ -34,6 +34,8 @@ export default defineConfig({
       "@server-theme": path.resolve(import.meta.dirname, "../../server/src/content/theme.ts"),
       // Esquema y valores por defecto del pie de página.
       "@server-footer": path.resolve(import.meta.dirname, "../../server/src/content/footer.ts"),
+      // Idiomas, límites y valores por defecto del audiodescriptor.
+      "@server-voice": path.resolve(import.meta.dirname, "../../server/src/content/voice.ts"),
       // Vista previa de textos enriquecidos con el mismo renderizado que el servidor.
       "@server-rich-text": path.resolve(
         import.meta.dirname,

@@ -4,6 +4,7 @@ import { NavLink, Outlet, ScrollRestoration, useLocation } from "react-router";
 import { ThemeSwitcher, ZoomControl } from "@shared/theme/Controls";
 import { IconoCerrar, IconoMenu } from "@shared/ui/Icons";
 import { ToastProvider } from "@shared/ui/Toast";
+import { configurarVoz } from "@shared/voz/voz";
 import { EnlaceEditable, Img, Isotipo, Logo, Redes, VozDeImagen } from "./components";
 import { consultas, PIE_POR_DEFECTO } from "./data";
 
@@ -179,8 +180,18 @@ function Pie() {
   );
 }
 
+// La voz del sitio (idioma, voz y velocidad) se configura en el panel y llega con los datos.
+function useConfigVoz() {
+  const { data: sitio } = useQuery(consultas.sitio());
+  const voz = sitio?.voz;
+  useEffect(() => {
+    if (voz) configurarVoz(voz);
+  }, [voz]);
+}
+
 export function Layout() {
   const enLinea = useEnLinea();
+  useConfigVoz();
   return (
     <ToastProvider>
       <a className="skip-link" href="#contenido">

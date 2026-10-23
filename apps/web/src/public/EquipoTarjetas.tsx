@@ -1,19 +1,29 @@
-import { useId, useRef } from "react";
+import { useCallback, useId, useRef, useState } from "react";
+import { IconoPausa, IconoReanudar } from "@shared/ui/Icons";
 import { Redes, VozDeImagen } from "./components";
 import type { Persona } from "./data";
 import { FotoPersona } from "./FotoPersona";
-import { useCarrusel } from "./useCarrusel";
+import { useAutoavance, useCarrusel } from "./useCarrusel";
 
 // El equipo en «Nosotros»: tarjetas grandes con toda la información a la vista,
-// en un carrusel. Se recorre con las flechas (con forma de beacon), deslizando
-// con el dedo o, con el foco en el carrusel, con las flechas del teclado.
+// en un carrusel. Avanza solo cada 10 s (con botón para pausarlo) y se recorre
+// con las flechas (con forma de beacon), deslizando con el dedo o, con el foco
+// en el carrusel, con las flechas del teclado.
 
 export function EquipoTarjetas({ personas }: { personas: Persona[] }) {
   const id = useId();
   const pista = useRef<HTMLDivElement>(null);
-  const { desborda, alInicio, alFinal, desplazar } = useCarrusel(pista);
+  const carrusel = useRef<HTMLDivElement>(null);
+  const { desborda, alInicio, alFinal, desplazar, irAlInicio } = useCarrusel(pista);
+  const [pausado, setPausado] = useState(false);
+  // Al llegar al final, vuelve a la primera tarjeta.
+  const avanzar = useCallback(
+    () => (alFinal ? irAlInicio() : desplazar(1)),
+    [alFinal, irAlInicio, desplazar],
+  );
+  const { disponible } = useAutoavance(carrusel, { pausado: pausado || !desborda, avanzar });
   return (
-    <div className="carrusel">
+    <div ref={carrusel} className="carrusel">
       <div
         ref={pista}
         id={id}
@@ -35,6 +45,17 @@ export function EquipoTarjetas({ personas }: { personas: Persona[] }) {
       </div>
       {desborda && (
         <div className="carrusel__controles">
+          {disponible && (
+            <button
+              type="button"
+              className="carrusel__flecha carrusel__pausa"
+              aria-controls={id}
+              aria-label={pausado ? "Reanudar el avance automático" : "Pausar el avance automático"}
+              onClick={() => setPausado((p) => !p)}
+            >
+              {pausado ? <IconoReanudar /> : <IconoPausa />}
+            </button>
+          )}
           <FlechaBeacon
             sentido="anterior"
             controla={id}

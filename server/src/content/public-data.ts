@@ -2,6 +2,7 @@ import type { Page } from "../generated/prisma/enums.js";
 import type { Db } from "../lib/prisma.js";
 import { SLUG_REGEX } from "../lib/slug.js";
 import { parseFooter, type Footer } from "./footer.js";
+import { parseVoice } from "./voice.js";
 import { publicSectionImages, type ImagenPublica } from "./section-images.js";
 import { conAudiodescripcionInicial } from "./sections.js";
 import { PUBLIC_NEWS_INCLUDE, toNewsCard, toNewsDetail } from "./news-view.js";
@@ -66,6 +67,7 @@ export async function getSite(db: Db) {
     accesibilidad: s.accessibilityStatement,
     // Logo e imagen del pie como en las secciones: URL, tamaño y alt, sin ids internos.
     pie: publicSectionImages(parseFooter(s.footer)) as PiePublico,
+    voz: parseVoice(s.voice),
   };
 }
 

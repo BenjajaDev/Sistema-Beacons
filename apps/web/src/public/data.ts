@@ -32,6 +32,8 @@ export interface Sitio {
   accesibilidad: string;
   // Puede faltar en datos guardados por el service worker antes del pie editable.
   pie?: Pie;
+  // Audiodescriptor (panel); puede faltar en datos guardados antes de existir.
+  voz?: { idioma: string; voz: string; velocidad: number };
 }
 
 export interface EnlacePie {

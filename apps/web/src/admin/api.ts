@@ -189,6 +189,8 @@ export interface Ajustes {
   accessibilityStatement: string;
   // Lo guardado puede venir vacío ({}) en bases anteriores al pie editable.
   footer: Partial<import("@server-footer").Footer>;
+  // Puede venir vacío ({}) en bases anteriores al audiodescriptor.
+  voice: Partial<import("@server-voice").Voice>;
 }
 
 export interface Beacon {

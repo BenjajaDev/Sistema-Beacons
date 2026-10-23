@@ -2,11 +2,13 @@ import { act, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { BotonVoz } from "@shared/voz/BotonVoz";
+import { CONFIG_INICIAL, configurarVoz, elegirVoz } from "@shared/voz/voz";
 import { expectNoAxeViolations } from "./axe";
 
 // jsdom no trae Web Speech API: se simula lo justo para ver qué se lee.
 class FraseFalsa {
   lang = "";
+  rate = 1;
   voice: unknown = null;
   onend: (() => void) | null = null;
   onerror: (() => void) | null = null;
@@ -20,7 +22,11 @@ const sintesis = {
     // Como el navegador: cancelar termina la lectura en curso.
     for (const f of dichas.splice(0)) f.onend?.();
   }),
-  getVoices: () => [{ lang: "es-CL", name: "Chile" }],
+  getVoices: () => [
+    { lang: "es-ES", name: "Lucía" },
+    { lang: "es-CL", name: "Chile" },
+    { lang: "en-US", name: "Samantha" },
+  ],
 };
 
 beforeEach(() => {
@@ -29,6 +35,7 @@ beforeEach(() => {
   vi.stubGlobal("SpeechSynthesisUtterance", FraseFalsa);
 });
 afterEach(() => {
+  configurarVoz(CONFIG_INICIAL);
   vi.unstubAllGlobals();
   vi.clearAllMocks();
 });
@@ -88,5 +95,28 @@ describe("botón de voz", () => {
     vi.unstubAllGlobals();
     rerender(<BotonVoz texto="Algo" etiqueta="Escuchar" />);
     expect(screen.queryByRole("button")).toBeNull();
+  });
+});
+
+describe("configuración del audiodescriptor", () => {
+  const voces = [
+    { lang: "es-ES", name: "Lucía" },
+    { lang: "es_CL", name: "Chile" },
+    { lang: "en-US", name: "Samantha" },
+  ];
+
+  it("elige la voz por nombre; si no está, la del idioma y región, y luego la del idioma", () => {
+    expect(elegirVoz(voces, { idioma: "es-CL", voz: "Samantha" })?.name).toBe("Samantha");
+    expect(elegirVoz(voces, { idioma: "es-CL", voz: "No existe" })?.name).toBe("Chile");
+    expect(elegirVoz(voces, { idioma: "es-MX", voz: "" })?.name).toBe("Lucía");
+    expect(elegirVoz(voces, { idioma: "pt-BR", voz: "" })).toBeUndefined();
+  });
+
+  it("la lectura usa el idioma, la voz y la velocidad configurados en el panel", async () => {
+    const usuario = userEvent.setup();
+    configurarVoz({ idioma: "es-ES", voz: "Lucía", velocidad: 1.3 });
+    render(<BotonVoz texto="Hola" etiqueta="Escuchar" />);
+    await usuario.click(screen.getByRole("button", { name: "Escuchar" }));
+    expect(dichas[0]).toMatchObject({ lang: "es-ES", rate: 1.3, voice: { name: "Lucía" } });
   });
 });

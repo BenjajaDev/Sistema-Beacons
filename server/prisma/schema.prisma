@@ -93,6 +93,8 @@ model SiteSettings {
   accessibilityStatement String
   // Textos, columnas de enlaces y bloques visibles del pie. Ver src/content/footer.ts.
   footer                 Json     @default("{}")
+  // Audiodescriptor: idioma, voz preferida y velocidad. Ver src/content/voice.ts.
+  voice                  Json     @default("{}")
   updatedAt              DateTime @updatedAt
   updatedById            String?
 

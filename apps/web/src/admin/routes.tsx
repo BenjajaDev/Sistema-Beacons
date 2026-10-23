@@ -91,6 +91,10 @@ export function crearRouter() {
               { path: "identidad", lazy: diferida(() => import("./views/Identidad")) },
               { path: "contacto", element: soloAdmin(Contacto) },
               { path: "pie", lazy: diferida(() => import("./views/Pie")) },
+              {
+                path: "audiodescriptor",
+                lazy: diferida(() => import("./views/Audiodescriptor")),
+              },
               { path: "perfil", Component: Perfil },
               {
                 path: "beacons",

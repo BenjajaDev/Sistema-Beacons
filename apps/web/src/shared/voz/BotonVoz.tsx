@@ -1,6 +1,6 @@
 import { useEffect, useId, useSyncExternalStore } from "react";
 import { IconoDetener, IconoVoz } from "../ui/Icons";
-import { detener, hablar, leyendo, suscribir, vozDisponible } from "./voz";
+import { detener, hablar, leyendo, suscribir, vozDisponible, type ConfigVoz } from "./voz";
 
 // Botón que lee un texto en voz alta y, mientras suena, lo detiene. Si el
 // navegador no tiene voz o no hay texto, no se muestra.
@@ -10,6 +10,7 @@ export function BotonVoz({
   etiquetaDetener = "Detener la lectura",
   variante = "icono",
   className = "",
+  ajustes,
 }: {
   texto: string;
   // Nombre accesible del botón (y texto visible en la variante con texto).
@@ -17,6 +18,8 @@ export function BotonVoz({
   etiquetaDetener?: string;
   variante?: "icono" | "texto";
   className?: string;
+  // Voz, idioma y velocidad; sin ellos, los configurados del sitio.
+  ajustes?: ConfigVoz;
 }) {
   const id = useId();
   const sonando = useSyncExternalStore(suscribir, leyendo, () => null) === id;
@@ -32,7 +35,7 @@ export function BotonVoz({
   if (!vozDisponible() || !texto.trim()) return null;
   const nombre = sonando ? etiquetaDetener : etiqueta;
   const Icono = sonando ? IconoDetener : IconoVoz;
-  const alternar = () => (sonando ? detener() : hablar(id, texto));
+  const alternar = () => (sonando ? detener() : hablar(id, texto, ajustes));
 
   if (variante === "texto") {
     return (
