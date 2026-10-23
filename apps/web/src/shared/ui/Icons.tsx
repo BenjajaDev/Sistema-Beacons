@@ -74,3 +74,17 @@ export const IconoMenu = (p: Props) => (
     <path d="M3 6h18M3 12h18M3 18h18" />
   </Base>
 );
+
+// Parlante con las ondas de la señal: leer en voz alta.
+export const IconoVoz = (p: Props) => (
+  <Base {...p}>
+    <path d="M4 9.5h3.5L12 5.5v13l-4.5-4H4z" />
+    <path d="M15.5 9.2a4 4 0 0 1 0 5.6M18.3 6.6a7.8 7.8 0 0 1 0 10.8" />
+  </Base>
+);
+
+export const IconoDetener = (p: Props) => (
+  <Base {...p}>
+    <rect x="6.5" y="6.5" width="11" height="11" rx="2" />
+  </Base>
+);

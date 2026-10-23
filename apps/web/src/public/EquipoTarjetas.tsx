@@ -1,5 +1,5 @@
 import { useId, useRef } from "react";
-import { Redes } from "./components";
+import { Redes, VozDeImagen } from "./components";
 import type { Persona } from "./data";
 import { FotoPersona } from "./FotoPersona";
 import { useCarrusel } from "./useCarrusel";
@@ -60,6 +60,7 @@ export function TarjetaPersona({ persona: p }: { persona: Persona }) {
     <>
       <div className="persona__marco">
         <FotoPersona persona={p} className="persona__foto" claseInicial="persona__inicial" />
+        {p.photo && <VozDeImagen imagen={p.photo} />}
       </div>
       <h3 className="persona__nombre">{p.name}</h3>
       <p className="persona__cargo">{p.position}</p>

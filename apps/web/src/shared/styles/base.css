@@ -12,6 +12,9 @@ html {
 }
 
 body {
+  /* Control Zoom−/Zoom+: agranda toda la página y el contenido se reacomoda al
+     ancho de la pantalla (sin scroll horizontal), como el zoom del navegador. */
+  zoom: var(--zoom-pagina, 1);
   margin: 0;
   min-height: 100vh;
   min-height: 100dvh;

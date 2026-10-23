@@ -3,9 +3,12 @@ import { IconoLuna, IconoPantalla, IconoSol } from "../ui/Icons";
 import {
   aplicarEscala,
   aplicarTema,
+  aplicarZoom,
   escalaGuardada,
   ESCALAS,
   temaGuardado,
+  zoomGuardado,
+  ZOOMS,
   type TemaPreferido,
 } from "./preferences";
 
@@ -43,8 +46,8 @@ export function ThemeSwitcher() {
   );
 }
 
-// A− / A+ sobre el tamaño de letra del navegador. El cambio se anuncia en una
-// región de estado y los botones quedan enfocables en los extremos.
+// A− / A+ del panel sobre el tamaño de letra del navegador. El cambio se anuncia
+// en una región de estado y los botones quedan enfocables en los extremos.
 export function TextSizeControl() {
   const [indice, setIndice] = useState(() => ESCALAS.indexOf(escalaGuardada()));
 
@@ -81,6 +84,49 @@ export function TextSizeControl() {
       </button>
       <span className="visually-hidden" role="status">
         {`Texto al ${porcentaje} %`}
+      </span>
+    </div>
+  );
+}
+
+// Zoom− / Zoom+ de toda la página (texto incluido), con el porcentaje a la vista.
+// Es el control del sitio público; el panel usa A−/A+. Se anuncia en una región de estado.
+export function ZoomControl() {
+  const [indice, setIndice] = useState(() => ZOOMS.indexOf(zoomGuardado()));
+
+  function cambiar(delta: number) {
+    const nuevo = Math.min(ZOOMS.length - 1, Math.max(0, indice + delta));
+    if (nuevo === indice) return;
+    setIndice(nuevo);
+    aplicarZoom(ZOOMS[nuevo]!);
+  }
+
+  const porcentaje = Math.round(ZOOMS[indice]! * 100);
+  return (
+    <div className="zoom-pagina" role="group" aria-label="Zoom de la página">
+      <button
+        type="button"
+        className="btn btn--secundario"
+        aria-label="Zoom−: reducir el zoom de la página"
+        aria-disabled={indice === 0 || undefined}
+        onClick={() => cambiar(-1)}
+      >
+        Zoom−
+      </button>
+      <span className="zoom-pagina__valor" aria-hidden="true">
+        {porcentaje} %
+      </span>
+      <button
+        type="button"
+        className="btn btn--secundario"
+        aria-label="Zoom+: aumentar el zoom de la página"
+        aria-disabled={indice === ZOOMS.length - 1 || undefined}
+        onClick={() => cambiar(1)}
+      >
+        Zoom+
+      </button>
+      <span className="visually-hidden" role="status">
+        {`Zoom al ${porcentaje} %`}
       </span>
     </div>
   );

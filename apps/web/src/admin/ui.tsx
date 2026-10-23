@@ -377,3 +377,69 @@ export function RegionDesplazable({
     </div>
   );
 }
+
+// Imagen tal como la guarda el servidor dentro de un JSON (secciones y pie; ver
+// server/src/content/section-images.ts): id, URL, texto alternativo y si es decorativa.
+export interface ImagenValor {
+  mediaId: string;
+  url: string;
+  alt: string;
+  decorativa: boolean;
+  width?: number | null;
+  height?: number | null;
+}
+
+// SelectorImagen para una ImagenValor, con la opción «decorativa».
+export function CampoImagen({
+  etiqueta,
+  marco,
+  valor,
+  onCambiar,
+  idAlt,
+  idBoton,
+  errorAlt,
+  errorImagen,
+  ayudaAlt,
+}: {
+  etiqueta: string;
+  marco?: { proporcion: number; nombre: string };
+  valor: ImagenValor | undefined;
+  onCambiar: (v: ImagenValor | undefined) => void;
+  idAlt: string;
+  idBoton: string;
+  errorAlt?: string;
+  errorImagen?: string;
+  ayudaAlt?: string;
+}) {
+  return (
+    <SelectorImagen
+      etiqueta={etiqueta}
+      marco={marco}
+      imagen={valor ? { id: valor.mediaId, url: valor.url } : null}
+      alt={valor?.alt ?? ""}
+      onCambiar={(img, alt) =>
+        onCambiar(
+          img
+            ? {
+                mediaId: img.id,
+                url: img.url,
+                alt,
+                decorativa: valor?.mediaId === img.id ? valor.decorativa : false,
+              }
+            : undefined,
+        )
+      }
+      decorativa={
+        valor && {
+          valor: valor.decorativa,
+          onCambiar: (decorativa) => onCambiar({ ...valor, decorativa }),
+        }
+      }
+      idAlt={idAlt}
+      idBoton={idBoton}
+      errorAlt={errorAlt}
+      errorImagen={errorImagen}
+      {...(ayudaAlt && { ayudaAlt })}
+    />
+  );
+}

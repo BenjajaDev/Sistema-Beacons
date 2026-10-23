@@ -60,6 +60,9 @@ export const PIE_POR_DEFECTO: Pie = {
 
 // Ver server/src/content/footer.ts.
 export interface Pie {
+  // Sin logo se muestra el isotipo vectorial.
+  logo?: Imagen;
+  imagen?: Imagen;
   descripcion?: string;
   columnas: { titulo: string; enlaces: EnlacePie[] }[];
   mostrarContacto: boolean;

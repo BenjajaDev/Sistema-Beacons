@@ -29,7 +29,7 @@ test.describe("landing pública", () => {
       await page.setViewportSize({ width: 320, height: 720 });
       await page.goto(ruta);
       await sinScrollHorizontal(page);
-      // Texto al 200 %: el control A+ llega al 150 %; aquí se fuerza el 200 % (WCAG 1.4.4).
+      // Texto al 200 % (WCAG 1.4.4), como lo haría el navegador: se fuerza en la raíz.
       await page.evaluate(() => (document.documentElement.style.fontSize = "200%"));
       await page.setViewportSize({ width: 640, height: 720 });
       await sinScrollHorizontal(page);
@@ -122,6 +122,35 @@ test.describe("landing pública", () => {
     await sinScrollHorizontal(page);
   });
 
+  test("Zoom+ agranda la página sin scroll horizontal y se recuerda al recargar", async ({
+    page,
+  }) => {
+    await page.goto("/");
+    const zoom = page.getByRole("group", { name: "Zoom de la página" });
+    await expect(zoom).toContainText("100 %");
+    // 100 → 110 → 125 → 150 %.
+    for (let i = 0; i < 3; i++) {
+      await zoom.getByRole("button", { name: /^Zoom\+/ }).click();
+    }
+    await expect(zoom.getByRole("status")).toHaveText("Zoom al 150 %");
+    await sinScrollHorizontal(page);
+    await page.reload();
+    // Con zoom, el encabezado pasa a «Menú», pero el zoom sigue a la vista para volver atrás.
+    await expect(page.getByRole("button", { name: "Menú" })).toBeVisible();
+    await expect(page.getByRole("group", { name: "Zoom de la página" })).toContainText("150 %");
+    await sinScrollHorizontal(page);
+    await sinViolaciones(page, "/ con zoom al 150 %");
+  });
+
+  test("las secciones principales se pueden escuchar", async ({ page }) => {
+    await page.goto("/");
+    const escuchar = page.locator("#hero").getByRole("button", { name: "Escuchar esta sección" });
+    // Solo si el navegador tiene voz (Web Speech API).
+    if (await page.evaluate(() => "speechSynthesis" in window)) {
+      await expect(escuchar).toBeVisible();
+    }
+  });
+
   test("el enlace «Saltar al contenido» es lo primero y lleva al contenido", async ({ page }) => {
     await page.goto("/");
     await page.keyboard.press("Tab");
@@ -142,13 +171,14 @@ test.describe("landing pública", () => {
     await expect(page).toHaveTitle(/^Contacto · /);
   });
 
-  test("tema y tamaño de texto se recuerdan al recargar", async ({ page }) => {
+  test("tema y zoom se recuerdan al recargar; el sitio no tiene A−/A+", async ({ page }) => {
     await page.goto("/");
+    await expect(page.getByRole("button", { name: /^A\+/ })).toHaveCount(0);
     await page.getByRole("radio", { name: "Oscuro" }).check();
-    await page.getByRole("button", { name: /^A\+/ }).click();
+    await page.getByRole("button", { name: /^Zoom\+/ }).click();
     await page.reload();
     await expect(page.locator("html")).toHaveAttribute("data-theme", "dark");
-    await expect(page.locator("html")).toHaveAttribute("style", /font-size: 112.5%/);
+    await expect(page.locator("html")).toHaveAttribute("style", /--zoom-pagina: 1.1/);
   });
 
   test("el formulario de contacto valida, anuncia errores y envía", async ({ page }) => {

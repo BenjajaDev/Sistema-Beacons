@@ -1,5 +1,6 @@
 import { z } from "zod";
 import type { Page } from "../generated/prisma/enums.js";
+import { imagenSchema } from "./image-schema.js";
 import { richTextFromParagraphs, richTextSchema } from "./rich-text.js";
 
 // Catálogo de secciones de la landing. Cada `key` define la forma de su JSON,
@@ -20,19 +21,11 @@ const href = z
 
 const enlace = z.object({ texto: texto(40), href });
 
-// Imagen de la biblioteca. Quien edita envía el id, el texto alternativo y si es
-// decorativa; el servidor agrega la URL y el tamaño al guardar (section-images.ts).
-// Sin texto alternativo, solo se acepta si se marca como decorativa (WCAG 1.1.1).
-export const imagenSchema = z
-  .object({
-    mediaId: z.uuid("Elige una imagen."),
-    alt: z.string().trim().max(300).default(""),
-    decorativa: z.boolean().default(false),
-  })
-  .refine((i) => i.decorativa || i.alt.length > 0, {
-    path: ["alt"],
-    message: "Describe la imagen (texto alternativo) o márcala como decorativa.",
-  });
+// Audiodescripción de una sección principal: lo que se lee en voz alta al
+// presionar «Escuchar esta sección». Vacía, el botón no aparece.
+const audiodescripcion = textoOpcional(1200);
+
+export { imagenSchema };
 
 const item = z.object({ titulo: texto(80), texto: texto(400), imagen: imagenSchema.optional() });
 const encabezado = {
@@ -59,10 +52,12 @@ export const sectionSchemas = {
     imagen: imagenSchema.optional(),
     accionPrincipal: enlace.optional(),
     accionSecundaria: enlace.optional(),
+    audiodescripcion,
   }),
   "que-es": z.object({
     ...encabezado,
     pasos: z.array(item).min(1, "Agrega al menos un paso.").max(6, "Hasta 6 pasos."),
+    audiodescripcion,
   }),
   objetivos: z.object({ ...encabezado, items: z.array(item).min(1).max(8) }),
   proyecciones: z.object({ ...encabezado, items: z.array(item).min(1).max(8) }),
@@ -72,12 +67,14 @@ export const sectionSchemas = {
     texto: texto(600),
     imagen: imagenSchema.optional(),
     accion: enlace.optional(),
+    audiodescripcion,
   }),
   "noticias-recientes": z.object({ ...encabezado, textoVerTodas: texto(40) }),
   "quienes-somos": z.object({
     titulo: texto(120),
     cuerpo: richTextSchema,
     imagen: imagenSchema.optional(),
+    audiodescripcion,
   }),
   equipo: z.object(encabezado),
   colaboradores: z.object(encabezado),
@@ -86,6 +83,7 @@ export const sectionSchemas = {
     ...encabezado,
     formularioTitulo: texto(80),
     mensajeExito: texto(200),
+    audiodescripcion,
   }),
   "imagen-texto-inicio": imagenTexto,
   "imagen-texto-nosotros": imagenTexto,
@@ -118,6 +116,8 @@ export const SECTION_DEFINITIONS: { [K in SectionKey]: SectionDefinition<K> } = 
         "SIGNAL guía a personas con discapacidad visual dentro de espacios interiores con beacons Bluetooth y mensajes de audio en su teléfono.",
       accionPrincipal: { texto: "Cómo funciona", href: "#que-es" },
       accionSecundaria: { texto: "Contáctanos", href: "/contacto" },
+      audiodescripcion:
+        "Estás en la portada de SIGNAL, un sistema de orientación en interiores para personas con discapacidad visual. Junto al título hay una ilustración de la señal de un beacon: un punto de luz azul que emite ondas. Debajo hay dos botones: uno explica cómo funciona y otro lleva al formulario de contacto.",
     },
   },
   "que-es": {
@@ -143,6 +143,8 @@ export const SECTION_DEFINITIONS: { [K in SectionKey]: SectionDefinition<K> } = 
           texto: "La app describe el lugar en voz alta e indica cómo llegar al siguiente punto.",
         },
       ],
+      audiodescripcion:
+        "Esta sección explica cómo funciona SIGNAL en pasos numerados. Primero, se instalan pequeños beacons Bluetooth en puntos clave del edificio. Luego, la app del teléfono detecta el beacon más cercano. Por último, la app describe el lugar en voz alta e indica cómo seguir.",
     },
   },
   objetivos: {
@@ -194,6 +196,8 @@ export const SECTION_DEFINITIONS: { [K in SectionKey]: SectionDefinition<K> } = 
       texto:
         "Somos un equipo que diseña la orientación en interiores junto a personas con discapacidad visual: probamos cada mensaje en terreno y lo ajustamos con quienes lo usan.",
       accion: { texto: "Conoce al equipo", href: "/nosotros" },
+      audiodescripcion:
+        "Presentación del equipo de SIGNAL. Hay un texto breve sobre quiénes somos y, debajo, una fila con la foto circular de cada integrante, su nombre y su cargo. Al activar a una persona se abre una tarjeta con su formación, una breve biografía y su correo.",
     },
   },
   "noticias-recientes": {
@@ -212,6 +216,8 @@ export const SECTION_DEFINITIONS: { [K in SectionKey]: SectionDefinition<K> } = 
         "SIGNAL es un proyecto que busca que los espacios interiores sean accesibles para personas con discapacidad visual.",
         "Edita este texto desde el panel para contar la historia del equipo.",
       ]),
+      audiodescripcion:
+        "Página Nosotros. Cuenta quiénes forman SIGNAL y por qué nació el proyecto: que los espacios interiores sean accesibles para personas con discapacidad visual. Más abajo están las tarjetas del equipo, que se recorren con las flechas del carrusel, y las organizaciones colaboradoras.",
     },
   },
   equipo: {
@@ -241,6 +247,8 @@ export const SECTION_DEFINITIONS: { [K in SectionKey]: SectionDefinition<K> } = 
       intro: "Escríbenos si quieres llevar SIGNAL a tu edificio o colaborar con el proyecto.",
       formularioTitulo: "Envíanos un mensaje",
       mensajeExito: "Recibimos tu mensaje. Te responderemos a la brevedad.",
+      audiodescripcion:
+        "Página de contacto. A un lado están el teléfono, el correo y la dirección de SIGNAL; al otro, un formulario con nombre, correo, teléfono opcional, asunto y mensaje. Al enviarlo aparece un aviso de confirmación.",
     },
   },
   "imagen-texto-inicio": {
@@ -274,4 +282,17 @@ export function isSectionKey(key: string): key is SectionKey {
 
 export function parseSectionContent<K extends SectionKey>(key: K, content: unknown) {
   return sectionSchemas[key].safeParse(content);
+}
+
+// Las bases creadas antes de la audiodescripción no tienen ese campo: mientras
+// nadie lo edite, se usa el texto inicial del catálogo. Si alguien lo deja vacío
+// a propósito, queda "" y no se reemplaza (el botón no aparece).
+export function conAudiodescripcionInicial(key: string, content: unknown): unknown {
+  if (!isSectionKey(key) || !content || typeof content !== "object" || Array.isArray(content)) {
+    return content;
+  }
+  const inicial = (SECTION_DEFINITIONS[key].contenidoInicial as { audiodescripcion?: string })
+    .audiodescripcion;
+  if (inicial === undefined || "audiodescripcion" in content) return content;
+  return { ...content, audiodescripcion: inicial };
 }
