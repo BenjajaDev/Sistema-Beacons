@@ -30,6 +30,23 @@ describe("almacenamiento en Supabase", () => {
     expect(err.message).not.toContain(CONFIG.serviceRoleKey);
   });
 
+  it("con una secret key (sb_secret_) no envía Authorization: no es un JWT", async () => {
+    const enviadas: Headers[] = [];
+    const clave = "sb_secret_clave-de-prueba-0123456789";
+    const storage = supabaseStorage({ ...CONFIG, serviceRoleKey: clave }, async (_url, init) => {
+      enviadas.push(new Headers(init?.headers));
+      return new Response("{}", { status: 200 });
+    });
+    await storage.put("a.webp", Buffer.from("x"), "image/webp");
+    await storage.get("a.webp").catch(() => undefined);
+    await storage.remove("a.webp");
+    expect(enviadas).toHaveLength(3);
+    for (const h of enviadas) {
+      expect(h.get("apikey")).toBe(clave);
+      expect(h.has("Authorization")).toBe(false);
+    }
+  });
+
   it("si no puede conectarse, lo dice", async () => {
     const storage = supabaseStorage(CONFIG, async () => {
       throw new TypeError("fetch failed");

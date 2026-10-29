@@ -185,9 +185,11 @@ Sin este paso, las imágenes que subas en el panel se guardan en la carpeta `ser
 ### 7.2 Copiar la URL del proyecto y la clave del servidor
 
 1. **Project Settings → Data API** (o **API**, según la versión del panel): copia la **Project URL**, que se ve como `https://<ref>.supabase.co`.
-2. **Project Settings → API Keys**: copia la clave **`service_role`**. Es un texto largo que empieza con `eyJ`. Si el panel separa las claves en pestañas, está en **Legacy API Keys**.
-   - **No uses la clave `anon` ni la `publishable`**: no tienen permiso para subir archivos.
-   - Si tu proyecto solo ofrece las claves nuevas (`sb_secret_...`), usa la **secret key** y comprueba la subida en el paso 8. Si falla con 401 o 403, pide la clave `service_role` heredada.
+2. **Project Settings → API Keys**: copia una clave de servidor. Sirven las dos:
+   - la **secret key** (empieza con `sb_secret_`), en la pestaña de las claves nuevas;
+   - o la **`service_role`** heredada (texto largo que empieza con `eyJ`), en **Legacy API Keys**.
+   - **No uses la `anon` ni la `publishable`**: no pueden subir archivos. El servidor no arranca con ellas y te dice por qué.
+   - El servidor envía cada tipo de clave como lo pide Supabase: la `sb_secret_` solo en la cabecera `apikey` (no es un JWT; como `Authorization: Bearer`, Storage responde «Invalid Compact JWS»).
 
 ### 7.3 Escribir las variables
 
@@ -256,6 +258,8 @@ La app no cambia por usar Supabase: sigue pidiendo `GET /beacons/:major/:minor` 
 | `/api/health` responde `"db":"sin conexión"` tras un tiempo sin uso      | Los proyectos gratuitos de Supabase se pausan por inactividad.    | Reanuda el proyecto desde el panel de Supabase. Mientras tanto, la app sigue respondiendo desde el snapshot. |
 | Al subir una imagen: `Supabase Storage respondió 400` o `404`          | El bucket no existe o tiene otro nombre.                          | Crea el bucket `media` o ajusta `SUPABASE_BUCKET`.                                                   |
 | Al subir una imagen: `Supabase Storage respondió 401` o `403`          | Clave equivocada (`anon` o `publishable`) o mal copiada.          | Usa la `service_role` (paso 7.2).                                                                    |
+| Al subir una imagen: `400 Invalid Compact JWS`                          | Una versión anterior del servidor enviaba la `sb_secret_` como Bearer. | Actualiza el servidor (ya lo resuelve). Si persiste, revisa que la clave esté completa, sin espacios. |
+| El servidor no arranca: `SUPABASE_URL es solo https://<ref>.supabase.co` | Se copió la URL de S3 de Storage (`…/storage/v1/s3`).            | Usa la **Project URL** de **Project Settings → Data API** (paso 7.2).                                 |
 | La imagen se sube pero no se ve en el sitio                             | El bucket no es público.                                          | En **Storage**, edita el bucket y activa **Public bucket**.                                          |
 | `Configuración inválida en server/.env: STORAGE_DRIVER ...`             | `STORAGE_DRIVER=supabase` sin `SUPABASE_URL` o sin la clave.      | Completa las dos variables (paso 7.3).                                                               |
 
@@ -273,7 +277,7 @@ La app no cambia por usar Supabase: sigue pidiendo `GET /beacons/:major/:minor` 
 | `DIRECT_URL`                | Sí, para `db:deploy`        | `postgresql://postgres.<ref>:<clave>@aws-0-<region>.pooler.supabase.com:5432/postgres` |
 | `STORAGE_DRIVER`            | No (por defecto `local`)    | `supabase`                                                                             |
 | `SUPABASE_URL`              | Solo con Storage            | `https://<ref>.supabase.co`                                                            |
-| `SUPABASE_SERVICE_ROLE_KEY` | Solo con Storage            | `eyJ...`                                                                               |
+| `SUPABASE_SERVICE_ROLE_KEY` | Solo con Storage            | `sb_secret_...` o `eyJ...` (service_role)                                              |
 | `SUPABASE_BUCKET`           | No (por defecto `media`)    | `media`                                                                                |
 
 El resto de la configuración de producción (Render, Cloudflare Pages, dominio y secretos) está en [`docs/cloudflare-pages.md`](cloudflare-pages.md).

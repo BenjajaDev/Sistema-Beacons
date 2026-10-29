@@ -1,6 +1,7 @@
 import { mkdir, readFile, rm, writeFile } from "node:fs/promises";
 import path from "node:path";
 import type { ServerEnv } from "../config/env.js";
+import { cabecerasDeSupabase } from "../config/supabase-key.js";
 import { ApiError } from "../http/errors.js";
 
 // Dónde se guardan los archivos subidos. En desarrollo, en disco (server/uploads,
@@ -47,7 +48,7 @@ async function falloDeStorage(accion: string, res: Response): Promise<ApiError> 
   return new ApiError(
     503,
     "STORAGE_FAILED",
-    `El almacenamiento de imágenes (Supabase Storage) no pudo ${accion}: ${res.status} ${motivo}. Revisa en Supabase que exista el bucket público y que la clave del servidor sea la service_role.`,
+    `El almacenamiento de imágenes (Supabase Storage) no pudo ${accion}: ${res.status} ${motivo}. Revisa en Supabase que exista el bucket público y que la clave del servidor sea la service_role o la secret key (sb_secret_…).`,
   );
 }
 
@@ -63,17 +64,15 @@ async function pedir(fetchFn: typeof fetch, url: string, init: RequestInit) {
   }
 }
 
-// Usa la API REST de Storage directamente (sin SDK). La service role key solo vive
-// en el servidor: nunca debe llegar al navegador.
+// Usa la API REST de Storage directamente (sin SDK). La clave del servidor solo vive
+// en el servidor: nunca debe llegar al navegador. Va en las cabeceras que pide su
+// tipo: una sb_secret_ como Bearer hace que Storage rechace todo («Invalid Compact JWS»).
 export function supabaseStorage(
   config: { url: string; serviceRoleKey: string; bucket: string },
   fetchFn: typeof fetch = fetch,
 ): MediaStorage {
   const base = config.url.replace(/\/$/, "");
-  const headers = {
-    Authorization: `Bearer ${config.serviceRoleKey}`,
-    apikey: config.serviceRoleKey,
-  };
+  const headers = cabecerasDeSupabase(config.serviceRoleKey);
   return {
     async put(key, data, contentType) {
       const res = await pedir(fetchFn, `${base}/storage/v1/object/${config.bucket}/${key}`, {
