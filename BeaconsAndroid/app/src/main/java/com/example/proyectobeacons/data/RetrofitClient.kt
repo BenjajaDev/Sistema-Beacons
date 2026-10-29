@@ -1,5 +1,6 @@
 package com.example.proyectobeacons.data
 
+import com.example.proyectobeacons.BuildConfig
 import okhttp3.OkHttpClient
 import okhttp3.logging.HttpLoggingInterceptor
 import retrofit2.Retrofit
@@ -9,18 +10,16 @@ import java.util.concurrent.TimeUnit
 /**
  * Punto único donde se configura la conexión al backend.
  *
- * BASE_URL:
- *   - EMULADOR de Android  -> "http://10.0.2.2:3000/"  (10.0.2.2 = localhost del PC)
- *   - TELÉFONO físico       -> "http://TU_IP_LOCAL:3000/" (ej. http://192.168.1.100:3000/)
- *     Saca tu IP con `ipconfig` en Windows y recuerda añadirla en network_security_config.xml.
+ * La URL sale del tipo de build (BuildConfig.BASE_URL, definida en gradle.properties):
+ *   - debug   -> signal.urlDesarrollo, el servidor local (HTTP en la red WiFi).
+ *   - release -> signal.urlProduccion, https://proyectosignal.pages.dev/.
  */
 object RetrofitClient {
 
-    private const val BASE_URL = "http://10.147.219.177:3000/"
-
     val api: BeaconApi by lazy {
         val logging = HttpLoggingInterceptor().apply {
-            level = HttpLoggingInterceptor.Level.BODY
+            // En release no se registran las respuestas en el logcat del teléfono.
+            level = if (BuildConfig.DEBUG) HttpLoggingInterceptor.Level.BODY else HttpLoggingInterceptor.Level.NONE
         }
 
         val client = OkHttpClient.Builder()
@@ -30,7 +29,7 @@ object RetrofitClient {
             .build()
 
         Retrofit.Builder()
-            .baseUrl(BASE_URL)
+            .baseUrl(BuildConfig.BASE_URL)
             .client(client)
             .addConverterFactory(GsonConverterFactory.create())
             .build()

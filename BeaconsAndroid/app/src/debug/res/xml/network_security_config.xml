@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Solo en el build debug (reemplaza al de src/main): permite HTTP sin cifrar para
+  probar contra el servidor local (emulador 10.0.2.2 o la IP del PC en la WiFi,
+  según signal.urlDesarrollo en gradle.properties). El build release no lo incluye.
+-->
+<network-security-config>
+    <base-config cleartextTrafficPermitted="true" />
+</network-security-config>
