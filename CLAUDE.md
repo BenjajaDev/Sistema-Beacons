@@ -12,7 +12,7 @@ SIGNAL es navegación interior con beacons BLE para personas con discapacidad vi
 
 ## Reglas que no se rompen
 
-1. **Contrato de la app Android.** `GET /beacons/:major/:minor` responde `{ titulo, descripcion, ubicacion }` y un 404 `{ error: "No hay información para el beacon M-m" }`, en el puerto 3000. No cambia; `server/test/legacy-beacons.test.ts` lo verifica.
+1. **Contrato de la app Android.** `GET /beacons/:major/:minor` responde `{ titulo, descripcion, ubicacion }` y un 404 `{ error: "No hay información para el beacon M-m" }`, en el puerto 3000. No cambia (lo usan las versiones anteriores de la app); `server/test/legacy-beacons.test.ts` lo verifica. La app actual usa `GET /api/public/beacons` (catálogo con `version` y `ETag`) y orienta sin conexión: no la hagas depender de la red para anunciar un beacon.
 2. **Nada del panel en el bundle público.** `ADMIN_PATH` vive solo en `server/.env`, nunca en variables `VITE_*`. `apps/web/scripts/check-public-bundle.mjs` corre en cada build.
 3. **Accesibilidad WCAG 2.1 AA.** Un `h1` por página, foco visible y gestionado, labels, errores con `aria-live`, objetivos de 44 px, `prefers-reduced-motion` y nada que dependa solo del color. axe con 0 violaciones críticas o graves.
 4. **Español.** Textos de interfaz, comentarios y commits en español. Los commits terminan con la línea `Co-Authored-By` que indique la sesión.

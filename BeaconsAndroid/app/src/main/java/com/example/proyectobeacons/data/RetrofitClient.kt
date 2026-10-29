@@ -8,7 +8,8 @@ import retrofit2.converter.gson.GsonConverterFactory
 import java.util.concurrent.TimeUnit
 
 /**
- * Punto único donde se configura la conexión al backend.
+ * Punto único donde se configura la conexión al backend. Solo se usa para
+ * sincronizar el catálogo (CatalogoBeacons): ninguna detección espera a la red.
  *
  * La URL sale del tipo de build (BuildConfig.BASE_URL, definida en gradle.properties):
  *   - debug   -> signal.urlDesarrollo, el servidor local (HTTP en la red WiFi).
@@ -24,8 +25,10 @@ object RetrofitClient {
 
         val client = OkHttpClient.Builder()
             .addInterceptor(logging)
-            .connectTimeout(5, TimeUnit.SECONDS)
-            .readTimeout(5, TimeUnit.SECONDS)
+            // La sincronización corre en segundo plano: puede esperar a que el
+            // servidor despierte (Render gratis tarda hasta ~1 min tras estar inactivo).
+            .connectTimeout(20, TimeUnit.SECONDS)
+            .readTimeout(60, TimeUnit.SECONDS)
             .build()
 
         Retrofit.Builder()
