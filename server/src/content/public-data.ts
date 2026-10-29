@@ -39,10 +39,13 @@ type PiePublico = Omit<Footer, "logo" | "imagen"> & {
 };
 
 export async function getSite(db: Db) {
-  const s = await db.siteSettings.findUnique({
-    where: { id: 1 },
-    include: { logoLight: IMAGEN, logoDark: IMAGEN, favicon: IMAGEN },
-  });
+  const [s, respaldos] = await Promise.all([
+    db.siteSettings.findUnique({
+      where: { id: 1 },
+      include: { logoLight: IMAGEN, logoDark: IMAGEN, favicon: IMAGEN },
+    }),
+    getBackers(db),
+  ]);
   if (!s) return null;
   const fuentes = s.fonts as Fonts;
   return {
@@ -68,6 +71,8 @@ export async function getSite(db: Db) {
     // Logo e imagen del pie como en las secciones: URL, tamaño y alt, sin ids internos.
     pie: publicSectionImages(parseFooter(s.footer)) as PiePublico,
     voz: parseVoice(s.voice),
+    // Van en el pie de todas las páginas: llegan con los datos del sitio.
+    respaldos,
   };
 }
 
@@ -139,6 +144,22 @@ export async function getTeam(db: Db) {
       photoFrame: m.photoFrame,
     })),
   };
+}
+
+// Instituciones que respaldan el proyecto, sin ids internos.
+async function getBackers(db: Db) {
+  const filas = await db.backer.findMany({
+    where: { visible: true },
+    orderBy: { order: "asc" },
+    include: { logo: IMAGEN },
+  });
+  return filas.map((r) => ({
+    name: r.name,
+    kind: r.kind,
+    description: r.description,
+    url: r.url,
+    logo: r.logo ? { ...r.logo, alt: r.logoAlt ?? r.name } : null,
+  }));
 }
 
 export async function getCollaborators(db: Db) {

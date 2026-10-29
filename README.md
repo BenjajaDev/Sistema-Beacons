@@ -99,13 +99,13 @@ Todas las respuestas de error tienen la forma `{ error, code, campos? }`. `error
 
 **Panel** (`/api/admin`, con sesión y CSRF):
 
-| Módulo                                                  | Editor                                                                | Administrador                                                  |
-| ------------------------------------------------------- | --------------------------------------------------------------------- | -------------------------------------------------------------- |
-| Noticias                                                | Crea, edita sus borradores, los envía a revisión y ve la vista previa | Además publica, devuelve con observaciones, despublica y borra |
-| Secciones                                               | Edita borradores y los envía a revisión                               | Además publica, devuelve, oculta y ordena                      |
-| Equipo, colaboradores, identidad visual, pie y contacto | Todo (se publica al guardar y queda en la bitácora)                   | Todo                                                           |
-| Imágenes                                                | Sube y lista                                                          | Además borra (si no están en uso)                              |
-| Beacons, mensajes, usuarios y bitácora                  | —                                                                     | Todo                                                           |
+| Módulo                                                             | Editor                                                                | Administrador                                                  |
+| ------------------------------------------------------------------ | --------------------------------------------------------------------- | -------------------------------------------------------------- |
+| Noticias                                                           | Crea, edita sus borradores, los envía a revisión y ve la vista previa | Además publica, devuelve con observaciones, despublica y borra |
+| Secciones                                                          | Edita borradores y los envía a revisión                               | Además publica, devuelve, oculta y ordena                      |
+| Equipo, colaboradores, respaldos, identidad visual, pie y contacto | Todo (se publica al guardar y queda en la bitácora)                   | Todo                                                           |
+| Imágenes                                                           | Sube y lista                                                          | Además borra (si no están en uso)                              |
+| Beacons, mensajes, usuarios y bitácora                             | —                                                                     | Todo                                                           |
 
 Garantías que impone el servidor, no solo la interfaz:
 
@@ -140,7 +140,7 @@ Garantías que impone el servidor, no solo la interfaz:
 Express sirve la landing en sus rutas: `/`, `/nosotros`, `/noticias`, `/noticias/:slug` y `/contacto`.
 
 - **Datos incluidos en el HTML:** cada página sale con su `<title>`, meta description, Open Graph, canonical, el tema de Identidad visual y los datos iniciales en `<script type="application/json" id="datos-iniciales">`. El primer render no espera a la API, y el JSON va escapado para que ningún texto pueda cerrar el `<script>`.
-- **Sin contenido fijo en el código:** secciones (incluida «Nosotros» en el inicio, con fotos del equipo), textos, noticias, equipo, colaboradores, logos, colores, pie de página y contacto salen de la base de datos. Lo publicado en el panel se ve al recargar, sin redeploy.
+- **Sin contenido fijo en el código:** secciones (incluida «Nosotros» en el inicio, con fotos del equipo), textos, noticias, equipo, colaboradores, respaldos, logos, colores, pie de página y contacto salen de la base de datos. Lo publicado en el panel se ve al recargar, sin redeploy.
 - **404 real:** cualquier otra ruta (incluidas `/admin` o `/login`) responde 404 con la página «no encontrada», también cuando la base de datos no responde. Una noticia en borrador o inexistente también es 404.
 - **SEO:** `/robots.txt` y `/sitemap.xml` se generan en el servidor. Solo listan lo publicado y no mencionan el panel.
 - **Accesibilidad:**
@@ -164,7 +164,7 @@ Se abre en `/<ADMIN_PATH>` (en desarrollo: `npm run dev:admin`, en http://localh
 | -------------- | --------------------------------------------------- | ---------------------------------------------------------------- | ------------------------------------------------------------------------------- |
 | Resumen        | Resumen                                             | Sus borradores y notas en revisión                               | Notas por revisar, secciones pendientes, mensajes y beacons incompletos         |
 | Contenido      | Secciones                                           | Edita borradores con vista previa en vivo y los envía a revisión | Además publica, muestra u oculta y reordena                                     |
-| Contenido      | Equipo y colaboradores                              | Todo                                                             | Todo                                                                            |
+| Contenido      | Equipo y colaboradores, Respaldos                   | Todo                                                             | Todo                                                                            |
 | Contenido      | Noticias                                            | Escribe, guarda y envía a revisión                               | Además publica, devuelve con observaciones, despublica y borra                  |
 | Contenido      | Identidad visual y Pie de página                    | Todo                                                             | Todo                                                                            |
 | CMS            | Beacons                                             | —                                                                | Todo                                                                            |
@@ -190,6 +190,7 @@ Las vistas de administración muestran «sin acceso» si un editor entra por URL
   - las listas son flexibles: de 1 a 6 pasos, y los botones de la portada y de «Nosotros» son opcionales;
   - una sección nueva del catálogo se crea sola, oculta, al arrancar el servidor sobre una base existente.
 - **Equipo:** cada persona tiene área, formación y un correo público opcionales. En **Nosotros**, tarjetas grandes con toda la información: en escritorio caben hasta 5 por fila (el equipo completo, sin flechas, con una versión compacta de la tarjeta); si no caben, un carrusel que avanza solo cada 10 s (con botón para pausarlo; se detiene al apuntar o enfocar y no corre con «reducir movimiento»): también se recorre con flechas con forma de beacon, deslizando o con el teclado. En el **inicio**, una fila de círculos: al apuntar, el círculo crece hasta ser una card; con teclado o un toque se abre igual y Escape la cierra (WCAG 1.4.13). Al editar a una persona, el panel muestra en vivo el círculo, la card y la tarjeta, y permite ajustar el encuadre de la foto (enfoque y zoom) sin recortar el archivo.
+- **Respaldos:** las instituciones que financian o patrocinan el proyecto (por ejemplo, la universidad y el programa que lo financia). No son colaboradores: tienen su propia vista y tabla (`backers`). Cada una lleva nombre, tipo de respaldo («Financia», «Patrocina»), una mención opcional («Proyecto financiado por…»), sitio web y logo con texto alternativo. Se muestran al inicio del pie de todas las páginas, bajo «Con el respaldo de», con los logos sobre placas blancas del mismo alto (se leen en claro y oscuro y ninguno pesa más que otro, como piden los manuales de marca institucionales); llegan con los datos del sitio (`GET /api/public/site`, campo `respaldos`).
 - **Encuadre de imágenes:** la foto del equipo (cuadrada), la portada de las noticias (16:9) y las imágenes de las secciones (en la proporción de su marco) se pueden encuadrar. Se abre sola si la imagen no calza; se arrastra o se ajusta con controles deslizantes (alternativa sin arrastre, WCAG 2.5.7). El servidor recorta con `sharp` y crea una imagen nueva: la original queda en la biblioteca.
 - **Beacons:** el CMS anterior integrado como módulo, con fichas completas e incompletas, conteo por ubicación, búsqueda, cambio de major/minor en un solo paso y botón para escuchar la descripción como la leerá la app.
 - **Usuarios:** cuentas con contraseña temporal que se muestra una sola vez; desactivar o restablecer la contraseña cierra las sesiones de esa persona. Solo administración gestiona cuentas. Eliminar se permite si la cuenta no tiene noticias, borradores, imágenes ni beacons a su nombre (si los tiene, se desactiva para conservar la autoría), nunca la propia ni la última administradora.

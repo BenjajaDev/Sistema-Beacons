@@ -35,6 +35,7 @@ test("el editor solo ve lo suyo y escribe una nota que envía a revisión", asyn
     "Resumen",
     "Secciones",
     "Equipo y colaboradores",
+    "Respaldos",
     "Noticias",
     "Identidad visual",
     "Pie de página",
@@ -113,6 +114,36 @@ test("un beacon creado en el panel llega a la app Android", async ({ page }) => 
   expect((await page.request.get("/beacons/9/9")).status()).toBe(404);
 });
 
+test("el editor agrega un respaldo y aparece en el pie, aparte de los colaboradores", async ({
+  page,
+}) => {
+  await iniciarSesion(page, "editor");
+  await page.getByRole("link", { name: "Respaldos" }).click();
+  await expect(page.getByRole("heading", { level: 1, name: "Respaldos" })).toBeVisible();
+  await page.getByRole("button", { name: "Agregar respaldo" }).first().click();
+  const dialogo = page.getByRole("dialog");
+  // El tipo de respaldo es obligatorio y su error queda junto al campo.
+  await dialogo.getByLabel("Nombre de la institución").fill("Conocimientos 2030");
+  await dialogo.getByRole("button", { name: "Guardar" }).click();
+  await expect(dialogo.getByText(/Escribe el tipo de respaldo/)).toBeVisible();
+  await dialogo.getByLabel("Tipo de respaldo").fill("Financia");
+  await dialogo
+    .getByLabel(/Mención/)
+    .fill("Proyecto financiado por el programa Conocimientos 2030.");
+  await dialogo.getByRole("button", { name: "Guardar" }).click();
+  await expect(page.getByText("Respaldo agregado.")).toBeVisible();
+
+  for (const ruta of ["/", "/contacto"]) {
+    await page.goto(ruta);
+    const pie = page.getByRole("contentinfo");
+    await expect(pie.getByRole("heading", { name: "Con el respaldo de" })).toBeVisible();
+    await expect(pie.getByText("Conocimientos 2030", { exact: true })).toBeVisible();
+    await expect(pie.getByText("Financia", { exact: true })).toBeVisible();
+  }
+  await sinViolaciones(page, "pie con respaldos");
+  expect((await (await page.request.get("/api/public/collaborators")).json()).items).toEqual([]);
+});
+
 test("un mensaje se responde por Gmail, Outlook, la app de correo o copiando la dirección", async ({
   page,
 }) => {
@@ -150,6 +181,7 @@ test("todas las vistas del panel pasan axe en claro y oscuro", async ({ page }) 
     ["/secciones", "Secciones"],
     ["/secciones/hero", "Portada"],
     ["/equipo", "Equipo y colaboradores"],
+    ["/respaldos", "Respaldos"],
     ["/identidad", "Identidad visual"],
     ["/pie", "Pie de página"],
     ["/audiodescriptor", "Audiodescriptor"],

@@ -7,7 +7,8 @@ import type { AdminDeps } from "./deps.js";
 import { assertImage, changedFields, idParam, textoOpcional, urlHttps } from "./helpers.js";
 import { ANY_ROLE, type AdminRoute } from "./registry.js";
 
-// Equipo y Colaboradores: listas ordenables. Son contenido: las editan ADMIN y EDITOR.
+// Equipo, Colaboradores y Respaldos: listas ordenables. Son contenido: las editan
+// ADMIN y EDITOR.
 
 const nombre = z.string("Escribe el nombre.").trim().min(1, "Escribe el nombre.").max(120);
 const imagenId = z
@@ -71,6 +72,17 @@ const collaboratorBase = z.object({
 });
 const collaboratorCreate = collaboratorBase.extend({ visible: z.boolean().default(true) });
 
+// Respaldo institucional: quién financia o patrocina el proyecto. `kind` es el texto
+// que acompaña al logo en el sitio («Financia», «Patrocina»).
+const backerBase = collaboratorBase.extend({
+  kind: z
+    .string("Escribe el tipo de respaldo.")
+    .trim()
+    .min(1, "Escribe el tipo de respaldo, por ejemplo «Financia» o «Patrocina».")
+    .max(60, "El tipo de respaldo admite hasta 60 caracteres."),
+});
+const backerCreate = backerBase.extend({ visible: z.boolean().default(true) });
+
 const orderSchema = z.object({ ids: z.array(z.uuid()).min(1) });
 
 // Operaciones de Prisma que usan ambas colecciones.
@@ -86,6 +98,8 @@ interface Coleccion {
 interface Config {
   ruta: string;
   entidad: string;
+  // Nombre del modelo en el cliente de Prisma (para usarlo dentro de una transacción).
+  delegado: "teamMember" | "collaborator" | "backer";
   accion: string;
   que: string;
   createSchema: z.ZodObject;
@@ -147,9 +161,7 @@ function orderedCollection({ db, audit }: AdminDeps, c: Config): AdminRoute[] {
           );
         }
         await db.$transaction(async (tx) => {
-          const col = (tx as unknown as Record<string, Coleccion>)[
-            c.entidad === "TeamMember" ? "teamMember" : "collaborator"
-          ]!;
+          const col = tx[c.delegado] as unknown as Coleccion;
           for (const [i, id] of ids.entries()) {
             await col.update({ where: { id }, data: { order: i + 1 } });
           }
@@ -224,6 +236,7 @@ export function teamRoutes(deps: AdminDeps): AdminRoute[] {
     ...orderedCollection(deps, {
       ruta: "/team",
       entidad: "TeamMember",
+      delegado: "teamMember",
       accion: "TEAM_MEMBER",
       que: "La persona",
       createSchema: teamCreate,
@@ -235,11 +248,24 @@ export function teamRoutes(deps: AdminDeps): AdminRoute[] {
     ...orderedCollection(deps, {
       ruta: "/collaborators",
       entidad: "Collaborator",
+      delegado: "collaborator",
       accion: "COLLABORATOR",
       que: "El colaborador",
       createSchema: collaboratorCreate,
       updateSchema: collaboratorBase.partial(),
       coleccion: deps.db.collaborator as unknown as Coleccion,
+      imagen: { id: "logoId", alt: "logoAlt" },
+      include: { logo: IMAGEN },
+    }),
+    ...orderedCollection(deps, {
+      ruta: "/backers",
+      entidad: "Backer",
+      delegado: "backer",
+      accion: "BACKER",
+      que: "El respaldo",
+      createSchema: backerCreate,
+      updateSchema: backerBase.partial(),
+      coleccion: deps.db.backer as unknown as Coleccion,
       imagen: { id: "logoId", alt: "logoAlt" },
       include: { logo: IMAGEN },
     }),

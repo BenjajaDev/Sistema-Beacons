@@ -31,6 +31,11 @@
   --color-aviso: #7a4f01;
   --color-aviso-bg: #fff4d6;
 
+  /* --- Logos de instituciones (respaldos): placa blanca en ambos temas, como
+     piden los manuales de marca; el texto sobre ella es la tinta de la marca. --- */
+  --placa-logo: #ffffff;
+  --placa-logo-texto: var(--marca-ciruela);
+
   /* --- Tipografía --- */
   --text-sm: 0.875rem;
   --text-base: 1.0625rem;
