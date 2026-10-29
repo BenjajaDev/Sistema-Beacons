@@ -5,10 +5,11 @@ import type { Persona } from "./data";
 import { FotoPersona } from "./FotoPersona";
 import { useAutoavance, useCarrusel } from "./useCarrusel";
 
-// El equipo en «Nosotros»: tarjetas grandes con toda la información a la vista,
-// en un carrusel. Avanza solo cada 10 s (con botón para pausarlo) y se recorre
-// con las flechas (con forma de beacon), deslizando con el dedo o, con el foco
-// en el carrusel, con las flechas del teclado.
+// El equipo en «Nosotros»: tarjetas grandes con toda la información a la vista.
+// En escritorio caben las 5 de una vez; si no caben, es un carrusel que avanza
+// solo cada 10 s (con botón para pausarlo) y se recorre con las flechas (con
+// forma de beacon), deslizando con el dedo o, con el foco en el carrusel, con
+// las flechas del teclado.
 
 export function EquipoTarjetas({ personas }: { personas: Persona[] }) {
   const id = useId();

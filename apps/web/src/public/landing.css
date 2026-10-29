@@ -955,9 +955,11 @@ main:focus {
 }
 
 /* --- Nosotros: tarjetas grandes de persona en un carrusel ---
-   Scroll nativo con snap; las flechas (beacons) avanzan una tarjeta. Caben 1, 2 o
-   3 tarjetas enteras según el ancho del carrusel (no de la pantalla: en la vista
-   previa del panel el marco es angosto), sin tarjetas cortadas en los bordes. */
+   Scroll nativo con snap; las flechas (beacons) avanzan una tarjeta. Caben de 1 a
+   5 tarjetas enteras según el ancho del carrusel (no de la pantalla: en la vista
+   previa del panel el marco es angosto), sin tarjetas cortadas en los bordes. En
+   escritorio el equipo completo (5) se ve de una vez: sin flechas ni avance
+   automático, porque el carrusel no desborda (useCarrusel). */
 
 .carrusel__pista {
   /* Su ancho no depende de las tarjetas: así desplaza en vez de ensanchar la
@@ -980,23 +982,38 @@ main:focus {
   display: none;
 }
 .personas {
+  --columnas: 1;
+  --hueco: var(--space-5);
   display: grid;
   grid-auto-flow: column;
-  grid-auto-columns: 100%;
-  gap: var(--space-5);
+  grid-auto-columns: calc((100% - (var(--columnas) - 1) * var(--hueco)) / var(--columnas));
+  gap: var(--hueco);
   margin: 0;
   padding: 0;
   list-style: none;
 }
-/* Cada tarjeta mide al menos 15rem: 2 × 15rem + el espacio entre ellas, etc. */
+/* Hasta 3 columnas, cada tarjeta mide al menos 15rem (2 × 15rem + el espacio
+   entre ellas, etc.). Con 4 y 5, al menos 12rem y un espacio menor: la tarjeta
+   pasa a su versión compacta (abajo). */
 @container (min-width: 31.5rem) {
   .personas {
-    grid-auto-columns: calc((100% - var(--space-5)) / 2);
+    --columnas: 2;
   }
 }
 @container (min-width: 48rem) {
   .personas {
-    grid-auto-columns: calc((100% - 2 * var(--space-5)) / 3);
+    --columnas: 3;
+  }
+}
+@container (min-width: 51rem) {
+  .personas {
+    --columnas: 4;
+    --hueco: var(--space-4);
+  }
+}
+@container (min-width: 64rem) {
+  .personas {
+    --columnas: 5;
   }
 }
 .carrusel__controles {
@@ -1080,6 +1097,9 @@ main:focus {
   }
 }
 .persona {
+  /* La tarjeta se adapta a su propio ancho: igual en el carrusel y en la vista
+     previa del panel. */
+  container: persona / inline-size;
   display: flex;
   flex-direction: column;
   overflow: hidden;
@@ -1152,6 +1172,26 @@ main:focus {
 }
 .persona__correo {
   overflow-wrap: anywhere;
+}
+/* Tarjeta angosta (4 o 5 por fila): márgenes y textos secundarios más chicos,
+   para que la biografía no quede en columnas de pocas palabras. */
+@container persona (max-width: 15rem) {
+  .persona > :not(.persona__marco) {
+    margin-inline: var(--space-4);
+  }
+  .persona > :last-child {
+    margin-bottom: var(--space-4);
+  }
+  .persona__marco {
+    margin-bottom: var(--space-3);
+  }
+  .persona__nombre {
+    font-size: var(--text-base);
+  }
+  .persona__bio,
+  .persona__correo {
+    font-size: var(--text-sm);
+  }
 }
 .persona:hover {
   border-color: var(--color-primary);
