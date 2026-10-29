@@ -45,6 +45,15 @@ export function problemaDeClaveDeServidor(clave: string): string | null {
   return null;
 }
 
+// La API REST de Storage cuelga del origen del proyecto (https://<ref>.supabase.co).
+// Es fácil pegar otra URL del panel de Supabase: la de la Data API (…/rest/v1), la
+// de S3 de Storage (https://<ref>.storage.supabase.co/storage/v1/s3) o una con /
+// final. Se corrige al origen en vez de impedir que el servidor arranque.
+export function normalizarUrlSupabase(url: string): string {
+  const { protocol, host } = new URL(url);
+  return `${protocol}//${host.replace(/\.storage\.supabase\.co$/, ".supabase.co")}`;
+}
+
 // Cabeceras de autenticación para la API REST de Supabase según el tipo de clave.
 export function cabecerasDeSupabase(clave: string): Record<string, string> {
   const { tipo } = clasificarClaveSupabase(clave);

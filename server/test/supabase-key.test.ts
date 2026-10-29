@@ -49,20 +49,37 @@ describe("claves de Supabase", () => {
     expect(problemaDeClaveDeServidor(jwtConRol("anon"))).toContain("rol «anon»");
   });
 
-  it("el servidor no arranca con la clave anon ni con una URL de Storage con ruta", () => {
-    const base = { STORAGE_DRIVER: "supabase", SUPABASE_URL: "https://ref.supabase.co" };
-    expect(() => testEnv({ ...base, SUPABASE_SERVICE_ROLE_KEY: jwtConRol("anon") })).toThrow(
-      /SUPABASE_SERVICE_ROLE_KEY/,
-    );
-    expect(() =>
+  it("una configuración de Storage equivocada no impide arrancar: se corrige o se avisa", () => {
+    const base = { STORAGE_DRIVER: "supabase", SUPABASE_SERVICE_ROLE_KEY: SECRETA };
+    // La URL de S3 de Storage, la de la Data API o con / final: se usa el origen.
+    for (const url of [
+      "https://ref.storage.supabase.co/storage/v1/s3",
+      "https://ref.supabase.co/rest/v1/",
+      "https://ref.supabase.co/",
+    ]) {
+      const env = testEnv({ ...base, SUPABASE_URL: url });
+      expect(env.SUPABASE_URL).toBe("https://ref.supabase.co");
+      expect(env.imgHosts).toContain("https://ref.supabase.co");
+    }
+    expect(testEnv({ ...base, SUPABASE_URL: "https://ref.supabase.co/rest/v1" }).avisos).toEqual([
+      expect.stringContaining("se usa https://ref.supabase.co"),
+    ]);
+    const bien = testEnv({ ...base, SUPABASE_URL: "https://ref.supabase.co" });
+    expect(bien.avisos).toEqual([]);
+
+    const anon = testEnv({
+      ...base,
+      SUPABASE_URL: "https://ref.supabase.co",
+      SUPABASE_SERVICE_ROLE_KEY: jwtConRol("anon"),
+    });
+    expect(anon.avisos).toEqual([expect.stringContaining("rol «anon»")]);
+    expect(anon.avisos.join()).not.toContain(jwtConRol("anon"));
+    expect(
       testEnv({
         ...base,
-        SUPABASE_URL: "https://ref.storage.supabase.co/storage/v1/s3",
-        SUPABASE_SERVICE_ROLE_KEY: SECRETA,
-      }),
-    ).toThrow(/SUPABASE_URL/);
-    expect(
-      testEnv({ ...base, SUPABASE_SERVICE_ROLE_KEY: ` ${SECRETA}\n` }).SUPABASE_SERVICE_ROLE_KEY,
+        SUPABASE_URL: "https://ref.supabase.co",
+        SUPABASE_SERVICE_ROLE_KEY: ` ${SECRETA}\n`,
+      }).SUPABASE_SERVICE_ROLE_KEY,
     ).toBe(SECRETA);
   });
 });

@@ -8,6 +8,7 @@ import { createMissingSections } from "./content/section-catalog.js";
 import { createBackup } from "./services/backup.js";
 
 const env = loadServerEnv();
+for (const aviso of env.avisos) logger.warn(aviso);
 const db = createPrisma(env.DATABASE_URL);
 
 const app = createApp({

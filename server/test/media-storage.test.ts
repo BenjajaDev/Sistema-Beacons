@@ -47,6 +47,21 @@ describe("almacenamiento en Supabase", () => {
     }
   });
 
+  it("con una clave que no puede escribir, explica el motivo sin llamar a Storage", async () => {
+    let llamadas = 0;
+    const storage = supabaseStorage(
+      { ...CONFIG, serviceRoleKey: "sb_publishable_clave-0123456789" },
+      async () => {
+        llamadas++;
+        return new Response("{}");
+      },
+    );
+    const err = await storage.put("a.webp", Buffer.from("x"), "image/webp").catch((e) => e);
+    expect(err).toMatchObject({ status: 503, code: "STORAGE_MISCONFIGURED" });
+    expect(err.message).toContain("publishable");
+    expect(llamadas).toBe(0);
+  });
+
   it("si no puede conectarse, lo dice", async () => {
     const storage = supabaseStorage(CONFIG, async () => {
       throw new TypeError("fetch failed");

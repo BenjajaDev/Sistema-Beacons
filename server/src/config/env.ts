@@ -1,6 +1,6 @@
 import path from "node:path";
 import { z } from "zod";
-import { problemaDeClaveDeServidor } from "./supabase-key.js";
+import { normalizarUrlSupabase, problemaDeClaveDeServidor } from "./supabase-key.js";
 
 // Raíz del paquete del servidor (server/). Las rutas relativas del .env se
 // resuelven desde aquí, no desde el directorio de trabajo.
@@ -71,24 +71,12 @@ const serverEnvSchema = z
     STORAGE_DRIVER: z.enum(["local", "supabase"]).default("local"),
     UPLOAD_DIR: z.string().default("uploads"),
     UPLOAD_MAX_MB: z.coerce.number().min(0.1).max(50).default(5),
-    // Solo el origen del proyecto. La URL de S3 que muestra Storage
-    // (…/storage/v1/s3) no sirve: el servidor usa la API REST.
+    // Un error en estas dos no impide arrancar: sin imágenes, el sitio y la app
+    // Android siguen funcionando. Ver avisos en loadServerEnv.
     SUPABASE_URL: z
       .url("SUPABASE_URL debe ser una URL completa, por ejemplo https://<ref>.supabase.co.")
-      .refine(
-        (v) => new URL(v).pathname === "/",
-        "SUPABASE_URL es solo https://<ref>.supabase.co, sin /storage/v1 ni otra ruta (Project Settings → Data API → Project URL).",
-      )
       .optional(),
-    SUPABASE_SERVICE_ROLE_KEY: z
-      .string()
-      .trim()
-      .min(20)
-      .superRefine((clave, ctx) => {
-        const problema = problemaDeClaveDeServidor(clave);
-        if (problema) ctx.addIssue({ code: "custom", message: problema });
-      })
-      .optional(),
+    SUPABASE_SERVICE_ROLE_KEY: z.string().trim().min(20).optional(),
     SUPABASE_BUCKET: z.string().default("media"),
 
     // --- Respaldos ---
@@ -135,6 +123,9 @@ export type ServerEnv = ParsedEnv & {
   uploadDir: string;
   // Hosts de imágenes para la CSP, incluido Supabase Storage si se usa.
   imgHosts: string[];
+  // Configuración corregida o que impide una función (no el arranque). Se
+  // registran al iniciar; nunca incluyen secretos.
+  avisos: string[];
 };
 
 function parseTrustProxy(valor: string): boolean | number | string {
@@ -142,6 +133,26 @@ function parseTrustProxy(valor: string): boolean | number | string {
   if (valor === "false") return false;
   if (/^\d+$/.test(valor)) return Number(valor);
   return valor;
+}
+
+// Avisos de Storage: la URL se corrige al origen del proyecto y una clave que no
+// puede subir imágenes se informa (las subidas responderán con el mismo motivo).
+function revisarSupabase(env: ParsedEnv): { url: string | undefined; avisos: string[] } {
+  if (env.STORAGE_DRIVER !== "supabase" || !env.SUPABASE_URL) {
+    return { url: env.SUPABASE_URL, avisos: [] };
+  }
+  const avisos: string[] = [];
+  const url = normalizarUrlSupabase(env.SUPABASE_URL);
+  if (url !== env.SUPABASE_URL) {
+    avisos.push(
+      `SUPABASE_URL debe ser solo el origen del proyecto: se usa ${url}. Corrígela en el entorno (Project Settings → Data API → Project URL).`,
+    );
+  }
+  const problema = env.SUPABASE_SERVICE_ROLE_KEY
+    ? problemaDeClaveDeServidor(env.SUPABASE_SERVICE_ROLE_KEY)
+    : null;
+  if (problema) avisos.push(problema);
+  return { url, avisos };
 }
 
 // Valida el entorno de una vez al arrancar y corta con un mensaje claro si
@@ -154,9 +165,11 @@ export function loadServerEnv(source: NodeJS.ProcessEnv = process.env): ServerEn
       .join("\n");
     throw new Error(`Configuración inválida en server/.env:\n${detalle}`);
   }
-  const env = parsed.data;
+  const supabase = revisarSupabase(parsed.data);
+  const env = { ...parsed.data, SUPABASE_URL: supabase.url };
   return {
     ...env,
+    avisos: supabase.avisos,
     isProduction: env.NODE_ENV === "production",
     adminDistDir: path.resolve(SERVER_ROOT, env.ADMIN_DIST_DIR),
     publicDistDir: path.resolve(SERVER_ROOT, env.PUBLIC_DIST_DIR),

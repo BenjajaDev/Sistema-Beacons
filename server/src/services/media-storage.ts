@@ -1,7 +1,7 @@
 import { mkdir, readFile, rm, writeFile } from "node:fs/promises";
 import path from "node:path";
 import type { ServerEnv } from "../config/env.js";
-import { cabecerasDeSupabase } from "../config/supabase-key.js";
+import { cabecerasDeSupabase, problemaDeClaveDeServidor } from "../config/supabase-key.js";
 import { ApiError } from "../http/errors.js";
 
 // Dónde se guardan los archivos subidos. En desarrollo, en disco (server/uploads,
@@ -73,30 +73,47 @@ export function supabaseStorage(
 ): MediaStorage {
   const base = config.url.replace(/\/$/, "");
   const headers = cabecerasDeSupabase(config.serviceRoleKey);
+  // Una clave que no puede escribir (anon, publishable) se informa en cada uso, sin
+  // llamar a Storage: el servidor arranca igual y el panel muestra qué corregir.
+  const problema = problemaDeClaveDeServidor(config.serviceRoleKey);
+  const pedirConClave: typeof pedir = (...args) => {
+    if (problema) {
+      return Promise.reject(new ApiError(503, "STORAGE_MISCONFIGURED", problema));
+    }
+    return pedir(...args);
+  };
   return {
     async put(key, data, contentType) {
-      const res = await pedir(fetchFn, `${base}/storage/v1/object/${config.bucket}/${key}`, {
-        method: "POST",
-        headers: {
-          ...headers,
-          "Content-Type": contentType,
-          "Cache-Control": "max-age=31536000",
-          "x-upsert": "false",
+      const res = await pedirConClave(
+        fetchFn,
+        `${base}/storage/v1/object/${config.bucket}/${key}`,
+        {
+          method: "POST",
+          headers: {
+            ...headers,
+            "Content-Type": contentType,
+            "Cache-Control": "max-age=31536000",
+            "x-upsert": "false",
+          },
+          body: new Uint8Array(data),
         },
-        body: new Uint8Array(data),
-      });
+      );
       if (!res.ok) throw await falloDeStorage("guardar la imagen", res);
       return { url: `${base}/storage/v1/object/public/${config.bucket}/${key}` };
     },
     async get(key) {
-      const res = await pedir(fetchFn, `${base}/storage/v1/object/${config.bucket}/${key}`, {
-        headers,
-      });
+      const res = await pedirConClave(
+        fetchFn,
+        `${base}/storage/v1/object/${config.bucket}/${key}`,
+        {
+          headers,
+        },
+      );
       if (!res.ok) throw await falloDeStorage("leer la imagen", res);
       return Buffer.from(await res.arrayBuffer());
     },
     async remove(key) {
-      const res = await pedir(fetchFn, `${base}/storage/v1/object/${config.bucket}`, {
+      const res = await pedirConClave(fetchFn, `${base}/storage/v1/object/${config.bucket}`, {
         method: "DELETE",
         headers: { ...headers, "Content-Type": "application/json" },
         body: JSON.stringify({ prefixes: [key] }),
