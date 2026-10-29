@@ -205,6 +205,28 @@ model Collaborator {
   @@map("collaborators")
 }
 
+// Instituciones que respaldan el proyecto (financiamiento, patrocinio). No son
+// colaboradores: se muestran en el pie de todas las páginas.
+model Backer {
+  id          String   @id @default(uuid())
+  name        String
+  // Cómo respalda, tal como se lee en el sitio: «Financia», «Patrocina»…
+  kind        String
+  description String?
+  url         String?
+  logoId      String?
+  logoAlt     String?
+  order       Int
+  visible     Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  logo Media? @relation(fields: [logoId], references: [id], onDelete: Restrict)
+
+  @@index([order])
+  @@map("backers")
+}
+
 // Ficha que la app Android lee en GET /beacons/:major/:minor. Los nombres de los
 // campos en español son parte del contrato con la app: no se renombran.
 model Beacon {
@@ -240,6 +262,7 @@ model Media {
   newsCovers  News[]
   teamPhotos  TeamMember[]
   collabLogos Collaborator[]
+  backerLogos Backer[]
   logoLightOf SiteSettings[] @relation("LogoLight")
   logoDarkOf  SiteSettings[] @relation("LogoDark")
   faviconOf   SiteSettings[] @relation("Favicon")

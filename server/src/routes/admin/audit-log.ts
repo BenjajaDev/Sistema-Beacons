@@ -7,7 +7,15 @@ import { ADMIN_ONLY, type AdminRoute } from "./registry.js";
 // Cada área reúne los códigos que empiezan con alguno de sus prefijos.
 export const AUDIT_AREAS = {
   sesiones: ["LOGIN_", "LOGOUT", "ACCOUNT_", "PASSWORD_CHANGE"],
-  contenido: ["NEWS_", "SECTION_", "TEAM_MEMBER_", "COLLABORATOR_", "MEDIA_", "SETTINGS_"],
+  contenido: [
+    "NEWS_",
+    "SECTION_",
+    "TEAM_MEMBER_",
+    "COLLABORATOR_",
+    "BACKER_",
+    "MEDIA_",
+    "SETTINGS_",
+  ],
   cms: ["BEACON"],
   administracion: ["USER_", "PROFILE_", "MESSAGE_"],
 } as const;

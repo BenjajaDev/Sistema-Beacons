@@ -36,17 +36,30 @@ test.describe("landing pública", () => {
     });
   }
 
-  test("Nosotros muestra las tarjetas grandes en un carrusel con flechas de beacon", async ({
+  test("Nosotros muestra al equipo completo en escritorio y un carrusel si no cabe", async ({
     page,
   }) => {
     await page.goto("/nosotros");
     const tarjetas = page.locator(".persona");
     await expect(tarjetas).toHaveCount(5);
-    // Tarjetas grandes (al menos 15rem) en una fila.
+    const enUnaFila = async () => {
+      const ys = await tarjetas.evaluateAll((els) => els.map((e) => e.getBoundingClientRect().top));
+      expect(Math.max(...ys) - Math.min(...ys)).toBeLessThan(2);
+    };
+
+    // A 1280 px caben las 5 enteras: sin flechas, sin avance automático y sin
+    // una región con scroll que enfocar.
+    await enUnaFila();
+    await sinTarjetasCortadas(page);
+    await expect(page.locator(".carrusel__controles")).toHaveCount(0);
+    await expect(page.getByRole("region", { name: "Integrantes del equipo" })).toHaveCount(0);
+    await sinViolaciones(page, "/nosotros con el equipo completo");
+
+    // Más angosto, tarjetas grandes (al menos 15rem) en un carrusel.
+    await page.setViewportSize({ width: 700, height: 720 });
     const caja = (await tarjetas.first().boundingBox())!;
     expect(caja.width).toBeGreaterThanOrEqual(240);
-    const ys = await tarjetas.evaluateAll((els) => els.map((e) => e.getBoundingClientRect().top));
-    expect(Math.max(...ys) - Math.min(...ys)).toBeLessThan(2);
+    await enUnaFila();
 
     const carrusel = page.getByRole("region", { name: "Integrantes del equipo" });
     await expect(carrusel).toHaveAttribute("tabindex", "0");

@@ -1,5 +1,6 @@
 import path from "node:path";
 import { z } from "zod";
+import { problemaDeClaveDeServidor } from "./supabase-key.js";
 
 // Raíz del paquete del servidor (server/). Las rutas relativas del .env se
 // resuelven desde aquí, no desde el directorio de trabajo.
@@ -70,8 +71,24 @@ const serverEnvSchema = z
     STORAGE_DRIVER: z.enum(["local", "supabase"]).default("local"),
     UPLOAD_DIR: z.string().default("uploads"),
     UPLOAD_MAX_MB: z.coerce.number().min(0.1).max(50).default(5),
-    SUPABASE_URL: z.url().optional(),
-    SUPABASE_SERVICE_ROLE_KEY: z.string().min(20).optional(),
+    // Solo el origen del proyecto. La URL de S3 que muestra Storage
+    // (…/storage/v1/s3) no sirve: el servidor usa la API REST.
+    SUPABASE_URL: z
+      .url("SUPABASE_URL debe ser una URL completa, por ejemplo https://<ref>.supabase.co.")
+      .refine(
+        (v) => new URL(v).pathname === "/",
+        "SUPABASE_URL es solo https://<ref>.supabase.co, sin /storage/v1 ni otra ruta (Project Settings → Data API → Project URL).",
+      )
+      .optional(),
+    SUPABASE_SERVICE_ROLE_KEY: z
+      .string()
+      .trim()
+      .min(20)
+      .superRefine((clave, ctx) => {
+        const problema = problemaDeClaveDeServidor(clave);
+        if (problema) ctx.addIssue({ code: "custom", message: problema });
+      })
+      .optional(),
     SUPABASE_BUCKET: z.string().default("media"),
 
     // --- Respaldos ---

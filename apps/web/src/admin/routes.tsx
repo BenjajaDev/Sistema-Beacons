@@ -88,6 +88,7 @@ export function crearRouter() {
               { path: "secciones", Component: Secciones },
               { path: "secciones/:key", lazy: diferida(() => import("./views/SeccionEditor")) },
               { path: "equipo", Component: Equipo },
+              { path: "respaldos", lazy: diferida(() => import("./views/Respaldos")) },
               { path: "identidad", lazy: diferida(() => import("./views/Identidad")) },
               { path: "contacto", element: soloAdmin(Contacto) },
               { path: "pie", lazy: diferida(() => import("./views/Pie")) },

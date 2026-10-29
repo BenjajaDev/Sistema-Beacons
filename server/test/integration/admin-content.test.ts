@@ -293,6 +293,74 @@ describe.skipIf(!hasTestDb)("administración de contenido", () => {
     });
   });
 
+  describe("respaldos", () => {
+    it("el editor agrega un respaldo con logo y se ve en el pie, aparte de los colaboradores", async () => {
+      const logo = (await subir(editor, await png())).body.media;
+
+      const sinTipo = await as(app, editor, "post", "/api/admin/backers").send({ name: "UA" });
+      expect(sinTipo.status).toBe(400);
+      expect(sinTipo.body.campos.kind).toMatch(/tipo de respaldo/);
+
+      const sinAlt = await as(app, editor, "post", "/api/admin/backers").send({
+        name: "Universidad Autónoma de Chile",
+        kind: "Patrocina",
+        logoId: logo.id,
+      });
+      expect(sinAlt.body.campos.logoAlt).toMatch(/texto alternativo/);
+
+      const ua = await as(app, editor, "post", "/api/admin/backers").send({
+        name: "Universidad Autónoma de Chile",
+        kind: "Patrocina",
+        url: "https://www.uautonoma.cl",
+        logoId: logo.id,
+        logoAlt: "Universidad Autónoma de Chile",
+      });
+      expect(ua.status).toBe(201);
+      const c2030 = await as(app, editor, "post", "/api/admin/backers").send({
+        name: "Conocimientos 2030",
+        kind: "Financia",
+        description: "Proyecto financiado por el programa Conocimientos 2030.",
+      });
+      await as(app, editor, "put", "/api/admin/backers/order").send({
+        ids: [c2030.body.item.id, ua.body.item.id],
+      });
+
+      const sitio = (await request(app).get("/api/public/site")).body;
+      expect(sitio.respaldos).toEqual([
+        {
+          name: "Conocimientos 2030",
+          kind: "Financia",
+          description: "Proyecto financiado por el programa Conocimientos 2030.",
+          url: null,
+          logo: null,
+        },
+        {
+          name: "Universidad Autónoma de Chile",
+          kind: "Patrocina",
+          description: null,
+          url: "https://www.uautonoma.cl",
+          logo: {
+            url: logo.url,
+            width: 40,
+            height: 30,
+            alt: "Universidad Autónoma de Chile",
+          },
+        },
+      ]);
+      expect((await request(app).get("/api/public/collaborators")).body.items).toEqual([]);
+
+      // Un logo en uso no se borra; un respaldo oculto no se muestra.
+      const borrar = await as(app, admin, "delete", `/api/admin/media/${logo.id}`);
+      expect(borrar.status).toBe(409);
+      expect(borrar.body.error).toContain("Universidad Autónoma de Chile (respaldos)");
+      await as(app, editor, "patch", `/api/admin/backers/${ua.body.item.id}`).send({
+        visible: false,
+      });
+      const visibles = (await request(app).get("/api/public/site")).body.respaldos;
+      expect(visibles.map((r: { name: string }) => r.name)).toEqual(["Conocimientos 2030"]);
+    });
+  });
+
   describe("usuarios", () => {
     it("crea una cuenta con contraseña temporal que obliga a cambiarla", async () => {
       const res = await as(app, admin, "post", "/api/admin/users").send({

@@ -34,6 +34,8 @@ export interface Sitio {
   pie?: Pie;
   // Audiodescriptor (panel); puede faltar en datos guardados antes de existir.
   voz?: { idioma: string; voz: string; velocidad: number };
+  // Instituciones que respaldan el proyecto; pueden faltar en datos guardados antes.
+  respaldos?: Respaldo[];
 }
 
 export interface EnlacePie {
@@ -126,6 +128,10 @@ export interface Colaborador {
   description: string | null;
   url: string | null;
   logo: Imagen | null;
+}
+
+export interface Respaldo extends Colaborador {
+  kind: string;
 }
 
 export type SlugPagina = "inicio" | "nosotros" | "noticias" | "contacto";

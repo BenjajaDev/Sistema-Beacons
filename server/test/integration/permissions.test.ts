@@ -48,12 +48,23 @@ describe("política de roles", () => {
   });
 
   // Lo que el menú agrupa en «Contenido» es de ambos roles.
-  const CONTENIDO = [/^\/team(\/|$)/, /^\/collaborators(\/|$)/, /^\/settings(\/|$)/];
+  const CONTENIDO = [
+    /^\/team(\/|$)/,
+    /^\/collaborators(\/|$)/,
+    /^\/backers(\/|$)/,
+    /^\/settings(\/|$)/,
+  ];
   const contenido = rutas.filter((r) => CONTENIDO.some((p) => p.test(r.path)));
 
-  it("cubre equipo, colaboradores e identidad visual y pie", () => {
+  it("cubre equipo, colaboradores, respaldos e identidad visual y pie", () => {
     expect(contenido.map((r) => r.path)).toEqual(
-      expect.arrayContaining(["/team", "/collaborators", "/settings/identity", "/settings/footer"]),
+      expect.arrayContaining([
+        "/team",
+        "/collaborators",
+        "/backers",
+        "/settings/identity",
+        "/settings/footer",
+      ]),
     );
   });
 

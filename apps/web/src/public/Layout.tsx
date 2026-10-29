@@ -6,7 +6,7 @@ import { IconoCerrar, IconoMenu } from "@shared/ui/Icons";
 import { ToastProvider } from "@shared/ui/Toast";
 import { configurarVoz } from "@shared/voz/voz";
 import { EnlaceEditable, Img, Isotipo, Logo, Redes, VozDeImagen } from "./components";
-import { consultas, PIE_POR_DEFECTO } from "./data";
+import { consultas, PIE_POR_DEFECTO, type Respaldo } from "./data";
 
 const NAVEGACION = [
   { to: "/", texto: "Inicio", end: true },
@@ -99,6 +99,39 @@ function Encabezado() {
   );
 }
 
+// Instituciones que respaldan el proyecto (panel → Respaldos), al inicio del pie
+// en todas las páginas. Los logos van sobre placas blancas del mismo tamaño: se
+// leen en tema claro y oscuro y ninguno pesa más que otro. Sin logo, el nombre.
+function Respaldos({ respaldos }: { respaldos: Respaldo[] }) {
+  return (
+    <div className="container respaldos">
+      <h2 className="pie__titulo">Con el respaldo de</h2>
+      <ul className="respaldos__lista">
+        {respaldos.map((r) => {
+          const placa = r.logo ? (
+            <Img imagen={r.logo} className="respaldo__logo" />
+          ) : (
+            <span className="respaldo__nombre">{r.name}</span>
+          );
+          return (
+            <li key={r.name} className="respaldo">
+              <p className="respaldo__tipo">{r.kind}</p>
+              {r.url ? (
+                <a href={r.url} rel="noopener noreferrer" className="respaldo__placa">
+                  {placa}
+                </a>
+              ) : (
+                <div className="respaldo__placa">{placa}</div>
+              )}
+              {r.description && <p className="respaldo__mencion">{r.description}</p>}
+            </li>
+          );
+        })}
+      </ul>
+    </div>
+  );
+}
+
 // El pie se edita en el panel (Pie de página): descripción, columnas de enlaces,
 // bloques visibles y texto legal. Cada bloque lleva su título, sin ser región.
 function Pie() {
@@ -110,6 +143,7 @@ function Pie() {
   const hayRedes = pie.mostrarRedes && redes.length > 0;
   return (
     <footer className="pie">
+      {sitio.respaldos?.length ? <Respaldos respaldos={sitio.respaldos} /> : null}
       <div className="container pie__rejilla">
         <div className="pie__marca">
           {pie.logo ? (

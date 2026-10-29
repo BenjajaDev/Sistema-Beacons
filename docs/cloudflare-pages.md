@@ -55,7 +55,7 @@ Sigue [`docs/supabase.md`](supabase.md), pasos 1 a 3 y 7.1–7.2. Al terminar te
 
 - `DATABASE_URL`: el **Transaction pooler** (puerto `6543`) con `?pgbouncer=true` al final.
 - `DIRECT_URL`: el **Session pooler** (puerto `5432`).
-- `SUPABASE_URL` (`https://<ref>.supabase.co`) y la clave `service_role`.
+- `SUPABASE_URL` (`https://<ref>.supabase.co`) y la secret key (`sb_secret_…`) o la `service_role` heredada.
 - El bucket **público** `media` creado en Storage.
 
 Usa siempre las URL de los **poolers**, no la «Direct connection»: Render no tiene IPv6 y la conexión directa solo funciona por IPv6.
@@ -101,7 +101,7 @@ El archivo [`render.yaml`](../render.yaml) del repositorio ya trae toda la confi
    | `DATABASE_URL`              | Transaction pooler, puerto 6543, con `?pgbouncer=true`. Sin comillas.                   |
    | `DIRECT_URL`                | Session pooler, puerto 5432. Sin comillas.                                              |
    | `SUPABASE_URL`              | `https://<ref>.supabase.co`                                                             |
-   | `SUPABASE_SERVICE_ROLE_KEY` | La clave `service_role`.                                                                |
+   | `SUPABASE_SERVICE_ROLE_KEY` | La secret key (`sb_secret_…`) o la `service_role` heredada.                             |
 
 4. Pulsa **Apply**. Render compila (`npm ci --include=dev && npm run build`), aplica las migraciones (`npm run db:deploy`) y arranca (`npm start`). Si las migraciones fallan, el despliegue se cancela y sigue la versión anterior.
 5. Cuando diga **Live**, copia la URL del servicio, por ejemplo `https://signal-api.onrender.com`. Es el `BACKEND_ORIGIN` del paso 5.

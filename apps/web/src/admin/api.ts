@@ -169,6 +169,11 @@ export interface Colaborador {
   visible: boolean;
 }
 
+// Institución que respalda el proyecto: «kind» es el texto que acompaña al logo.
+export interface Respaldo extends Colaborador {
+  kind: string;
+}
+
 export interface Ajustes {
   siteName: string;
   tagline: string | null;

@@ -54,6 +54,10 @@ const ACCIONES: Record<string, string> = {
   COLLABORATOR_UPDATE: "Editó un colaborador",
   COLLABORATOR_DELETE: "Quitó un colaborador",
   COLLABORATOR_REORDER: "Reordenó los colaboradores",
+  BACKER_CREATE: "Agregó un respaldo",
+  BACKER_UPDATE: "Editó un respaldo",
+  BACKER_DELETE: "Quitó un respaldo",
+  BACKER_REORDER: "Reordenó los respaldos",
   MESSAGE_DELETE: "Borró un mensaje",
 };
 
