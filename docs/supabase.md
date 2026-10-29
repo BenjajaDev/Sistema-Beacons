@@ -188,7 +188,7 @@ Sin este paso, las imágenes que subas en el panel se guardan en la carpeta `ser
 2. **Project Settings → API Keys**: copia una clave de servidor. Sirven las dos:
    - la **secret key** (empieza con `sb_secret_`), en la pestaña de las claves nuevas;
    - o la **`service_role`** heredada (texto largo que empieza con `eyJ`), en **Legacy API Keys**.
-   - **No uses la `anon` ni la `publishable`**: no pueden subir archivos. El servidor no arranca con ellas y te dice por qué.
+   - **No uses la `anon` ni la `publishable`**: no pueden subir archivos. El servidor arranca igual (el sitio y la app no dependen de las imágenes), pero lo avisa en el registro y cada subida responde con ese motivo.
    - El servidor envía cada tipo de clave como lo pide Supabase: la `sb_secret_` solo en la cabecera `apikey` (no es un JWT; como `Authorization: Bearer`, Storage responde «Invalid Compact JWS»).
 
 ### 7.3 Escribir las variables
@@ -259,7 +259,7 @@ La app no cambia por usar Supabase: sigue pidiendo `GET /beacons/:major/:minor` 
 | Al subir una imagen: `Supabase Storage respondió 400` o `404`          | El bucket no existe o tiene otro nombre.                          | Crea el bucket `media` o ajusta `SUPABASE_BUCKET`.                                                   |
 | Al subir una imagen: `Supabase Storage respondió 401` o `403`          | Clave equivocada (`anon` o `publishable`) o mal copiada.          | Usa la `service_role` (paso 7.2).                                                                    |
 | Al subir una imagen: `400 Invalid Compact JWS`                          | Una versión anterior del servidor enviaba la `sb_secret_` como Bearer. | Actualiza el servidor (ya lo resuelve). Si persiste, revisa que la clave esté completa, sin espacios. |
-| El servidor no arranca: `SUPABASE_URL es solo https://<ref>.supabase.co` | Se copió la URL de S3 de Storage (`…/storage/v1/s3`).            | Usa la **Project URL** de **Project Settings → Data API** (paso 7.2).                                 |
+| Aviso al arrancar: `SUPABASE_URL debe ser solo el origen del proyecto` | Se copió otra URL del panel (la de S3 `…/storage/v1/s3` o la de la Data API `…/rest/v1`). | El servidor ya usa el origen correcto; igual corrige la variable con la **Project URL** (paso 7.2).    |
 | La imagen se sube pero no se ve en el sitio                             | El bucket no es público.                                          | En **Storage**, edita el bucket y activa **Public bucket**.                                          |
 | `Configuración inválida en server/.env: STORAGE_DRIVER ...`             | `STORAGE_DRIVER=supabase` sin `SUPABASE_URL` o sin la clave.      | Completa las dos variables (paso 7.3).                                                               |
 
