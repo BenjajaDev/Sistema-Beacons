@@ -3,6 +3,19 @@ plugins {
     alias(libs.plugins.kotlin.compose)
 }
 
+// URL del servidor de SIGNAL por tipo de build (ver gradle.properties). La app solo
+// llama a GET {url}beacons/:major/:minor. Se valida aquí: un error de URL debe
+// cortar la compilación, no aparecer en el teléfono de una persona usuaria.
+fun urlDelServidor(propiedad: String, soloHttps: Boolean): String {
+    val url = providers.gradleProperty(propiedad).orNull?.trim().orEmpty()
+    if (url.isEmpty()) throw GradleException("Falta $propiedad en gradle.properties.")
+    if (!url.endsWith("/")) throw GradleException("$propiedad debe terminar en / (Retrofit lo exige): $url")
+    if (soloHttps && !url.startsWith("https://")) {
+        throw GradleException("$propiedad debe usar https:// (la app de producción no envía tráfico sin cifrar): $url")
+    }
+    return url
+}
+
 android {
     namespace = "com.example.proyectobeacons"
     compileSdk {
@@ -22,7 +35,11 @@ android {
     }
 
     buildTypes {
+        debug {
+            buildConfigField("String", "BASE_URL", "\"${urlDelServidor("signal.urlDesarrollo", soloHttps = false)}\"")
+        }
         release {
+            buildConfigField("String", "BASE_URL", "\"${urlDelServidor("signal.urlProduccion", soloHttps = true)}\"")
             optimization {
                 enable = false
             }
@@ -34,6 +51,7 @@ android {
     }
     buildFeatures {
         compose = true
+        buildConfig = true
     }
 }
 

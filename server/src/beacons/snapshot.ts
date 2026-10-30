@@ -1,7 +1,13 @@
 import { mkdir, readFile, rename, writeFile } from "node:fs/promises";
 import path from "node:path";
 import type { Db } from "../lib/prisma.js";
-import { beaconKey, type BeaconInfo, parseLegacyBeacons, toLegacyFile } from "./legacy-format.js";
+import {
+  beaconKey,
+  type BeaconInfo,
+  type BeaconRecord,
+  parseLegacyBeacons,
+  toLegacyFile,
+} from "./legacy-format.js";
 
 // Copia local de los beacons en el formato de la app. Permite que
 // GET /beacons/:major/:minor siga respondiendo si la base de datos no está disponible.
@@ -18,12 +24,16 @@ export async function writeBeaconSnapshot(db: Db, filePath: string): Promise<num
   return beacons.length;
 }
 
+export async function readSnapshot(filePath: string): Promise<BeaconRecord[]> {
+  return parseLegacyBeacons(JSON.parse(await readFile(filePath, "utf-8"))).beacons;
+}
+
 export async function readSnapshotEntry(
   filePath: string,
   major: number,
   minor: number,
 ): Promise<BeaconInfo | null> {
-  const { beacons } = parseLegacyBeacons(JSON.parse(await readFile(filePath, "utf-8")));
+  const beacons = await readSnapshot(filePath);
   const clave = beaconKey(major, minor);
   return beacons.find((b) => beaconKey(b.major, b.minor) === clave) ?? null;
 }
