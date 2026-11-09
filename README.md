@@ -95,7 +95,7 @@ La ruta oculta evita que el panel aparezca a simple vista, pero **no es la segur
 
 Todas las respuestas de error tienen la forma `{ error, code, campos? }`. `error` es un mensaje para la persona que usa el sitio y `campos` indica el error de cada input del formulario.
 
-**Pública** (`/api/public`, solo lectura, caché de 60 s): `GET /site`, `GET /pages/:page` (`inicio`, `nosotros`, `noticias` o `contacto`), `GET /news?pagina&porPagina&categoria`, `GET /news/:slug`, `GET /team` y `GET /collaborators`, más `POST /contact` (limitado a 5 por hora por IP y con campo trampa contra bots). Solo entrega lo visible y lo publicado.
+**Pública** (`/api/public`, solo lectura, caché de 60 s): `GET /site`, `GET /pages/:page` (`inicio`, `nosotros`, `noticias` o `contacto`), `GET /news?pagina&porPagina&categoria`, `GET /news/:slug`, `GET /team`, `GET /collaborators` y `GET /beacons` (el catálogo de la app, ver «Contrato con la app Android»), más `POST /contact` (limitado a 5 por hora por IP y con campo trampa contra bots). Solo entrega lo visible y lo publicado.
 
 **Panel** (`/api/admin`, con sesión y CSRF):
 
@@ -226,7 +226,9 @@ El servidor también hace un respaldo cada `BACKUP_INTERVAL_HOURS` horas. Los re
 
 - **No se puede cambiar** sin actualizar la app. `test/legacy-beacons.test.ts` comprueba que cada entrada del `beacons.json` original se responde de forma idéntica.
 - Si la base de datos no responde, el servidor contesta desde el snapshot local (`BEACON_SNAPSHOT_PATH`), que se actualiza al arrancar, al importar y en cada respaldo.
-- El listado (`GET /beacons`) y la escritura sin autenticación (`POST` y `DELETE`) se eliminaron. La edición está en el panel (vista Beacons, `/api/admin/beacons`), solo para administradores.
+- **Sin conexión:** la app guarda en el teléfono el catálogo completo de fichas y responde cada beacon desde ahí, sin esperar a la red. Lo sincroniza con `GET /api/public/beacons` (solo lectura: `{ version, beacons: [{ major, minor, titulo, descripcion, ubicacion }] }`, con `ETag`; si la versión no cambió responde `304`) al abrirse, cada hora y cuando detecta un beacon que no tiene. Si la base no responde, el catálogo sale del snapshot. La primera vez usa la copia incluida en la APK (`BeaconsAndroid/app/src/main/assets/catalogo-beacons.json`), y si la información tiene más de 7 días sin confirmarse, la pantalla principal lo avisa.
+- **Antes de cada APK de release**, actualiza la copia incluida con `npm run catalogo:app` (la descarga de producción; con `-- http://localhost:3000`, del servidor local).
+- El listado en `GET /beacons` y la escritura sin autenticación (`POST` y `DELETE`) se eliminaron. La edición está en el panel (vista Beacons, `/api/admin/beacons`), solo para administradores.
 - El servidor anterior (`BeaconsAndroid/server/`) y el CMS anterior (`cms/`) se eliminaron. Los datos históricos quedan en `server/prisma/data/beacons.json`.
 
 ## Tests y calidad
@@ -270,7 +272,7 @@ En resumen:
 2. **Secretos:** `npm run secret`; en producción se usan `ADMIN_PATH` y `EDGE_PROXY_SECRET` **nuevos**. `JWT_SECRET` y `CSRF_SECRET` los genera Render.
 3. **Render:** New → Blueprint con este repositorio (branch `main`). Compila con `npm ci --include=dev && npm run build`, migra con `npm run db:deploy` al final del build y solo despliega si el CI pasó. Sin disco, los respaldos se hacen con `npm run backup` desde tu computador.
 4. **Cloudflare Pages:** conectar el repositorio con build `npm run build:pages`, salida `apps/web/dist/public`, y las variables `BACKEND_ORIGIN` (URL de Render) y `EDGE_PROXY_SECRET` (el mismo de Render). Luego, el dominio propio y `SITE_URL` en Render.
-5. **App Android:** su `BASE_URL` (`RetrofitClient.kt`) hoy apunta a una IP de la red local por HTTP. Para producción, `https://tu-dominio/` y recompilar. El contrato no cambia.
+5. **App Android:** ejecuta `npm run catalogo:app` para actualizar la copia del catálogo que viaja en la APK. La URL del servidor depende del tipo de build y se define en `BeaconsAndroid/gradle.properties`: el **release** usa `signal.urlProduccion` (`https://proyectosignal.pages.dev/`, solo HTTPS) y el **debug**, `signal.urlDesarrollo` (el servidor local por HTTP). Siempre el dominio de Pages, nunca la URL ni las IPs de Render: el servidor rechaza lo que no llega por Cloudflare. Una URL sin `/` final, o sin `https://` en release, corta la compilación. El contrato no cambia.
 6. **Después de desplegar:** entra a `https://tu-dominio/<ADMIN_PATH>` con cada cuenta del seed y crea la contraseña definitiva; comprueba que `/admin` responde 404 y que `/beacons/1/1` responde la ficha.
 
 **Sin Cloudflare (VPS propio):** `npm ci && npm run build && npm run db:deploy && npm start` detrás de Nginx o Caddy con HTTPS, reenviando a `127.0.0.1:3000` con `X-Forwarded-Proto`, `TRUST_PROXY=1` y sin `EDGE_PROXY_SECRET`. Las variables de producción están en [`docs/configurar-env.md`](docs/configurar-env.md#10-en-producción).

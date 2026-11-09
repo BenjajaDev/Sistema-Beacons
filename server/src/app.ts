@@ -15,6 +15,7 @@ import { adminPanel } from "./routes/admin-panel.js";
 import { adminApi } from "./routes/admin/index.js";
 import { landing } from "./routes/landing.js";
 import { legacyBeaconsRouter } from "./routes/legacy-beacons.js";
+import { beaconCatalogRouter } from "./routes/beacon-catalog.js";
 import { writeBeaconSnapshot } from "./beacons/snapshot.js";
 import { themeCss } from "./content/theme.js";
 import { publicApi } from "./routes/public.js";
@@ -92,6 +93,8 @@ export function createApp(deps: AppDeps) {
   });
   const csrf = createCsrf({ secret: env.CSRF_SECRET, secureCookies: env.COOKIE_SECURE });
   app.use("/api/public", publicApi({ db, logger }));
+  // Catálogo de beacons para que la app funcione sin conexión (con el snapshot de respaldo).
+  app.use(beaconCatalogRouter({ ...deps.beacons, logger }));
 
   const admin = adminApi({
     db,

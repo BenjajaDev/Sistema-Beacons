@@ -4,7 +4,7 @@ import { prismaBeaconReader, type BeaconReader } from "../../src/beacons/store.j
 import type { Db } from "../../src/lib/prisma.js";
 import { testEnv } from "./env.js";
 
-const sinBeacons: BeaconReader = { find: async () => null };
+const sinBeacons: BeaconReader = { find: async () => null, list: async () => [] };
 
 // Sin `db`, cualquier consulta falla: sirve para probar lo que no debería tocar la base.
 // Leer propiedades (db.teamMember) está permitido; lo que falla es llamar a un método.

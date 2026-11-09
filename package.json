@@ -22,6 +22,7 @@
     "db:deploy": "npm run db:deploy -w server",
     "seed": "npm run seed -w server",
     "import:beacons": "npm run import:beacons -w server",
+    "catalogo:app": "node scripts/catalogo-app.mjs",
     "backup": "npm run backup -w server",
     "restore": "npm run restore -w server",
     "test": "npm run test --workspaces --if-present",

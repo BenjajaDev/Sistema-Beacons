@@ -48,6 +48,7 @@ fun HomeScreen(
     val uiState by beaconViewModel.uiState.collectAsStateWithLifecycle()
     val lastKnown by beaconViewModel.lastKnownLocation.collectAsStateWithLifecycle()
     val settings by settingsViewModel.settings.collectAsStateWithLifecycle()
+    val avisoCatalogo by beaconViewModel.avisoCatalogo.collectAsStateWithLifecycle()
 
     // Repetición automática: si está activada, reproduce el mensaje cada 30 s
     // mientras haya un beacon detectado.
@@ -69,6 +70,7 @@ fun HomeScreen(
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(20.dp),
     ) {
+        avisoCatalogo?.let { AvisoCatalogo(palette = palette, texto = it) }
         when (val state = uiState) {
             is BeaconUiState.Scanning -> ScanningContent(
                 palette = palette,
@@ -203,6 +205,33 @@ private fun DetectedContent(
 }
 
 /* ----------------------------- Componentes ----------------------------- */
+
+/**
+ * La información guardada en el teléfono puede estar desactualizada. Se anuncia
+ * con cortesía (no interrumpe el mensaje de un beacon) y se lee como un texto.
+ */
+@Composable
+private fun AvisoCatalogo(palette: SignalPalette, texto: String) {
+    InfoCard(
+        palette = palette,
+        active = false,
+        modifier = Modifier.semantics(mergeDescendants = true) {
+            liveRegion = LiveRegionMode.Polite
+        },
+    ) {
+        Text(
+            text = "Información sin actualizar",
+            color = palette.textPrimary,
+            fontSize = 15.sp,
+            fontWeight = FontWeight.Bold,
+        )
+        Text(
+            text = texto,
+            color = palette.textSecondary,
+            fontSize = 14.sp,
+        )
+    }
+}
 
 /**
  * Círculo de distancia con dos anillos decorativos exteriores.
