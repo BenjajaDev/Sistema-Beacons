@@ -246,9 +246,16 @@
     gap: var(--space-5);
     padding-bottom: 0;
   }
+  /* Seis enlaces con la fuente para dislexia (más ancha) deben caber en una fila. */
   .navegacion {
     flex-direction: row;
-    gap: var(--space-1);
+    gap: 0;
+  }
+  .navegacion a {
+    padding-inline: var(--space-2);
+  }
+  .navegacion a::after {
+    inset-inline: var(--space-2);
   }
 }
 
@@ -2062,6 +2069,8 @@ a.respaldo__placa:hover {
 .buscador input {
   flex: 1 1 14rem;
   width: auto;
+  /* Sin esto, el ancho propio del campo (según la fuente) lo desborda en pantallas angostas. */
+  min-width: 0;
 }
 .recursos__resultado {
   margin: 0 0 var(--space-3);
@@ -2176,4 +2185,57 @@ a.respaldo__placa:hover {
 }
 .boletin-baja {
   max-width: 40rem;
+}
+
+/* --- Kit de prensa: al final de Noticias --- */
+.kit-prensa {
+  margin-top: var(--space-8);
+  padding-top: var(--space-6);
+  border-top: 1px solid var(--color-border);
+}
+.kit-prensa h3 {
+  margin: var(--space-5) 0 var(--space-2);
+  font-size: var(--text-lg);
+}
+.kit-prensa__texto {
+  max-width: 45rem;
+  padding: var(--space-4) var(--space-5);
+  border-inline-start: 4px solid var(--color-primary);
+  background: var(--color-surface);
+}
+.kit-prensa__logos,
+.kit-prensa__archivos {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-4);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.kit-prensa__archivos {
+  flex-direction: column;
+  gap: var(--space-2);
+}
+.kit-prensa__logos li {
+  display: grid;
+  gap: var(--space-2);
+}
+/* Placa blanca: el logotipo se ve igual en los dos temas (como los respaldos). */
+.kit-prensa__logo {
+  display: grid;
+  place-items: center;
+  width: 12rem;
+  height: 6rem;
+  padding: var(--space-3);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--placa-logo);
+}
+.kit-prensa__logo img {
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+}
+.kit-prensa__detalle {
+  color: var(--color-text-muted);
 }

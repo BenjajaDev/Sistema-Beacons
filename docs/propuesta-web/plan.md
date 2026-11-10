@@ -44,8 +44,8 @@ Las debe tomar el equipo. Mientras tanto se mantiene lo ya existente.
 | ------------------------------- | ----------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------- |
 | Tipografías                     | Atkinson Hyperlegible (actual) frente a Glacial Indifference, Garet y Red Hat Display del documento   | **Abierta.** Se conserva Atkinson. Glacial y Garet no se pueden instalar como paquete y su licencia debe revisarse. Red Hat Display sí, para títulos. |
 | Azul Claro                      | `#9DC2F7` (app) o `#79ACF0` (documento)                                                               | **Abierta.** Se conserva `#9DC2F7`. `#79ACF0` da 2,3:1 sobre blanco: solo decorativo. Si se cambia, se cambia también en la app.              |
-| Recursos: ¿subir PDF o enlazar? | Subir al sitio o enlazar a un repositorio institucional (DOI)                                         | **Abierta**, de la etapa 2.                                                                                                                  |
-| Boletín                         | Guardar suscriptores en la base propia o conectar un servicio externo                                 | **Abierta**, de la etapa 2. Exige consentimiento y baja (ley chilena de datos personales).                                                   |
+| Recursos: ¿subir PDF o enlazar? | Subir al sitio o enlazar a un repositorio institucional (DOI)                                         | **Resuelta por defecto, reversible:** se admiten las dos (PDF, DOI o enlace; al menos uno). Ver paso 5.                                      |
+| Boletín                         | Guardar suscriptores en la base propia o conectar un servicio externo                                 | **Resuelta por defecto, reversible:** base propia, con consentimiento y baja. Falta confirmar por correo y la revisión legal. Ver paso 7.    |
 
 ## 5. Etapas
 
@@ -65,7 +65,7 @@ Las debe tomar el equipo. Mientras tanto se mantiene lo ya existente.
 
 ### Etapa 2: piezas nuevas
 
-Repositorio de recursos abiertos (la más grande), galería multimedia, kit de prensa y boletín. Dependen de las decisiones abiertas.
+Repositorio de recursos abiertos, galería de fotos, kit de prensa y boletín. **Hecha** (ver el apartado 8).
 
 ### Etapa 3: contenido y lanzamiento
 
@@ -90,3 +90,20 @@ Antes de publicar contenido real, falta que el equipo, desde el panel:
 - vuelva a elegir la **categoría** de las notas antiguas, si quiere que aparezcan en los filtros.
 
 Siguen abiertas las cuatro decisiones del apartado 4 (tipografías, azul claro, repositorio de recursos y boletín); la etapa 2 no se empezó.
+
+## 8. Estado de la etapa 2
+
+**Terminada.** Documentada en la [bitácora](bitacora.md), pasos 5 a 8: repositorio de recursos (PDF, DOI o enlace), galería de fotos, boletín con consentimiento y baja, y kit de prensa.
+
+Las decisiones abiertas de esta etapa se tomaron con la opción que no cierra puertas, a falta de respuesta del equipo. Se pueden cambiar sin perder datos.
+
+Antes de publicar, falta que el equipo, desde el panel:
+
+- suba los **recursos** reales (los PDF deben ser accesibles) y las **fotos**, con su descripción;
+- escriba y revise los textos de **«Boletín»** y **«Kit de prensa»** en _Secciones_ y los muestre (nacen ocultos);
+- decida cómo enviar el boletín y cómo **confirmar los correos**, y revise el aviso de privacidad con su asesoría legal;
+- cargue el logotipo claro y oscuro en _Identidad visual_ para el kit de prensa.
+
+**Quedó fuera:** los videos de la galería (exigen subtítulos y audiodescripción), un visor ampliado de fotos y el envío de correos desde el sitio.
+
+Siguen abiertas las decisiones de **tipografías** y de **azul claro**; la etapa 3 (contenido real, dominio, revisión con lector de pantalla y difusión) no se empezó.

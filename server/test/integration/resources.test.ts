@@ -240,4 +240,21 @@ describe.skipIf(!hasTestDb)("repositorio de recursos", () => {
       SELECT unnest(enum_range(NULL::"ResourceKind"))::text AS e`;
     expect(filas.map((f) => f.e).sort()).toEqual(TIPOS_RECURSO.map((t) => t.clave).sort());
   });
+
+  it("el kit de prensa nace oculto; al mostrarlo, /noticias trae sus archivos en el HTML", async () => {
+    const kit = await db.section.findUniqueOrThrow({ where: { key: "kit-prensa" } });
+    expect(kit).toMatchObject({ visible: false, page: "NOTICIAS" });
+    await crear(editor, { title: "Dossier de prensa", kind: "PRESS_KIT", doi: "10.1234/kit" });
+    await crear(editor, { title: "Informe", kind: "REPORT", doi: "10.1234/inf" });
+
+    const oculto = await request(app).get("/noticias");
+    expect(oculto.text).not.toContain("Dossier de prensa");
+
+    await db.section.update({ where: { key: "kit-prensa" }, data: { visible: true } });
+    const visible = await request(app).get("/noticias");
+    expect(visible.text).toContain("Dossier de prensa");
+    expect(visible.text).toContain('"kit-prensa"');
+    // Solo los archivos del tipo «Kit de prensa».
+    expect(visible.text).not.toContain("10.1234/inf");
+  });
 });

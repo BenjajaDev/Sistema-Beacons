@@ -389,8 +389,10 @@ test("comunicación descarga la lista de suscriptores y la baja del enlace funci
   await iniciarSesion(page, "social");
   await page.getByRole("link", { name: "Suscriptores" }).click();
   await expect(page.getByRole("heading", { level: 1, name: "Suscriptores" })).toBeVisible();
-  await expect(page.getByText("lectora@example.cl", { exact: true })).toBeVisible();
-  await expect(page.getByText(/· Suscrita/)).toBeVisible();
+  // Otra prueba también se suscribió: se mira solo la fila de esta persona.
+  const fila = page.locator("li.fila-seccion", { hasText: "lectora@example.cl" });
+  await expect(fila).toBeVisible();
+  await expect(fila.getByText(/· Suscrita/)).toBeVisible();
   await sinViolaciones(page, "suscriptores");
 
   const descarga = page.waitForEvent("download");
@@ -402,7 +404,9 @@ test("comunicación descarga la lista de suscriptores y la baja del enlace funci
     .trim()
     .split("\r\n");
   expect(csv[0]).toBe('"correo","nombre","consentimiento","enlace_de_baja"');
-  const enlace = /"(http[^"]*\/boletin\/baja\?t=[^"]+)"$/.exec(csv[1]!)?.[1];
+  const enlace = /"(http[^"]*\/boletin\/baja\?t=[^"]+)"$/.exec(
+    csv.find((l) => l.includes("lectora@example.cl"))!,
+  )?.[1];
   expect(enlace).toBeTruthy();
 
   // Quien recibe el correo abre su enlace: no pasa nada hasta que confirma.
@@ -413,14 +417,14 @@ test("comunicación descarga la lista de suscriptores y la baja del enlace funci
   await page.getByRole("button", { name: "Darme de baja" }).click();
   await expect(page.getByText(/no recibirás más correos/)).toBeVisible();
 
-  // En el panel, la persona pasa a «dadas de baja» y sale del archivo.
+  // En el panel, la persona sale de las suscritas y pasa a «dadas de baja».
   await page.goto(`${PANEL}/suscriptores`);
-  await expect(
-    page.getByText("Aún no hay suscripciones").or(page.getByText("Todavía no hay suscripciones")),
-  ).toBeVisible();
+  await expect(page.getByRole("heading", { level: 2, name: /Lista/ })).toBeVisible();
+  await expect(page.locator("li.fila-seccion", { hasText: "lectora@example.cl" })).toHaveCount(0);
   await page.getByLabel("Mostrar").selectOption("bajas");
-  await expect(page.getByText("lectora@example.cl", { exact: true })).toBeVisible();
-  await expect(page.getByText(/Se dio de baja el/)).toBeVisible();
+  const baja = page.locator("li.fila-seccion", { hasText: "lectora@example.cl" });
+  await expect(baja).toBeVisible();
+  await expect(baja.getByText(/Se dio de baja el/)).toBeVisible();
 });
 
 test("un mensaje se responde por Gmail, Outlook, la app de correo o copiando la dirección", async ({

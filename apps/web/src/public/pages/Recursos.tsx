@@ -3,7 +3,7 @@ import { useState, type FormEvent } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router";
 import { mensajeDeError } from "@shared/api";
 import { Cargando, EmptyState, ErrorState, Skeleton } from "@shared/ui/States";
-import { FechaDia } from "../components";
+import { FechaDia, tamanoLegible } from "../components";
 import {
   consultas,
   POR_PAGINA_RECURSOS,
@@ -12,15 +12,6 @@ import {
   type TipoRecurso,
 } from "../data";
 import { PaginaSecciones } from "../sections";
-
-const FORMATO_TAMANO = new Intl.NumberFormat("es-CL", { maximumFractionDigits: 1 });
-
-// «2,3 MB» o «540 KB».
-export function tamanoLegible(bytes: number) {
-  return bytes >= 1024 * 1024
-    ? `${FORMATO_TAMANO.format(bytes / (1024 * 1024))} MB`
-    : `${FORMATO_TAMANO.format(Math.max(1, bytes / 1024))} KB`;
-}
 
 const etiquetaTipo = (clave: TipoRecurso) => TIPOS_RECURSO.find((t) => t.clave === clave)?.etiqueta;
 

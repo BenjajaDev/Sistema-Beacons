@@ -127,14 +127,21 @@ export function landing(deps: {
     if (ruta === "/noticias") {
       const pagina = Math.max(1, Math.min(1000, Number(req.query.pagina) || 1));
       const q = { pagina, porPagina: POR_PAGINA_NOTICIAS };
+      const contenido = await getPage(db, "NOTICIAS");
+      const consultas: Consulta[] = [
+        ...base,
+        [["pagina", "noticias"], contenido],
+        [["noticias", q], await getNewsList(db, q)],
+      ];
+      // El kit de prensa lista los recursos de ese tipo: llegan con el HTML.
+      if (contenido.secciones.some((s) => s.key === "kit-prensa")) {
+        const kit = { pagina: 1, porPagina: POR_PAGINA_RECURSOS, tipo: "PRESS_KIT" as const };
+        consultas.push([["recursos", kit], await getResources(db, kit)]);
+      }
       return {
         status: 200,
         titulo: pagina > 1 ? `Noticias, página ${pagina}` : "Noticias",
-        consultas: [
-          ...base,
-          [["pagina", "noticias"], await getPage(db, "NOTICIAS")],
-          [["noticias", q], await getNewsList(db, q)],
-        ],
+        consultas,
       };
     }
     if (ruta === "/recursos") {

@@ -3,6 +3,7 @@ import { Link, useSearchParams } from "react-router";
 import { mensajeDeError } from "@shared/api";
 import { Cargando, EmptyState, ErrorState, Skeleton } from "@shared/ui/States";
 import { Paginacion, TarjetaNoticia } from "../components";
+import { KitPrensa, type ContenidoKit } from "../KitPrensa";
 import { CATEGORIAS_NOTICIA, consultas, POR_PAGINA_NOTICIAS } from "../data";
 import { PaginaSecciones } from "../sections";
 
@@ -78,6 +79,10 @@ function FiltroCategorias({ categoria }: { categoria?: string }) {
 
 export default function Noticias() {
   const [params] = useSearchParams();
+  const { data: contenido } = useQuery(consultas.pagina("noticias"));
+  // La sección del kit no es un bloque de la página: se muestra al final de la lista.
+  const kit = contenido?.secciones.find((s) => s.key === "kit-prensa")?.content as
+    ContenidoKit | undefined;
   const pagina = Math.max(1, Number(params.get("pagina")) || 1);
   // Una categoría que no es de la lista se ignora.
   const pedida = params.get("categoria") ?? "";
@@ -97,6 +102,7 @@ export default function Noticias() {
       <div className="container seccion">
         <FiltroCategorias categoria={categoria} />
         <Listado pagina={pagina} categoria={categoria} />
+        {kit && <KitPrensa contenido={kit} />}
       </div>
     </PaginaSecciones>
   );

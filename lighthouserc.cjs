@@ -12,7 +12,14 @@ module.exports = {
       startServerCommand: "node e2e/servidor.mjs",
       startServerReadyPattern: "Servidor de pruebas listo",
       startServerReadyTimeout: 120000,
-      url: [`${BASE}/`, `${BASE}/nosotros`, `${BASE}/noticias`, `${BASE}/contacto`],
+      url: [
+        `${BASE}/`,
+        `${BASE}/nosotros`,
+        `${BASE}/noticias`,
+        `${BASE}/recursos`,
+        `${BASE}/galeria`,
+        `${BASE}/contacto`,
+      ],
       numberOfRuns: 3,
       settings: {
         chromeFlags: "--headless=new",

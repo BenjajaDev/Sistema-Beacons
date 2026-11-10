@@ -264,3 +264,32 @@ El equipo no respondió las decisiones abiertas de la etapa 2 y pidió empezar. 
 
 - El correo con espacios alrededor fallaba la validación del servidor; ahora se recorta antes de validar.
 - Un resumen de errores con `h2` dentro de una sección del inicio rompía el orden de encabezados; con solo tres campos se optó por errores junto a cada campo y foco al primero.
+
+## Paso 8: kit de prensa y cierre de la etapa 2
+
+**Qué pedía el documento.** Un kit de prensa para periodistas: texto oficial, contacto y material descargable.
+
+**Qué se construyó.** Sin una página nueva ni un modelo nuevo: el kit reutiliza lo que ya existe.
+
+- **Sección «Kit de prensa»** (página Noticias, editable desde _Secciones_, **nace oculta**): título, bajada, el texto «Quiénes somos, en breve» para citar tal cual, persona y correo de prensa.
+- **Material para descargar:** son los **recursos del tipo «Kit de prensa»** (el mismo repositorio del paso 5, con PDF o enlace). El bloque lista solo esos.
+- **Logotipos:** salen de _Identidad visual_ (claro y oscuro, el que esté cargado), sobre una placa blanca para que se vean igual en los dos temas. No hay otro lugar donde mantenerlos.
+- **Dónde se ve:** al final de «Noticias», después del listado. Los archivos del kit llegan con el HTML del servidor, como los demás datos de la página.
+
+**Decisiones y por qué.**
+
+- **Al final de Noticias y no en una página propia:** el público del kit (periodistas) ya llega a Noticias, y una página más es otro enlace en el menú y otra ruta que mantener.
+- **Sin botón «copiar texto».** El texto se puede seleccionar y copiar; un botón agrega JavaScript y un aviso de «copiado» que hay que anunciar.
+
+**Verificación de cierre** (sobre el último commit de `develop`):
+
+- Batería de la regla 5: lint, tipos, formato, 612 pruebas del servidor, 114 de la web, 43 del paquete compartido y build con la comprobación de que el bundle público no menciona el panel.
+- e2e completo: 53 pruebas, con axe en claro, oscuro y alto contraste, a 320 px y con el texto al 200 %.
+- Lighthouse móvil, mediana de tres corridas, en seis páginas (se agregaron `/recursos` y `/galeria`): rendimiento 96 a 97 y accesibilidad 100 en todas. Los umbrales (90 y 95) no se tocaron.
+- El contrato `GET /beacons/:major/:minor` de la app Android no cambió.
+
+**Problemas y cómo se resolvieron.**
+
+- El e2e de alto contraste con la fuente para dislexia detectó **46 px de desborde horizontal a 320 px** en `/recursos`: el buscador no encogía. Se agregó `min-width: 0` al campo. De paso, con seis enlaces en el menú se ajustó el relleno de la barra de navegación en escritorio para que quepan en una fila con esa fuente (más ancha).
+- Una prueba del panel descargaba el CSV y daba de baja a la primera persona de la lista, no a la que acababa de crear; ahora busca su propia fila.
+- Otra vez el espacio perdido ante un texto oculto («Logotipo para fondo claro(se abre…»): lo detectó la prueba con el nombre accesible exacto y se corrigió. Ya son tres veces en la etapa; está en las trampas de `CLAUDE.md`.

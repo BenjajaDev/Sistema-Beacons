@@ -84,6 +84,15 @@ export function FechaDia({ dia }: { dia: string }) {
   return <time dateTime={dia}>{FORMATO_FECHA_UTC.format(new Date(`${dia}T00:00:00Z`))}</time>;
 }
 
+const FORMATO_TAMANO = new Intl.NumberFormat("es-CL", { maximumFractionDigits: 1 });
+
+// «2,3 MB» o «540 KB».
+export function tamanoLegible(bytes: number) {
+  return bytes >= 1024 * 1024
+    ? `${FORMATO_TAMANO.format(bytes / (1024 * 1024))} MB`
+    : `${FORMATO_TAMANO.format(Math.max(1, bytes / 1024))} KB`;
+}
+
 // --- Imágenes ---------------------------------------------------------------
 
 // width/height evitan saltos de diseño mientras carga (CLS).

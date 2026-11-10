@@ -335,6 +335,34 @@ const CAMPOS: Record<string, Campo[]> = {
   noticias: [titulo, intro, imagenEncabezado],
   recursos: [titulo, intro, imagenEncabezado],
   galeria: [titulo, intro, imagenEncabezado],
+  "kit-prensa": [
+    titulo,
+    intro,
+    {
+      tipo: "texto",
+      clave: "descripcion",
+      etiqueta: "Quiénes somos, en breve",
+      max: 800,
+      multilinea: true,
+      ayuda:
+        "El texto oficial que pueden citar tal cual. Dos o tres frases: qué es SIGNAL, para quién y quién lo hace.",
+    },
+    {
+      tipo: "texto",
+      clave: "contactoPrensa",
+      etiqueta: "Persona de contacto de prensa",
+      max: 200,
+      opcional: true,
+      ayuda: "Por ejemplo: «Ana Rojas, comunicaciones».",
+    },
+    {
+      tipo: "texto",
+      clave: "correoPrensa",
+      etiqueta: "Correo de prensa",
+      max: 200,
+      opcional: true,
+    },
+  ],
   boletin: [
     titulo,
     intro,

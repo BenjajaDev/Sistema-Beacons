@@ -288,11 +288,12 @@ test.describe("landing pública", () => {
     ).toBeVisible();
 
     await page.goto("/recursos");
-    await expect(page.locator("article.tarjeta-recurso")).toHaveCount(3);
+    await expect(page.locator("article.tarjeta-recurso")).toHaveCount(4);
     // Lo más reciente primero; lo que no trae fecha, al final.
     await expect(page.locator("article.tarjeta-recurso h2")).toHaveText([
       "Informe de impacto 2026",
       "Navegación interior con balizas BLE",
+      "Dossier de prensa SIGNAL",
       "Guía de instalación de beacons",
     ]);
     const pdf = page.getByRole("link", { name: /Abrir PDF .*Informe de impacto 2026/ });
@@ -324,6 +325,30 @@ test.describe("landing pública", () => {
     await page.getByRole("searchbox").fill("zzz");
     await page.getByRole("button", { name: "Buscar" }).click();
     await expect(page.getByText("No encontramos recursos con ese filtro")).toBeVisible();
+  });
+
+  test("Noticias muestra el kit de prensa al final, con su contacto y sus archivos", async ({
+    page,
+  }) => {
+    await page.goto("/noticias");
+    const kit = page.locator("#kit-prensa");
+    await expect(kit.getByRole("heading", { level: 2, name: "Kit de prensa" })).toBeVisible();
+    await expect(kit.getByRole("heading", { level: 3 })).toHaveText([
+      "Quiénes somos, en breve",
+      "Contacto de prensa",
+      "Material para descargar",
+    ]);
+    await expect(kit.getByRole("link", { name: "prensa@signal.test" })).toHaveAttribute(
+      "href",
+      "mailto:prensa@signal.test",
+    );
+    // Solo los recursos del tipo «Kit de prensa».
+    await expect(kit.getByRole("link", { name: /Dossier de prensa SIGNAL/ })).toHaveAttribute(
+      "href",
+      "https://repositorio.example.cl/dossier",
+    );
+    await expect(kit.getByRole("link", { name: /Informe de impacto/ })).toHaveCount(0);
+    await sinViolaciones(page, "/noticias con el kit de prensa");
   });
 
   test("el boletín exige el consentimiento expreso y confirma la suscripción", async ({ page }) => {

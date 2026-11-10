@@ -121,11 +121,32 @@ try {
         doi: "10.1234/signal.2026.01",
       },
       {
+        title: "Dossier de prensa SIGNAL",
+        description: "Logotipos, fotos y datos clave del proyecto.",
+        kind: "PRESS_KIT",
+        publishedOn: new Date("2026-01-10T00:00:00Z"),
+        externalUrl: "https://repositorio.example.cl/dossier",
+      },
+      {
         title: "Guía de instalación de beacons",
         kind: "GUIDE",
         externalUrl: "https://repositorio.example.cl/guia-instalacion",
       },
     ],
+  });
+  // El kit de prensa también nace oculto: se muestra con un contacto de prueba.
+  await db.section.update({
+    where: { key: "kit-prensa" },
+    data: {
+      visible: true,
+      content: {
+        titulo: "Kit de prensa",
+        descripcion:
+          "SIGNAL orienta por voz dentro de los edificios a personas con discapacidad visual.",
+        contactoPrensa: "Ana Rojas, comunicaciones",
+        correoPrensa: "prensa@signal.test",
+      },
+    },
   });
   console.log("Base de pruebas lista.");
 } finally {

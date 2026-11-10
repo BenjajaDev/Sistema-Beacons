@@ -144,6 +144,15 @@ export const sectionSchemas = {
   noticias: z.object(encabezado),
   recursos: z.object(encabezado),
   galeria: z.object(encabezado),
+  // Kit de prensa: texto listo para citar, contacto y material para descargar (los
+  // archivos son recursos del tipo «Kit de prensa»; los logotipos, los de Identidad visual).
+  "kit-prensa": z.object({
+    titulo: texto(120),
+    intro: textoOpcional(400),
+    descripcion: texto(800),
+    contactoPrensa: textoOpcional(200),
+    correoPrensa: z.union([z.literal(""), z.email("Escribe un correo válido.")]).optional(),
+  }),
   // Suscripción al boletín. El texto del consentimiento se guarda tal cual con cada alta.
   boletin: z.object({
     titulo: texto(120),
@@ -367,6 +376,20 @@ export const SECTION_DEFINITIONS: { [K in SectionKey]: SectionDefinition<K> } = 
     contenidoInicial: {
       titulo: "Recursos",
       intro: "Informes, artículos y guías del proyecto, abiertos para descargar y reutilizar.",
+    },
+  },
+  "kit-prensa": {
+    page: "NOTICIAS",
+    order: 10,
+    nombre: "Kit de prensa",
+    // Nace oculto: el equipo escribe antes su texto oficial y su contacto de prensa.
+    visibleInicial: false,
+    contenidoInicial: {
+      titulo: "Kit de prensa",
+      intro:
+        "Material para quienes cubren el proyecto: texto listo para citar, contacto y archivos.",
+      descripcion:
+        "SIGNAL es un sistema de navegación interior con balizas Bluetooth para personas con discapacidad visual. Una aplicación en el teléfono anuncia por voz dónde está la persona y qué hay a su alrededor.",
     },
   },
   galeria: {
