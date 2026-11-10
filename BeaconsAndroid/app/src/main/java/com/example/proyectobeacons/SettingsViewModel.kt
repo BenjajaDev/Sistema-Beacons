@@ -34,4 +34,7 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
         viewModelScope.launch { repository.setActivationDistance(meters) }
 
     fun setLowPower(enabled: Boolean) = viewModelScope.launch { repository.setLowPower(enabled) }
+
+    fun setInternetPrimero(enabled: Boolean) =
+        viewModelScope.launch { repository.setInternetPrimero(enabled) }
 }

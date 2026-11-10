@@ -149,6 +149,19 @@ fun SettingsScreen(
                 onCheckedChange = { settingsViewModel.setLowPower(it) },
             )
         }
+
+        // ---- Información de los puntos ----
+        SettingsSection(palette, "Información de los puntos") {
+            ToggleRow(
+                palette = palette,
+                title = "Internet primero",
+                subtitle = "Activado: consulta el servidor antes de anunciar un punto y, sin " +
+                    "conexión, usa lo guardado. Desactivado: anuncia al instante con lo " +
+                    "guardado y actualiza en segundo plano",
+                checked = settings.internetPrimero,
+                onCheckedChange = { settingsViewModel.setInternetPrimero(it) },
+            )
+        }
     }
 }
 

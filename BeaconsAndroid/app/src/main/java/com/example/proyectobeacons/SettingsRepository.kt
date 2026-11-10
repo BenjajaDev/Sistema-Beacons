@@ -24,6 +24,12 @@ data class SignalSettings(
     val activationDistance: Float = DEFAULT_ACTIVATION_DISTANCE,
     val lowPower: Boolean = false,
     /**
+     * `true`: antes de anunciar un punto se consulta el servidor (espera poco) y, si no hay
+     * red, se usa lo guardado. `false`: se anuncia al instante con lo guardado y el servidor
+     * se consulta en segundo plano.
+     */
+    val internetPrimero: Boolean = true,
+    /**
      * RSSI medido a 1 m del beacon durante la calibración, en dBm.
      * `null` = usar el txPower que anuncia cada beacon.
      */
@@ -64,6 +70,7 @@ class SettingsRepository(private val context: Context) {
         val AUTO_REPEAT = booleanPreferencesKey("auto_repeat")
         val ACTIVATION_DISTANCE = floatPreferencesKey("activation_distance")
         val LOW_POWER = booleanPreferencesKey("low_power")
+        val INTERNET_PRIMERO = booleanPreferencesKey("internet_primero")
         val REFERENCE_RSSI = intPreferencesKey("reference_rssi")
         val VERSION = intPreferencesKey("settings_version")
     }
@@ -92,6 +99,7 @@ class SettingsRepository(private val context: Context) {
             activationDistance = (prefs[Keys.ACTIVATION_DISTANCE] ?: DEFAULT_ACTIVATION_DISTANCE)
                 .coerceIn(MIN_ACTIVATION_DISTANCE, MAX_ACTIVATION_DISTANCE),
             lowPower = prefs[Keys.LOW_POWER] ?: false,
+            internetPrimero = prefs[Keys.INTERNET_PRIMERO] ?: true,
             referenceRssi = prefs[Keys.REFERENCE_RSSI]?.takeIf { it in -100..-20 },
         )
     }
@@ -117,6 +125,9 @@ class SettingsRepository(private val context: Context) {
 
     suspend fun setLowPower(enabled: Boolean) =
         context.dataStore.edit { it[Keys.LOW_POWER] = enabled }
+
+    suspend fun setInternetPrimero(enabled: Boolean) =
+        context.dataStore.edit { it[Keys.INTERNET_PRIMERO] = enabled }
 
     /**
      * Guarda el RSSI medido a 1 m del beacon. Con `null` se vuelve a confiar en

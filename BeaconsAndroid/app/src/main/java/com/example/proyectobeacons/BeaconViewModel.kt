@@ -26,6 +26,7 @@ import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
+import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeoutOrNull
 import java.io.File
 import kotlin.math.roundToInt
@@ -95,8 +96,18 @@ class BeaconViewModel(application: Application) : AndroidViewModel(application) 
         /** Cada cuánto se vuelve a buscar en el catálogo un beacon que no estaba. */
         const val RESOLVE_RETRY_MS = 10_000L
 
-        /** Con el catálogo al día, se vuelve a preguntar al servidor cada hora. */
-        const val SINCRONIZAR_CADA_MS = 60 * 60_000L
+        /**
+         * Con el catálogo al día, se vuelve a preguntar al servidor cada 5 minutos. Es barato:
+         * si nada cambió, el servidor responde 304 sin cuerpo.
+         */
+        const val SINCRONIZAR_CADA_MS = 5 * 60_000L
+
+        /** "Internet primero": cuánto se espera al servidor antes de anunciar con lo guardado. */
+        const val ESPERA_CONSULTA_PREVIA_MS = 2_000L
+        const val ENTRE_CONSULTAS_PREVIAS_MS = 15_000L
+
+        /** Al volver a la app se sincroniza, pero no más de una vez cada 30 segundos. */
+        const val SINCRONIZAR_AL_VOLVER_MS = 30_000L
 
         /** Sin conexión, se reintenta con espera creciente: 1, 2, 4… hasta 15 min. */
         const val REINTENTO_INICIAL_MS = 60_000L
@@ -152,6 +163,8 @@ class BeaconViewModel(application: Application) : AndroidViewModel(application) 
     private var lastDiagnostico = 0L
     private var activationDistance = SignalSettings().activationDistance
     private var vibrationEnabled = true
+    private var internetPrimero = true
+    private var ultimaConsultaPrevia = 0L
 
     /** Beacon enganchado ahora mismo; su mensaje permanece fijo en pantalla. */
     private var activeId: String? = null
@@ -174,6 +187,7 @@ class BeaconViewModel(application: Application) : AndroidViewModel(application) 
             settingsRepository.settings.collect { settings ->
                 activationDistance = settings.activationDistance
                 vibrationEnabled = settings.vibration
+                internetPrimero = settings.internetPrimero
                 tracker.referenceRssi = settings.referenceRssi
                 ttsManager.setSpeechRate(settings.ttsSpeed)
             }
@@ -321,6 +335,7 @@ class BeaconViewModel(application: Application) : AndroidViewModel(application) 
         votosSalida = 0
 
         lastResolveAttempt = now
+        consultarServidorAntes()
         val registrada = resolveLocation(chosen.major, chosen.minor)
         activeRegistrado = registrada != null
         val location = registrada ?: puntoNoRegistrado(chosen.major, chosen.minor)
@@ -424,6 +439,35 @@ class BeaconViewModel(application: Application) : AndroidViewModel(application) 
     }
 
     private fun fmt(meters: Double) = "%.2f".format(meters)
+
+    /**
+     * Con "Internet primero", antes de anunciar un punto se pide la versión vigente al servidor
+     * (espera como mucho [ESPERA_CONSULTA_PREVIA_MS]). Si no hay red o tarda, se anuncia con lo
+     * guardado en el teléfono: orientar nunca depende de la conexión. Entre dos consultas pasan
+     * al menos [ENTRE_CONSULTAS_PREVIAS_MS], para no repetirla en cada relevo.
+     */
+    private suspend fun consultarServidorAntes() {
+        if (!internetPrimero) return
+        val ahora = System.currentTimeMillis()
+        if (ahora - ultimaConsultaPrevia < ENTRE_CONSULTAS_PREVIAS_MS) return
+        ultimaConsultaPrevia = ahora
+        val resultado = withTimeoutOrNull(ESPERA_CONSULTA_PREVIA_MS) {
+            withContext(Dispatchers.IO) { catalogo.sincronizar() }
+        }
+        Log.i("SIGNAL_VM", "Consulta previa al servidor: ${resultado ?: "sin respuesta a tiempo"}")
+        if (resultado != null) _avisoCatalogo.value = catalogo.aviso()
+    }
+
+    /**
+     * La app volvió a primer plano: se pide la versión vigente del catálogo, así los cambios
+     * hechos en el panel llegan sin esperar al próximo ciclo ni reiniciar la app.
+     */
+    fun sincronizarAlVolver() {
+        val ahora = System.currentTimeMillis()
+        if (ahora - ultimoPedidoDeSincronizacion < SINCRONIZAR_AL_VOLVER_MS) return
+        ultimoPedidoDeSincronizacion = ahora
+        pedidosDeSincronizacion.trySend(Unit)
+    }
 
     /** Ficha del beacon desde el catálogo del teléfono, o null si no está. No usa la red. */
     private fun resolveLocation(major: Int, minor: Int): BeaconLocation? {

@@ -7,6 +7,7 @@ import android.os.Build
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.activity.viewModels
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.isSystemInDarkTheme
@@ -59,13 +60,15 @@ class MainActivity : ComponentActivity() {
         permissionsGranted.value = results.values.all { it } && hasAllPermissions()
     }
 
+    // Es el mismo ViewModel que usa la pantalla (comparten el almacén de la actividad).
+    private val beaconViewModel: BeaconViewModel by viewModels()
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         permissionsGranted.value = hasAllPermissions()
 
         setContent {
             val themeViewModel: ThemeViewModel = viewModel()
-            val beaconViewModel: BeaconViewModel = viewModel()
             val settingsViewModel: SettingsViewModel = viewModel()
 
             val themeMode by themeViewModel.themeMode.collectAsStateWithLifecycle()
@@ -98,6 +101,7 @@ class MainActivity : ComponentActivity() {
 
     override fun onResume() {
         super.onResume()
+        beaconViewModel.sincronizarAlVolver()
         if (!permissionsGranted.value && hasAllPermissions()) {
             permissionsGranted.value = true
         }
