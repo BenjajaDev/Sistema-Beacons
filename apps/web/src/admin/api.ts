@@ -124,7 +124,7 @@ export interface Seccion {
   id: string;
   key: string;
   nombre: string;
-  page: "INICIO" | "NOSOTROS" | "NOTICIAS" | "CONTACTO";
+  page: "INICIO" | "NOSOTROS" | "NOTICIAS" | "RECURSOS" | "CONTACTO";
   order: number;
   visible: boolean;
   content: Record<string, unknown>;
@@ -184,6 +184,22 @@ export interface Colaborador {
 // Institución que respalda el proyecto: «kind» es el texto que acompaña al logo.
 export interface Respaldo extends Omit<Colaborador, "type"> {
   kind: string;
+}
+
+// Recurso del repositorio abierto. `name` repite el título: la lista del panel lo usa.
+export interface Recurso {
+  id: string;
+  name: string;
+  title: string;
+  description: string | null;
+  kind: import("../public/data").TipoRecurso;
+  authors: string | null;
+  publishedOn: string | null;
+  doi: string | null;
+  externalUrl: string | null;
+  license: string | null;
+  visible: boolean;
+  file: { id: string; url: string; sizeBytes: number; originalName: string } | null;
 }
 
 export interface Ajustes {

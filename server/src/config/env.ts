@@ -71,6 +71,8 @@ const serverEnvSchema = z
     STORAGE_DRIVER: z.enum(["local", "supabase"]).default("local"),
     UPLOAD_DIR: z.string().default("uploads"),
     UPLOAD_MAX_MB: z.coerce.number().min(0.1).max(50).default(5),
+    // Tamaño máximo de un PDF del repositorio de recursos (los informes pesan más que una foto).
+    DOCUMENT_MAX_MB: z.coerce.number().min(0.1).max(50).default(20),
     // Un error en estas dos no impide arrancar: sin imágenes, el sitio y la app
     // Android siguen funcionando. Ver avisos en loadServerEnv.
     SUPABASE_URL: z

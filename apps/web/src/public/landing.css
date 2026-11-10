@@ -2044,3 +2044,71 @@ a.respaldo__placa:hover {
   height: var(--guia-alto);
   border-block: 2px solid var(--color-primary);
 }
+
+/* --- Recursos: repositorio de documentos abiertos --- */
+.buscador {
+  margin-bottom: var(--space-4);
+}
+.buscador label {
+  display: block;
+  margin-bottom: var(--space-2);
+  font-weight: var(--peso-medio);
+}
+.buscador__fila {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+.buscador input {
+  flex: 1 1 14rem;
+  width: auto;
+}
+.recursos__resultado {
+  margin: 0 0 var(--space-3);
+  color: var(--color-text-muted);
+  font-size: var(--text-sm);
+}
+.rejilla-recursos {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 20rem), 1fr));
+  gap: var(--space-5);
+  margin: 0 0 var(--space-5);
+  padding: 0;
+  list-style: none;
+}
+.tarjeta-recurso {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  height: 100%;
+  padding: var(--space-5);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  background: var(--color-surface);
+}
+.tarjeta-recurso > p {
+  margin: 0;
+}
+.tarjeta-recurso__meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  color: var(--color-text-muted);
+  font-size: var(--text-sm);
+}
+.tarjeta-recurso__titulo {
+  margin: 0;
+  font-size: var(--text-lg);
+}
+.tarjeta-recurso__autores,
+.tarjeta-recurso__licencia {
+  color: var(--color-text-muted);
+  font-size: var(--text-sm);
+}
+.tarjeta-recurso__acciones {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  margin-top: auto;
+  padding-top: var(--space-3);
+}

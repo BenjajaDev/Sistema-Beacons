@@ -6,6 +6,7 @@ const PAGINAS = [
   { ruta: "/", nombre: "Inicio" },
   { ruta: "/nosotros", nombre: "Nosotros" },
   { ruta: "/noticias", nombre: "Noticias" },
+  { ruta: "/recursos", nombre: "Recursos" },
   { ruta: "/contacto", nombre: "Contacto" },
 ];
 
@@ -274,6 +275,54 @@ test.describe("landing pública", () => {
     await page.mouse.wheel(0, 600);
     expect(await whatsapp.evaluate((e) => getComputedStyle(e).position)).not.toBe("fixed");
     await sinViolaciones(page, "/contacto con WhatsApp y dirección");
+  });
+
+  test("Recursos lista, filtra y busca; el PDF y el DOI se abren en una pestaña nueva", async ({
+    page,
+  }) => {
+    // El enlace del menú aparece porque hay recursos publicados.
+    await page.goto("/");
+    await expect(
+      page.getByRole("navigation", { name: "Principal" }).getByRole("link", { name: "Recursos" }),
+    ).toBeVisible();
+
+    await page.goto("/recursos");
+    await expect(page.locator("article.tarjeta-recurso")).toHaveCount(3);
+    // Lo más reciente primero; lo que no trae fecha, al final.
+    await expect(page.locator("article.tarjeta-recurso h2")).toHaveText([
+      "Informe de impacto 2026",
+      "Navegación interior con balizas BLE",
+      "Guía de instalación de beacons",
+    ]);
+    const pdf = page.getByRole("link", { name: /Abrir PDF .*Informe de impacto 2026/ });
+    await expect(pdf).toHaveAttribute("href", "/uploads/documentos/e2e.pdf");
+    await expect(pdf).toHaveAttribute("target", "_blank");
+    expect((await pdf.boundingBox())!.height).toBeGreaterThanOrEqual(44);
+    await expect(page.getByRole("link", { name: /Ver por DOI: 10\.1234/ })).toHaveAttribute(
+      "href",
+      "https://doi.org/10.1234/signal.2026.01",
+    );
+
+    // Filtrar por tipo cambia la dirección y anuncia la cantidad.
+    await page
+      .getByRole("navigation", { name: "Tipos de recurso" })
+      .getByRole("link", { name: "Guía y manual" })
+      .click();
+    await expect(page).toHaveURL(/\/recursos\?tipo=GUIDE/);
+    await expect(page.locator("article.tarjeta-recurso")).toHaveCount(1);
+    await expect(page.locator(".recursos__resultado")).toHaveText("1 recurso");
+
+    // Buscar por texto.
+    await page.goto("/recursos");
+    await page.getByRole("searchbox").fill("balizas");
+    await page.getByRole("button", { name: "Buscar" }).click();
+    await expect(page).toHaveURL(/q=balizas/);
+    await expect(page.locator("article.tarjeta-recurso")).toHaveCount(1);
+    await sinViolaciones(page, "/recursos con búsqueda");
+
+    await page.getByRole("searchbox").fill("zzz");
+    await page.getByRole("button", { name: "Buscar" }).click();
+    await expect(page.getByText("No encontramos recursos con ese filtro")).toBeVisible();
   });
 
   test("el formulario de contacto valida, anuncia errores y envía", async ({ page }) => {

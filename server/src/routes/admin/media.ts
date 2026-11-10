@@ -102,6 +102,8 @@ export function mediaRoutes({ db, env, audit, storage, logger }: AdminDeps): Adm
       handler: async (req, res) => {
         const q = parseOrThrow(paginationSchema, req.query);
         const filas = await db.media.findMany({
+          // Los PDF del repositorio de recursos no son imágenes: no van en la biblioteca.
+          where: { mimeType: { startsWith: "image/" } },
           orderBy: [{ createdAt: "desc" }, { id: "desc" }],
           take: q.limit + 1,
           ...(q.cursor && { cursor: { id: q.cursor }, skip: 1 }),

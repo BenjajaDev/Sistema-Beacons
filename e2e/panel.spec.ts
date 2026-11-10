@@ -34,6 +34,7 @@ test("el editor solo ve lo suyo y escribe una nota que envía a revisión", asyn
     "Resumen",
     "Secciones",
     "Noticias",
+    "Recursos",
     "Equipo y colaboradores",
     "Respaldos",
     "Identidad visual",
@@ -297,6 +298,49 @@ test("Nosotros agrupa al comité consultivo y a las organizaciones por tipo", as
   await expect(page.getByRole("button", { name: /^Marcos Asesor/ })).toHaveCount(0);
 });
 
+test("el editor sube un PDF, agrega un recurso y se ve en la página pública", async ({ page }) => {
+  await iniciarSesion(page, "editor");
+  await page.getByRole("link", { name: "Recursos" }).click();
+  await expect(page.getByRole("heading", { level: 1, name: "Recursos" })).toBeVisible();
+  await page.getByRole("button", { name: "Agregar recurso" }).first().click();
+  const formulario = page.getByRole("dialog", { name: "Agregar recurso" });
+
+  // Sin archivo, DOI ni enlace no se guarda, y el error queda junto al archivo.
+  await formulario.getByLabel("Título").fill("Guía de uso con lector de pantalla");
+  await formulario.getByRole("button", { name: "Guardar" }).click();
+  await expect(formulario.getByRole("alert").filter({ hasText: /Sube un PDF/ })).toBeVisible();
+
+  // Un archivo que no es PDF se rechaza aunque se llame .pdf.
+  await formulario.locator("input[type=file]").setInputFiles({
+    name: "falso.pdf",
+    mimeType: "application/pdf",
+    buffer: Buffer.from("esto no es un pdf"),
+  });
+  await expect(page.getByText(/Solo se aceptan archivos PDF/).first()).toBeVisible();
+
+  await formulario.locator("input[type=file]").setInputFiles({
+    name: "guia.pdf",
+    mimeType: "application/pdf",
+    buffer: Buffer.from("%PDF-1.4\n% prueba\n%%EOF\n"),
+  });
+  await expect(formulario.getByText("guia.pdf")).toBeVisible();
+  await formulario.getByLabel("Tipo").selectOption({ label: "Guía y manual" });
+  await formulario.getByLabel("Fecha de publicación").fill("2026-09-10");
+  await sinViolaciones(page, "formulario de recurso");
+  await formulario.getByRole("button", { name: "Guardar" }).click();
+  await expect(page.getByText("Recurso agregado.")).toBeVisible();
+
+  await page.goto("/recursos");
+  const tarjeta = page.locator("article.tarjeta-recurso", {
+    hasText: "Guía de uso con lector de pantalla",
+  });
+  await expect(tarjeta.getByRole("link", { name: /Abrir PDF/ })).toHaveAttribute(
+    "href",
+    /\/uploads\/documentos\/.+\.pdf$/,
+  );
+  await sinViolaciones(page, "/recursos con el PDF subido");
+});
+
 test("un mensaje se responde por Gmail, Outlook, la app de correo o copiando la dirección", async ({
   page,
 }) => {
@@ -333,6 +377,7 @@ test("todas las vistas del panel pasan axe en claro y oscuro", async ({ page }) 
   const vistas: [string, string][] = [
     ["", "Resumen"],
     ["/noticias", "Noticias"],
+    ["/recursos", "Recursos"],
     ["/secciones", "Secciones"],
     ["/secciones/hero", "Portada"],
     ["/secciones/cifras", "En cifras"],

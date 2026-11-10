@@ -154,3 +154,45 @@ Registro cronológico de lo que se hizo para llevar el sitio hacia la [propuesta
 - Movimiento: lo único nuevo es el apuntado de los enlaces de «Compartir» (`transform`, `--dur-rapida`, solo con puntero fino y sin reducción de movimiento). La skill `review-animations` no estaba disponible en esta sesión, así que se revisó a mano contra las reglas de CLAUDE.md.
 
 **Lo que queda.** Ver el [estado de la etapa 1](plan.md#7-estado-de-la-etapa-1).
+
+---
+
+# Etapa 2: piezas nuevas
+
+El equipo no respondió las decisiones abiertas de la etapa 2 y pidió empezar. Se tomó, para cada una, la opción que **no cierra puertas** y que se puede cambiar después sin perder datos (ver [plan, decisiones](plan.md#4-decisiones-abiertas)).
+
+## Paso 5: repositorio de recursos abiertos
+
+**Qué pedía el documento.** Un repositorio de recursos abiertos (informes, artículos, guías) que haga del sitio un nodo de transferencia de conocimiento. Es la pieza más grande de la etapa 2.
+
+**Decisión: ¿subir PDF o enlazar?** Las dos cosas. Cada recurso lleva un PDF subido al sitio, un DOI o un enlace a un repositorio institucional, y **al menos uno de los tres** (lo exige la API y también la base, con un `CHECK`). Así un informe propio se sube y un artículo ya publicado se enlaza por su DOI, sin duplicar el archivo.
+
+**Qué se construyó.**
+
+- **Modelo `Resource`** (tabla `resources`, migración `20261111120000_recursos`): título, descripción, tipo, autoría, fecha de publicación (del documento, no de la carga), DOI, enlace, licencia, PDF y visibilidad. Cinco tipos fijos: _Informe_, _Artículo científico_, _Guía y manual_, _Kit de prensa_ y _Otro_. La lista vive en servidor y web, con un test que las compara (mismo patrón que los íconos y las categorías).
+- **Subida de PDF** (`POST /api/admin/documents`): el servidor comprueba que el contenido empiece con `%PDF-`, no solo el nombre ni el tipo que declara el navegador; guarda el archivo sin pasarlo por el procesador de imágenes y lo registra en la tabla `media`. Tamaño máximo nuevo: `DOCUMENT_MAX_MB` (20 por defecto, hasta 50), porque un informe pesa más que una foto.
+- **DOI limpio:** se acepta el DOI suelto o el enlace de doi.org y se guarda solo el DOI.
+- **Panel «Recursos»** (editores y administradores, como el equipo): lista, alta y edición en un diálogo, interruptor de visibilidad y borrado con confirmación. Reutiliza la lista de colecciones; se agregó la opción de no mostrar ↑ ↓, porque esta lista se ordena sola por fecha.
+- **Página pública `/recursos`** con encabezado editable desde _Secciones_ (página nueva «Recursos»), búsqueda por título, autoría o descripción, filtro por tipo con enlaces y paginación. Cada recurso es una tarjeta con título (`h2`), tipo, fecha, autoría, licencia y los botones que correspondan: _Abrir PDF (2,3 MB)_, _Ver por DOI_ y _Ver en el repositorio_. Todos avisan que se abren en una pestaña nueva y tienen al menos 44 px.
+- **El menú enlaza a Recursos solo si hay alguno visible.** `GET /api/public/site` trae `modulos.recursos`; así el sitio no muestra una página vacía mientras el equipo carga los primeros documentos.
+- La ruta entra al sitemap y se sirve con sus datos iniciales en el HTML, igual que las demás.
+
+**Decisiones y por qué.**
+
+- **Los PDF no aparecen en la biblioteca de imágenes.** `GET /media` ahora devuelve solo imágenes; de lo contrario, al elegir una portada se verían PDF.
+- **Al reemplazar o borrar un recurso se borra su PDF** (registro y archivo) si ningún otro lo usa, para no acumular huérfanos en el almacenamiento.
+- **La fecha de un día se muestra en UTC.** `2026-06-01` interpretado en horario de Chile mostraría el 31 de mayo; hay un componente `FechaDia` y una prueba que lo cubre.
+- **Región de estado persistente.** El conteo de resultados («3 recursos») se anuncia desde una región que existe siempre; una región insertada al cargar no la leen todos los lectores.
+- **Sin visor de PDF embebido.** Un `iframe` de PDF atrapa el teclado y no lo leen bien los lectores de pantalla; el PDF se abre en una pestaña nueva con el visor del navegador.
+- **Accesibilidad del archivo.** El panel recuerda que el PDF debe tener texto seleccionable y encabezados marcados. No se puede verificar automáticamente: queda como tarea de quien sube.
+
+**Cómo se comprobó.**
+
+- Servidor (12 pruebas nuevas): sube y sirve un PDF; rechaza HTML o imágenes con nombre `.pdf`; exige archivo, DOI o enlace y valida cada campo; no acepta una imagen como archivo; publica solo lo visible, ordenado por fecha, con filtro y búsqueda y sin ids; el menú depende de que haya recursos; borra el PDF al reemplazar o borrar; bitácora y roles (`SOCIAL` recibe 403); HTML y sitemap.
+- Web (4 pruebas nuevas y la lista compartida): tarjetas con sus tres accesos, fecha sin desfase, tipo marcado, tipo inventado ignorado, estado anunciado, buscador y menú condicionado; todo con axe.
+- e2e: la página pasa axe en claro y oscuro, sin scroll horizontal a 320 px y con el texto al 200 %; filtro y búsqueda; el editor sube un PDF, rechaza uno falso y lo ve publicado.
+
+**Problemas y cómo se resolvieron.**
+
+- Al ejecutar Prettier desde un subdirectorio se reformatearon documentos ajenos; se revirtieron y desde entonces se formatea solo desde la raíz.
+- Las pruebas buscaban `role="status"` y encontraban también el del panel de accesibilidad; ahora consultan la región por su clase.

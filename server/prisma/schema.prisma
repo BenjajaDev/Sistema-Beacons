@@ -68,6 +68,16 @@ enum Page {
   NOSOTROS
   NOTICIAS
   CONTACTO
+  RECURSOS
+}
+
+// Tipo de recurso del repositorio abierto.
+enum ResourceKind {
+  REPORT
+  ARTICLE
+  GUIDE
+  PRESS_KIT
+  OTHER
 }
 
 model User {
@@ -259,6 +269,31 @@ model Backer {
   @@map("backers")
 }
 
+// Recurso del repositorio abierto: un documento que se descarga (PDF subido al sitio)
+// y/o se consulta en otro lugar (DOI o repositorio institucional). Debe tener al menos
+// uno de los tres; lo exige la API y también la base (CHECK en la migración).
+model Resource {
+  id          String       @id @default(uuid())
+  title       String
+  description String?
+  kind        ResourceKind @default(OTHER)
+  authors     String?
+  // Fecha de publicación del documento (no la de carga al sitio).
+  publishedOn DateTime?    @db.Date
+  doi         String?
+  externalUrl String?
+  license     String?
+  fileId      String?
+  visible     Boolean      @default(true)
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+
+  file Media? @relation(fields: [fileId], references: [id], onDelete: Restrict)
+
+  @@index([publishedOn])
+  @@map("resources")
+}
+
 // Ficha que la app Android lee en GET /beacons/:major/:minor. Los nombres de los
 // campos en español son parte del contrato con la app: no se renombran.
 model Beacon {
@@ -295,6 +330,7 @@ model Media {
   teamPhotos  TeamMember[]
   collabLogos Collaborator[]
   backerLogos Backer[]
+  resources   Resource[]
   logoLightOf SiteSettings[] @relation("LogoLight")
   logoDarkOf  SiteSettings[] @relation("LogoDark")
   faviconOf   SiteSettings[] @relation("Favicon")

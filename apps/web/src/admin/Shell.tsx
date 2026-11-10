@@ -37,6 +37,7 @@ export const MENU: GrupoMenu[] = [
     items: [
       { to: "/secciones", texto: "Secciones", roles: CONTENIDO },
       { to: "/noticias", texto: "Noticias", roles: CONTENIDO },
+      { to: "/recursos", texto: "Recursos", roles: CONTENIDO },
       { to: "/equipo", texto: "Equipo y colaboradores", roles: CONTENIDO },
       { to: "/respaldos", texto: "Respaldos", roles: CONTENIDO },
       { to: "/identidad", texto: "Identidad visual", roles: CONTENIDO },

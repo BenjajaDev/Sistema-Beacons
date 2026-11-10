@@ -36,6 +36,9 @@ export interface Sitio {
   voz?: { idioma: string; voz: string; velocidad: number };
   // Instituciones que respaldan el proyecto; pueden faltar en datos guardados antes.
   respaldos?: Respaldo[];
+  // Qué módulos tienen contenido publicado (el encabezado solo enlaza a esos); puede
+  // faltar en datos guardados antes de existir.
+  modulos?: { recursos: boolean };
 }
 
 export interface EnlacePie {
@@ -176,7 +179,39 @@ export interface Respaldo extends Omit<Colaborador, "type"> {
   kind: string;
 }
 
-export type SlugPagina = "inicio" | "nosotros" | "noticias" | "contacto";
+// Tipos del repositorio de recursos (misma lista que server/src/content/resource-kinds.ts).
+export const TIPOS_RECURSO = [
+  { clave: "REPORT", etiqueta: "Informe" },
+  { clave: "ARTICLE", etiqueta: "Artículo científico" },
+  { clave: "GUIDE", etiqueta: "Guía y manual" },
+  { clave: "PRESS_KIT", etiqueta: "Kit de prensa" },
+  { clave: "OTHER", etiqueta: "Otro" },
+] as const;
+export type TipoRecurso = (typeof TIPOS_RECURSO)[number]["clave"];
+
+export interface Recurso {
+  title: string;
+  description: string | null;
+  kind: TipoRecurso;
+  authors: string | null;
+  // Fecha sin hora: «2026-03-15».
+  publishedOn: string | null;
+  doi: string | null;
+  doiUrl: string | null;
+  externalUrl: string | null;
+  license: string | null;
+  file: { url: string; sizeBytes: number; mimeType: string } | null;
+}
+
+export interface ListaRecursos {
+  items: Recurso[];
+  pagina: number;
+  porPagina: number;
+  total: number;
+  totalPaginas: number;
+}
+
+export type SlugPagina = "inicio" | "nosotros" | "noticias" | "recursos" | "contacto";
 
 const MINUTO = 60_000;
 
@@ -195,6 +230,16 @@ export const consultas = {
         apiFetch<ListaNoticias>(
           `/api/public/news?pagina=${q.pagina}&porPagina=${q.porPagina}` +
             (q.categoria ? `&categoria=${encodeURIComponent(q.categoria)}` : ""),
+        ),
+    }),
+  recursos: (q: { pagina: number; porPagina: number; tipo?: TipoRecurso; q?: string }) =>
+    queryOptions({
+      queryKey: ["recursos", q],
+      queryFn: () =>
+        apiFetch<ListaRecursos>(
+          `/api/public/resources?pagina=${q.pagina}&porPagina=${q.porPagina}` +
+            (q.tipo ? `&tipo=${q.tipo}` : "") +
+            (q.q ? `&q=${encodeURIComponent(q.q)}` : ""),
         ),
     }),
   noticia: (slug: string) =>
@@ -217,6 +262,7 @@ export const consultas = {
 
 export const POR_PAGINA_NOTICIAS = 9;
 export const NOTICIAS_EN_INICIO = 3;
+export const POR_PAGINA_RECURSOS = 12;
 
 export function crearQueryClient() {
   const cliente = new QueryClient({

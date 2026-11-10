@@ -77,6 +77,13 @@ export function Fecha({ iso }: { iso: string }) {
   return <time dateTime={iso}>{FORMATO_FECHA.format(new Date(iso))}</time>;
 }
 
+// Una fecha sin hora («2026-03-15») se lee en UTC: en horario de Chile mostraría el día anterior.
+const FORMATO_FECHA_UTC = new Intl.DateTimeFormat("es-CL", { dateStyle: "long", timeZone: "UTC" });
+
+export function FechaDia({ dia }: { dia: string }) {
+  return <time dateTime={dia}>{FORMATO_FECHA_UTC.format(new Date(`${dia}T00:00:00Z`))}</time>;
+}
+
 // --- Imágenes ---------------------------------------------------------------
 
 // width/height evitan saltos de diseño mientras carga (CLS).

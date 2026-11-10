@@ -2,11 +2,13 @@ import { Router, type RequestHandler } from "express";
 import { rateLimit } from "express-rate-limit";
 import { z } from "zod";
 import { CLAVES_MOTIVO } from "../content/contact-reasons.js";
+import { CLAVES_TIPO_RECURSO } from "../content/resource-kinds.js";
 import {
   getCollaborators,
   getNewsBySlug,
   getNewsList,
   getPage,
+  getResources,
   getSite,
   getTeam,
   PAGINAS,
@@ -31,6 +33,13 @@ const newsListSchema = z.object({
   pagina: z.coerce.number().int().min(1).max(1000).default(1),
   porPagina: z.coerce.number().int().min(1).max(24).default(9),
   categoria: z.string().trim().max(60).optional(),
+});
+
+const resourcesSchema = z.object({
+  pagina: z.coerce.number().int().min(1).max(1000).default(1),
+  porPagina: z.coerce.number().int().min(1).max(24).default(12),
+  tipo: z.enum(CLAVES_TIPO_RECURSO).optional(),
+  q: z.string().trim().max(80).optional(),
 });
 
 const contactSchema = z.object({
@@ -77,6 +86,10 @@ export function publicApi({ db, logger }: { db: Db; logger: Logger }) {
     const detalle = await getNewsBySlug(db, String(req.params.slug));
     if (!detalle) throw notFound("La noticia");
     res.json(detalle);
+  });
+
+  router.get("/resources", cachePublico, async (req, res) => {
+    res.json(await getResources(db, parseOrThrow(resourcesSchema, req.query)));
   });
 
   router.get("/team", cachePublico, async (_req, res) => {

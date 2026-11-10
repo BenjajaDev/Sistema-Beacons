@@ -149,6 +149,7 @@ Para encender la página en tu computador **no hace falta tocar nada más**. Est
 | `EDGE_PROXY_SECRET`                          | comentada                   | Solo en producción con Cloudflare Pages delante ([`docs/cloudflare-pages.md`](cloudflare-pages.md)).                 |
 | `STORAGE_DRIVER`                             | `local`                     | `supabase` para guardar las imágenes en Supabase Storage ([`docs/supabase.md`](supabase.md), paso 7).                |
 | `UPLOAD_DIR`, `UPLOAD_MAX_MB`                | `uploads`, `5`              | Carpeta y tamaño máximo de las imágenes subidas en modo `local`.                                                     |
+| `DOCUMENT_MAX_MB`                            | `20`                        | Tamaño máximo de un PDF del repositorio de recursos (hasta 50).                                                      |
 | `BACKUP_INTERVAL_HOURS`, `BACKUP_KEEP`       | `24`, `14`                  | Cada cuántas horas se respalda la base y cuántos respaldos se conservan. `0` desactiva el automático.                |
 | `ADMIN_DIST_DIR`, `PUBLIC_DIST_DIR`, `BACKUP_DIR`, `BEACON_SNAPSHOT_PATH` | rutas del proyecto | No las cambies.                                                                       |
 

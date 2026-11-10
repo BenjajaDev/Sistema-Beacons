@@ -14,6 +14,8 @@ export const AUDIT_AREAS = {
     "COLLABORATOR_",
     "BACKER_",
     "MEDIA_",
+    "DOCUMENT_",
+    "RESOURCE_",
     "SETTINGS_",
   ],
   cms: ["BEACON"],

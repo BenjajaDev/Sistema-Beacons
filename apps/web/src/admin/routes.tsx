@@ -12,6 +12,7 @@ import Contacto, { ContactoYRedes } from "./views/Contacto";
 import Equipo from "./views/Equipo";
 import Noticias from "./views/Noticias";
 import Perfil from "./views/Perfil";
+import Recursos from "./views/Recursos";
 import Resumen from "./views/Resumen";
 import Secciones from "./views/Secciones";
 import Usuarios from "./views/Usuarios";
@@ -95,6 +96,7 @@ export function crearRouter() {
                     ),
                     children: [
                       { path: "noticias", Component: Noticias },
+                      { path: "recursos", Component: Recursos },
                       {
                         path: "noticias/nueva",
                         lazy: diferida(() => import("./views/NoticiaEditor")),

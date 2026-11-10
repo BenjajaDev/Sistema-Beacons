@@ -6,10 +6,12 @@ import {
   getNewsBySlug,
   getNewsList,
   getPage,
+  getResources,
   getSite,
   getTeam,
   type PublicSite,
 } from "../content/public-data.js";
+import { CLAVES_TIPO_RECURSO } from "../content/resource-kinds.js";
 import type { Logger } from "../lib/logger.js";
 import type { Db } from "../lib/prisma.js";
 
@@ -22,6 +24,7 @@ import type { Db } from "../lib/prisma.js";
 
 export const POR_PAGINA_NOTICIAS = 9;
 export const NOTICIAS_EN_INICIO = 3;
+export const POR_PAGINA_RECURSOS = 12;
 
 // Par [clave de TanStack Query, datos]: el cliente los carga tal cual en su caché.
 type Consulta = [unknown[], unknown];
@@ -35,7 +38,7 @@ interface Pagina {
   consultas: Consulta[];
 }
 
-const RUTAS_FIJAS = new Set(["/", "/nosotros", "/noticias", "/contacto"]);
+const RUTAS_FIJAS = new Set(["/", "/nosotros", "/noticias", "/recursos", "/contacto"]);
 const RUTA_NOTICIA = /^\/noticias\/[a-z0-9]+(?:-[a-z0-9]+)*$/;
 
 // Si la ruta es de la landing. No depende de la base de datos: una ruta
@@ -120,6 +123,24 @@ export function landing(deps: {
           ...base,
           [["pagina", "noticias"], await getPage(db, "NOTICIAS")],
           [["noticias", q], await getNewsList(db, q)],
+        ],
+      };
+    }
+    if (ruta === "/recursos") {
+      const pagina = Math.max(1, Math.min(1000, Number(req.query.pagina) || 1));
+      const pedido = String(req.query.tipo ?? "");
+      const tipo = (CLAVES_TIPO_RECURSO as readonly string[]).includes(pedido)
+        ? (pedido as (typeof CLAVES_TIPO_RECURSO)[number])
+        : undefined;
+      const texto = typeof req.query.q === "string" ? req.query.q.trim().slice(0, 80) : "";
+      const q = { pagina, porPagina: POR_PAGINA_RECURSOS, tipo, q: texto || undefined };
+      return {
+        status: 200,
+        titulo: "Recursos",
+        consultas: [
+          ...base,
+          [["pagina", "recursos"], await getPage(db, "RECURSOS")],
+          [["recursos", q], await getResources(db, q)],
         ],
       };
     }
@@ -226,7 +247,7 @@ export function landing(deps: {
       select: { slug: true, updatedAt: true },
     });
     const urls = [
-      ...["/", "/nosotros", "/noticias", "/contacto"].map(
+      ...["/", "/nosotros", "/noticias", "/recursos", "/contacto"].map(
         (p) => `<url><loc>${base}${p}</loc></url>`,
       ),
       ...noticias.map(
@@ -266,7 +287,7 @@ export function landing(deps: {
 
   // --- Páginas ---
 
-  router.get(["/", "/nosotros", "/noticias", "/noticias/:slug", "/contacto"], servir);
+  router.get(["/", "/nosotros", "/noticias", "/noticias/:slug", "/recursos", "/contacto"], servir);
 
   // Cualquier otra página: 404 con la vista «no encontrada». Las rutas de API,
   // de la app y las de archivos (con extensión) siguen con su 404 en JSON.

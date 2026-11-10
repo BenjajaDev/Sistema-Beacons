@@ -8,6 +8,7 @@ import { beaconRoutes } from "./beacons.js";
 import { mediaRoutes } from "./media.js";
 import { messageRoutes } from "./messages.js";
 import { newsRoutes } from "./news.js";
+import { resourceRoutes } from "./resources.js";
 import { sectionRoutes } from "./sections.js";
 import { settingsRoutes } from "./settings.js";
 import { teamRoutes } from "./team.js";
@@ -23,6 +24,7 @@ export function adminRouteTable(deps: AdminDeps): AdminRoute[] {
     ...teamRoutes(deps),
     ...settingsRoutes(deps),
     ...mediaRoutes(deps),
+    ...resourceRoutes(deps),
     ...beaconRoutes(deps),
     ...userRoutes(deps),
     ...messageRoutes(deps),

@@ -88,6 +88,42 @@ try {
   const contenido = objetivos.content as { items: Record<string, unknown>[] };
   contenido.items[0] = { ...contenido.items[0], icono: "brujula" };
   await db.section.update({ where: { key: "objetivos" }, data: { content: contenido as object } });
+  // Recursos de prueba: un PDF (el archivo no existe en disco, solo se comprueba el
+  // enlace), un artículo con DOI y una guía en un repositorio externo.
+  const pdf = await db.media.create({
+    data: {
+      storageKey: "documentos/e2e.pdf",
+      url: "/uploads/documentos/e2e.pdf",
+      mimeType: "application/pdf",
+      sizeBytes: 2_400_000,
+      originalName: "informe.pdf",
+    },
+  });
+  await db.resource.createMany({
+    data: [
+      {
+        title: "Informe de impacto 2026",
+        description: "Resultados del primer año de SIGNAL en espacios públicos.",
+        kind: "REPORT",
+        authors: "Equipo SIGNAL",
+        publishedOn: new Date("2026-06-01T00:00:00Z"),
+        license: "CC BY 4.0",
+        fileId: pdf.id,
+      },
+      {
+        title: "Navegación interior con balizas BLE",
+        kind: "ARTICLE",
+        authors: "Rojas, A.; Pérez, L.",
+        publishedOn: new Date("2026-03-15T00:00:00Z"),
+        doi: "10.1234/signal.2026.01",
+      },
+      {
+        title: "Guía de instalación de beacons",
+        kind: "GUIDE",
+        externalUrl: "https://repositorio.example.cl/guia-instalacion",
+      },
+    ],
+  });
   console.log("Base de pruebas lista.");
 } finally {
   await db.$disconnect();

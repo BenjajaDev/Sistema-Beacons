@@ -10,12 +10,16 @@ import { consultas, PIE_POR_DEFECTO, type Respaldo } from "./data";
 import { GuiaLectura } from "./GuiaLectura";
 import { PanelAccesibilidad } from "./PanelAccesibilidad";
 
-const NAVEGACION = [
-  { to: "/", texto: "Inicio", end: true },
-  { to: "/nosotros", texto: "Nosotros" },
-  { to: "/noticias", texto: "Noticias" },
-  { to: "/contacto", texto: "Contacto" },
-];
+// «Recursos» se enlaza solo cuando hay recursos publicados.
+function navegacion(modulos: { recursos: boolean } | undefined) {
+  return [
+    { to: "/", texto: "Inicio", end: true },
+    { to: "/nosotros", texto: "Nosotros" },
+    { to: "/noticias", texto: "Noticias" },
+    ...(modulos?.recursos ? [{ to: "/recursos", texto: "Recursos" }] : []),
+    { to: "/contacto", texto: "Contacto" },
+  ];
+}
 
 function suscribirConexion(aviso: () => void) {
   window.addEventListener("online", aviso);
@@ -110,7 +114,7 @@ function Encabezado() {
         >
           <nav aria-label="Principal">
             <ul className="navegacion">
-              {NAVEGACION.map((n) => (
+              {navegacion(sitio?.modulos).map((n) => (
                 <li key={n.to}>
                   <NavLink to={n.to} end={n.end}>
                     {n.texto}

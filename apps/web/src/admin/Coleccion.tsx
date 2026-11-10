@@ -26,6 +26,8 @@ export interface Config<T extends Base, F> {
   vacio: string;
   descripcion: (item: T) => ReactNode;
   miniatura: (item: T) => string | null;
+  // false: la lista tiene un orden propio (por fecha) y no se reordena a mano.
+  ordenable?: boolean;
   aFormulario: (item: T | null) => F;
   aCuerpo: (form: F) => Record<string, unknown>;
   Campos: (p: { form: F; set: (f: F) => void; errores: Record<string, string> }) => ReactNode;
@@ -136,20 +138,24 @@ export function Coleccion<T extends Base, F>({ c }: { c: Config<T, F> }) {
                   etiqueta={`Visible: ${item.name}`}
                   onCambiar={(visible) => parche.mutate({ id: item.id, body: { visible } })}
                 />
-                <IconButton
-                  label={`Subir a ${item.name}`}
-                  aria-disabled={i === 0 || undefined}
-                  onClick={() => mover(data.items, i, -1)}
-                >
-                  <span aria-hidden="true">↑</span>
-                </IconButton>
-                <IconButton
-                  label={`Bajar a ${item.name}`}
-                  aria-disabled={i === data.items.length - 1 || undefined}
-                  onClick={() => mover(data.items, i, 1)}
-                >
-                  <span aria-hidden="true">↓</span>
-                </IconButton>
+                {c.ordenable !== false && (
+                  <>
+                    <IconButton
+                      label={`Subir a ${item.name}`}
+                      aria-disabled={i === 0 || undefined}
+                      onClick={() => mover(data.items, i, -1)}
+                    >
+                      <span aria-hidden="true">↑</span>
+                    </IconButton>
+                    <IconButton
+                      label={`Bajar a ${item.name}`}
+                      aria-disabled={i === data.items.length - 1 || undefined}
+                      onClick={() => mover(data.items, i, 1)}
+                    >
+                      <span aria-hidden="true">↓</span>
+                    </IconButton>
+                  </>
+                )}
                 <Button variante="secundario" onClick={() => abrir(item)}>
                   Editar<span className="visually-hidden"> a {item.name}</span>
                 </Button>

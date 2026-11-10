@@ -6,6 +6,7 @@ import NoEncontrada from "./pages/NoEncontrada";
 import Noticia from "./pages/Noticia";
 import Noticias from "./pages/Noticias";
 import Nosotros from "./pages/Nosotros";
+import Recursos from "./pages/Recursos";
 
 // Las páginas se cargan junto con la app: pesan unos pocos KB en total y cargarlas
 // por separado agregaba una segunda descarga en cadena antes del primer render.
@@ -18,6 +19,7 @@ export function crearRouter() {
         { path: "nosotros", Component: Nosotros },
         { path: "noticias", Component: Noticias },
         { path: "noticias/:slug", Component: Noticia },
+        { path: "recursos", Component: Recursos },
         { path: "contacto", Component: Contacto },
         { path: "*", Component: NoEncontrada },
       ],

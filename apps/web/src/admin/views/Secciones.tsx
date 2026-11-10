@@ -13,6 +13,7 @@ const PAGINAS: { valor: Seccion["page"]; texto: string }[] = [
   { valor: "INICIO", texto: "Inicio" },
   { valor: "NOSOTROS", texto: "Nosotros" },
   { valor: "NOTICIAS", texto: "Noticias" },
+  { valor: "RECURSOS", texto: "Recursos" },
   { valor: "CONTACTO", texto: "Contacto" },
 ];
 
