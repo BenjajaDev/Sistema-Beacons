@@ -83,6 +83,9 @@ try {
       },
     },
   });
+  // El boletín nace oculto (el equipo revisa antes los textos de consentimiento): se
+  // muestra con sus textos iniciales para recorrerlo.
+  await db.section.update({ where: { key: "boletin" }, data: { visible: true } });
   // Un ícono en la primera tarjeta de objetivos, para comprobar su contraste.
   const objetivos = await db.section.findUniqueOrThrow({ where: { key: "objetivos" } });
   const contenido = objetivos.content as { items: Record<string, unknown>[] };

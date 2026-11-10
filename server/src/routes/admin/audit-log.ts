@@ -20,7 +20,7 @@ export const AUDIT_AREAS = {
     "SETTINGS_",
   ],
   cms: ["BEACON"],
-  administracion: ["USER_", "PROFILE_", "MESSAGE_"],
+  administracion: ["USER_", "PROFILE_", "MESSAGE_", "SUBSCRIBER"],
 } as const;
 
 const querySchema = z.object({

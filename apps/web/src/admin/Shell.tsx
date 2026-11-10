@@ -25,6 +25,8 @@ interface GrupoMenu {
 export const TODOS: Rol[] = ["ADMIN", "EDITOR", "SOCIAL"];
 export const CONTENIDO: Rol[] = ["ADMIN", "EDITOR"];
 const ADMIN: Rol[] = ["ADMIN"];
+// Datos personales del boletín: administración y comunicación.
+export const COMUNICACION: Rol[] = ["ADMIN", "SOCIAL"];
 // Edición y administración editan el contacto y las redes dentro de «Pie de página».
 const SOLO_SOCIAL: Rol[] = ["SOCIAL"];
 
@@ -51,6 +53,7 @@ export const MENU: GrupoMenu[] = [
     items: [
       { to: "/contacto", texto: "Mensajes", roles: TODOS },
       { to: "/redes", texto: "Contacto y redes", roles: SOLO_SOCIAL },
+      { to: "/suscriptores", texto: "Suscriptores", roles: COMUNICACION },
     ],
   },
   { titulo: "CMS", items: [{ to: "/beacons", texto: "Beacons", roles: ADMIN }] },

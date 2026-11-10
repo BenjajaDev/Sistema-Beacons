@@ -85,7 +85,7 @@ test("comunicación solo ve los mensajes y el contacto, y edita las redes", asyn
   await iniciarSesion(page, "social");
   const menu = page.getByRole("navigation", { name: "Panel" }).getByRole("link");
   // «Mensajes» puede llevar el contador de no leídos (la landing envía uno antes).
-  await expect(menu).toHaveText(["Resumen", /^Mensajes/, "Contacto y redes"]);
+  await expect(menu).toHaveText(["Resumen", /^Mensajes/, "Contacto y redes", "Suscriptores"]);
   await expect(page.getByRole("link", { name: "Nueva noticia" })).toHaveCount(0);
   await expect(page.getByRole("heading", { name: "Mensajes de contacto" })).toBeVisible();
   await sinViolaciones(page, "resumen (comunicación)");
@@ -377,6 +377,52 @@ test("el editor agrega una foto con su descripción y aparece en la galería pú
   await sinViolaciones(page, "/galeria con una foto");
 });
 
+test("comunicación descarga la lista de suscriptores y la baja del enlace funciona", async ({
+  page,
+}) => {
+  // Alguien se suscribe desde el sitio (el formulario se prueba en la landing).
+  const alta = await page.request.post("/api/public/newsletter", {
+    data: { correo: "Lectora@Example.CL", nombre: "Lectora", consentimiento: true },
+  });
+  expect(alta.status()).toBe(201);
+
+  await iniciarSesion(page, "social");
+  await page.getByRole("link", { name: "Suscriptores" }).click();
+  await expect(page.getByRole("heading", { level: 1, name: "Suscriptores" })).toBeVisible();
+  await expect(page.getByText("lectora@example.cl", { exact: true })).toBeVisible();
+  await expect(page.getByText(/· Suscrita/)).toBeVisible();
+  await sinViolaciones(page, "suscriptores");
+
+  const descarga = page.waitForEvent("download");
+  await page.getByRole("link", { name: /Descargar suscritas/ }).click();
+  const archivo = await descarga;
+  expect(archivo.suggestedFilename()).toBe("suscriptores-boletin.csv");
+  const csv = (await (await import("node:fs/promises")).readFile((await archivo.path())!, "utf8"))
+    .replace(/^\uFEFF/, "")
+    .trim()
+    .split("\r\n");
+  expect(csv[0]).toBe('"correo","nombre","consentimiento","enlace_de_baja"');
+  const enlace = /"(http[^"]*\/boletin\/baja\?t=[^"]+)"$/.exec(csv[1]!)?.[1];
+  expect(enlace).toBeTruthy();
+
+  // Quien recibe el correo abre su enlace: no pasa nada hasta que confirma.
+  await page.goto(new URL(enlace!).pathname + new URL(enlace!).search);
+  await expect(page.getByRole("heading", { level: 1, name: "Baja del boletín" })).toBeVisible();
+  await expect(page.locator('meta[name="robots"]')).toHaveAttribute("content", "noindex");
+  await sinViolaciones(page, "baja del boletín");
+  await page.getByRole("button", { name: "Darme de baja" }).click();
+  await expect(page.getByText(/no recibirás más correos/)).toBeVisible();
+
+  // En el panel, la persona pasa a «dadas de baja» y sale del archivo.
+  await page.goto(`${PANEL}/suscriptores`);
+  await expect(
+    page.getByText("Aún no hay suscripciones").or(page.getByText("Todavía no hay suscripciones")),
+  ).toBeVisible();
+  await page.getByLabel("Mostrar").selectOption("bajas");
+  await expect(page.getByText("lectora@example.cl", { exact: true })).toBeVisible();
+  await expect(page.getByText(/Se dio de baja el/)).toBeVisible();
+});
+
 test("un mensaje se responde por Gmail, Outlook, la app de correo o copiando la dirección", async ({
   page,
 }) => {
@@ -426,6 +472,7 @@ test("todas las vistas del panel pasan axe en claro y oscuro", async ({ page }) 
     ["/audiodescriptor", "Audiodescriptor"],
     ["/contacto", "Mensajes"],
     ["/redes", "Contacto y redes"],
+    ["/suscriptores", "Suscriptores"],
     ["/perfil", "Mi perfil"],
     ["/beacons", "Beacons"],
     ["/usuarios", "Usuarios"],

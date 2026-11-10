@@ -25,3 +25,6 @@ export const ADMIN_ONLY = ["ADMIN"] as const;
 export const CONTENT_ROLES = ["ADMIN", "EDITOR"] as const;
 // La propia cuenta, los mensajes de contacto y los datos de contacto y redes.
 export const ALL_ROLES = ["ADMIN", "EDITOR", "SOCIAL"] as const;
+// Suscriptores del boletín: datos personales de quien pidió recibirlo. Los ve la
+// administración y quien lleva la comunicación, no la edición de contenido.
+export const COMUNICACION = ["ADMIN", "SOCIAL"] as const;

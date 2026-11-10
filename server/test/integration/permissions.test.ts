@@ -48,11 +48,12 @@ describe("política de roles", () => {
     expect(ruta.roles).toEqual(["ADMIN"]);
   });
 
-  // El rol de comunicación entra EXACTAMENTE a estas rutas: su cuenta, los mensajes
-  // y los datos de contacto y redes. Ni una más ni una menos.
+  // El rol de comunicación entra EXACTAMENTE a estas rutas: su cuenta, los mensajes,
+  // los suscriptores del boletín y los datos de contacto y redes. Ni una más ni una menos.
   const SOCIAL: [método: string, ruta: RegExp][] = [
     ["*", /^\/auth\//],
     ["*", /^\/messages(\/|$)/],
+    ["*", /^\/subscribers(\/|$)/],
     ["get", /^\/settings$/],
     ["put", /^\/settings\/contact$/],
   ];

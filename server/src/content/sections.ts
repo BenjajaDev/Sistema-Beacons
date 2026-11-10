@@ -144,6 +144,15 @@ export const sectionSchemas = {
   noticias: z.object(encabezado),
   recursos: z.object(encabezado),
   galeria: z.object(encabezado),
+  // Suscripción al boletín. El texto del consentimiento se guarda tal cual con cada alta.
+  boletin: z.object({
+    titulo: texto(120),
+    intro: textoOpcional(400),
+    textoConsentimiento: texto(300),
+    avisoPrivacidad: textoOpcional(500),
+    textoBoton: texto(30),
+    mensajeExito: texto(200),
+  }),
   contacto: z.object({
     ...encabezado,
     formularioTitulo: texto(80),
@@ -380,6 +389,23 @@ export const SECTION_DEFINITIONS: { [K in SectionKey]: SectionDefinition<K> } = 
       mensajeExito: "Recibimos tu mensaje. Te responderemos a la brevedad.",
       audiodescripcion:
         "Página de contacto. A un lado están el teléfono, el correo y la dirección de SIGNAL; al otro, un formulario con nombre, correo, teléfono opcional, asunto y mensaje. Al enviarlo aparece un aviso de confirmación.",
+    },
+  },
+  boletin: {
+    page: "INICIO",
+    order: 10,
+    nombre: "Boletín",
+    // Nace oculto: antes de mostrarlo, el equipo revisa los textos de consentimiento.
+    visibleInicial: false,
+    contenidoInicial: {
+      titulo: "Recibe las novedades de SIGNAL",
+      intro: "Escríbenos tu correo y te contaremos cuando haya noticias del proyecto.",
+      textoConsentimiento:
+        "Acepto recibir por correo el boletín de SIGNAL. Puedo darme de baja cuando quiera con el enlace que viene en cada envío.",
+      avisoPrivacidad:
+        "Usaremos tu correo solo para enviarte el boletín. No lo compartimos con terceros. Puedes pedir que lo borremos escribiéndonos desde la página de contacto.",
+      textoBoton: "Suscribirme",
+      mensajeExito: "Listo, quedaste suscrita o suscrito al boletín.",
     },
   },
   "imagen-texto-inicio": {

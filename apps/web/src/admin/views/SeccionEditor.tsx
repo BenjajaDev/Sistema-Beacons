@@ -335,6 +335,37 @@ const CAMPOS: Record<string, Campo[]> = {
   noticias: [titulo, intro, imagenEncabezado],
   recursos: [titulo, intro, imagenEncabezado],
   galeria: [titulo, intro, imagenEncabezado],
+  boletin: [
+    titulo,
+    intro,
+    {
+      tipo: "texto",
+      clave: "textoConsentimiento",
+      etiqueta: "Texto de la casilla de consentimiento",
+      max: 300,
+      multilinea: true,
+      ayuda:
+        "Lo que la persona acepta al marcar la casilla. Se guarda tal cual con cada suscripción: si lo cambias, las nuevas suscripciones guardan el texto nuevo.",
+    },
+    {
+      tipo: "texto",
+      clave: "avisoPrivacidad",
+      etiqueta: "Aviso de privacidad",
+      max: 500,
+      multilinea: true,
+      opcional: true,
+      ayuda:
+        "Para qué se usa el correo, si se comparte con alguien y cómo pedir que se borre. Conviene que lo revise quien asesore al equipo en protección de datos.",
+    },
+    { tipo: "texto", clave: "textoBoton", etiqueta: "Texto del botón", max: 30 },
+    {
+      tipo: "texto",
+      clave: "mensajeExito",
+      etiqueta: "Mensaje al suscribirse",
+      max: 200,
+      multilinea: true,
+    },
+  ],
   contacto: [
     titulo,
     intro,

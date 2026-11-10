@@ -117,6 +117,7 @@ describe.skipIf(!hasTestDb)("secciones de la landing", () => {
       "imagen-texto-inicio",
       "cifras",
       "hitos",
+      "boletin",
     ];
     expect(
       (await as(app, admin, "put", "/api/admin/sections/order").send({ page: "INICIO", keys }))
@@ -124,7 +125,7 @@ describe.skipIf(!hasTestDb)("secciones de la landing", () => {
     ).toBe(200);
     const res = await request(app).get("/api/public/pages/inicio");
     expect(res.body.secciones.map((s: { key: string }) => s.key)).toEqual(
-      keys.filter((k) => !["imagen-texto-inicio", "cifras", "hitos"].includes(k)),
+      keys.filter((k) => !["imagen-texto-inicio", "cifras", "hitos", "boletin"].includes(k)),
     );
 
     const incompleto = await as(app, admin, "put", "/api/admin/sections/order").send({

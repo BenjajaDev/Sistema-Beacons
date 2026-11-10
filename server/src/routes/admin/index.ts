@@ -11,6 +11,7 @@ import { newsRoutes } from "./news.js";
 import { resourceRoutes } from "./resources.js";
 import { sectionRoutes } from "./sections.js";
 import { settingsRoutes } from "./settings.js";
+import { subscriberRoutes } from "./subscribers.js";
 import { teamRoutes } from "./team.js";
 import { userRoutes } from "./users.js";
 import type { AdminDeps } from "./deps.js";
@@ -28,6 +29,7 @@ export function adminRouteTable(deps: AdminDeps): AdminRoute[] {
     ...beaconRoutes(deps),
     ...userRoutes(deps),
     ...messageRoutes(deps),
+    ...subscriberRoutes(deps),
     ...auditLogRoutes(deps),
   ];
 }

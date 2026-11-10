@@ -5,6 +5,7 @@ import { mensajeDeError } from "@shared/api";
 import { IconoTarjeta, type ClaveIcono } from "@shared/ui/IconosTarjeta";
 import { Cargando, EmptyState, ErrorState, Reveal, Skeleton } from "@shared/ui/States";
 import { BotonVoz } from "@shared/voz/BotonVoz";
+import { FormularioBoletin, type ContenidoBoletin } from "./Boletin";
 import { EnlaceEditable, Img, TarjetaNoticia, Titulo, VozDeImagen, type Nivel } from "./components";
 import {
   consultas,
@@ -113,6 +114,20 @@ function Cabecera({ contenido, nivel, refH1, idTitulo }: PropsSeccion<Encabezado
 }
 
 // --- Renderizadores ------------------------------------------------------------
+
+function Boletin({ contenido, nivel, refH1, idTitulo }: PropsSeccion<ContenidoBoletin>) {
+  return (
+    <div className="boletin">
+      <div className="seccion__cabecera">
+        <Titulo nivel={nivel} refH1={refH1} id={idTitulo}>
+          {contenido.titulo}
+        </Titulo>
+        {contenido.intro && <p className="seccion__intro">{contenido.intro}</p>}
+      </div>
+      <FormularioBoletin contenido={contenido} idTitulo={idTitulo} />
+    </div>
+  );
+}
 
 function Hero(
   p: PropsSeccion<{
@@ -555,6 +570,7 @@ export const RENDERIZADORES: Record<string, ComponentType<PropsSeccion<never>>> 
   noticias: Cabecera as ComponentType<PropsSeccion<never>>,
   recursos: Cabecera as ComponentType<PropsSeccion<never>>,
   galeria: Cabecera as ComponentType<PropsSeccion<never>>,
+  boletin: Boletin as ComponentType<PropsSeccion<never>>,
   contacto: Cabecera as ComponentType<PropsSeccion<never>>,
   "imagen-texto-inicio": ImagenTexto as ComponentType<PropsSeccion<never>>,
   "imagen-texto-nosotros": ImagenTexto as ComponentType<PropsSeccion<never>>,

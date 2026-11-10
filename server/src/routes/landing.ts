@@ -36,10 +36,20 @@ interface Pagina {
   descripcion?: string | null;
   imagen?: string | null;
   tipo?: "website" | "article";
+  // Páginas que no deben indexarse (la baja del boletín lleva un secreto en la dirección).
+  noindex?: boolean;
   consultas: Consulta[];
 }
 
-const RUTAS_FIJAS = new Set(["/", "/nosotros", "/noticias", "/recursos", "/galeria", "/contacto"]);
+const RUTAS_FIJAS = new Set([
+  "/",
+  "/nosotros",
+  "/noticias",
+  "/recursos",
+  "/galeria",
+  "/contacto",
+  "/boletin/baja",
+]);
 const RUTA_NOTICIA = /^\/noticias\/[a-z0-9]+(?:-[a-z0-9]+)*$/;
 
 // Si la ruta es de la landing. No depende de la base de datos: una ruta
@@ -156,6 +166,9 @@ export function landing(deps: {
         ],
       };
     }
+    if (ruta === "/boletin/baja") {
+      return { status: 200, titulo: "Baja del boletín", noindex: true, consultas: base };
+    }
     const slug = ruta.match(/^\/noticias\/([^/]+)$/)?.[1];
     if (slug) {
       const detalle = await getNewsBySlug(db, slug);
@@ -197,7 +210,7 @@ export function landing(deps: {
       p.status === 200 && `<link rel="canonical" href="${escaparHtml(url)}">`,
       p.imagen &&
         `<meta property="og:image" content="${escaparHtml(p.imagen.startsWith("http") ? p.imagen : origen(req) + p.imagen)}">`,
-      p.status !== 200 && `<meta name="robots" content="noindex">`,
+      (p.status !== 200 || p.noindex) && `<meta name="robots" content="noindex">`,
       sitio?.favicon && `<link rel="icon" href="${escaparHtml(sitio.favicon)}">`,
       tema && `<style id="tema">${tema}</style>`,
       `<script type="application/json" id="datos-iniciales">${jsonSeguro({ consultas: p.consultas })}</script>`,
@@ -240,6 +253,8 @@ export function landing(deps: {
       );
     }
     salida = salida.replace("</head>", `${extra}</head>`);
+    // La dirección de baja del boletín lleva un secreto: no debe viajar a otros sitios.
+    if (pagina.noindex) res.setHeader("Referrer-Policy", "no-referrer");
     res.status(pagina.status).setHeader("Cache-Control", "no-cache").type("html").send(salida);
   }
 

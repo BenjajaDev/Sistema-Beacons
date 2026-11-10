@@ -326,6 +326,33 @@ test.describe("landing pública", () => {
     await expect(page.getByText("No encontramos recursos con ese filtro")).toBeVisible();
   });
 
+  test("el boletín exige el consentimiento expreso y confirma la suscripción", async ({ page }) => {
+    await page.goto("/");
+    const seccion = page.locator("#boletin");
+    await seccion.scrollIntoViewIfNeeded();
+    const casilla = seccion.getByRole("checkbox");
+    await expect(casilla).not.toBeChecked();
+    expect((await casilla.boundingBox())!.height).toBeGreaterThanOrEqual(20);
+
+    // Sin correo ni consentimiento no se envía y el foco va al primer error.
+    await seccion.getByRole("button", { name: "Suscribirme" }).click();
+    await expect(seccion.getByLabel("Correo electrónico")).toBeFocused();
+    await expect(seccion.getByText("Escribe tu correo.")).toBeVisible();
+    await expect(
+      seccion.getByText("Marca la casilla para aceptar recibir el boletín."),
+    ).toBeVisible();
+    await sinViolaciones(page, "/ con el boletín y sus errores");
+
+    await seccion.getByLabel("Correo electrónico").fill("lector@example.cl");
+    await seccion.getByRole("button", { name: "Suscribirme" }).click();
+    await expect(seccion.getByRole("checkbox")).toBeFocused();
+
+    await casilla.check();
+    await seccion.getByRole("button", { name: "Suscribirme" }).click();
+    await expect(seccion.getByRole("status")).toContainText("Listo, quedaste suscrita o suscrito");
+    await sinViolaciones(page, "/ con el boletín confirmado");
+  });
+
   test("el formulario de contacto valida, anuncia errores y envía", async ({ page }) => {
     await page.goto("/contacto");
     await page.getByRole("button", { name: "Enviar mensaje" }).click();

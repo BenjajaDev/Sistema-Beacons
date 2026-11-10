@@ -4,7 +4,7 @@ import { importarConRecarga } from "@shared/recarga";
 import { ToastProvider } from "@shared/ui/Toast";
 import type { Rol } from "./api";
 import { ErrorDeRuta } from "./ErrorDeRuta";
-import { CONTENIDO, Shell, SoloRol } from "./Shell";
+import { COMUNICACION, CONTENIDO, Shell, SoloRol } from "./Shell";
 import { usePanelPage } from "./ui";
 import { CambiarContrasena, Login } from "./views/Acceso";
 import Bitacora from "./views/Bitacora";
@@ -16,6 +16,7 @@ import Perfil from "./views/Perfil";
 import Recursos from "./views/Recursos";
 import Resumen from "./views/Resumen";
 import Secciones from "./views/Secciones";
+import Suscriptores from "./views/Suscriptores";
 import Usuarios from "./views/Usuarios";
 
 // La ruta del panel no está en el código: sale del <base href> que inyecta Express
@@ -128,6 +129,14 @@ export function crearRouter() {
                   },
                   { path: "contacto", Component: Contacto },
                   { path: "redes", Component: ContactoYRedes },
+                  {
+                    path: "suscriptores",
+                    element: (
+                      <SoloRol roles={COMUNICACION}>
+                        <Suscriptores />
+                      </SoloRol>
+                    ),
+                  },
                   { path: "perfil", Component: Perfil },
                   {
                     path: "beacons",

@@ -290,6 +290,26 @@ model GalleryItem {
   @@map("gallery_items")
 }
 
+// Suscripción al boletín. Se guarda el momento y el texto exacto del consentimiento
+// que la persona aceptó. `token` es el secreto de su enlace de baja. Una baja no borra
+// la fila (así no se vuelve a escribir a quien pidió no recibir más), salvo que se
+// pida eliminarla.
+model Subscriber {
+  id             String    @id @default(uuid())
+  // Siempre en minúsculas.
+  email          String    @unique
+  name           String?
+  consentAt      DateTime
+  consentText    String
+  unsubscribedAt DateTime?
+  token          String    @unique
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  @@index([createdAt])
+  @@map("subscribers")
+}
+
 // Recurso del repositorio abierto: un documento que se descarga (PDF subido al sitio)
 // y/o se consulta en otro lugar (DOI o repositorio institucional). Debe tener al menos
 // uno de los tres; lo exige la API y también la base (CHECK en la migración).

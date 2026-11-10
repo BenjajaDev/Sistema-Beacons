@@ -273,6 +273,16 @@ export interface Mensaje {
   createdAt: string;
 }
 
+// Persona suscrita al boletín. El enlace secreto de baja no sale del servidor.
+export interface Suscriptor {
+  id: string;
+  email: string;
+  name: string | null;
+  consentAt: string;
+  unsubscribedAt: string | null;
+  createdAt: string;
+}
+
 export interface EntradaBitacora {
   id: string;
   action: string;

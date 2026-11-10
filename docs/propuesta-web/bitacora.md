@@ -225,3 +225,42 @@ El equipo no respondió las decisiones abiertas de la etapa 2 y pidió empezar. 
 **Problemas y cómo se resolvieron.**
 
 - Una prueba con nombre accesible exacto mostró «Ver en tamaño **completola** foto…»: el espacio inicial de un texto oculto se pierde. Es la misma trampa de «Cómo llegara…» del paso 4; el espacio va ahora en el texto visible. La prueba reveló que **Recursos tenía el mismo descuido** («DOI: 10.1234/abcdde…»): se corrigió y las pruebas de ambos usan ahora el nombre completo.
+
+## Paso 7: boletín con consentimiento y baja
+
+**Qué pedía el documento.** Un boletín para mantener informada a la comunidad. El plan marcó como condición que cumpla la ley chilena de datos personales: consentimiento y baja.
+
+**Decisión: ¿base propia o servicio externo?** Base propia. Un servicio externo (Mailchimp y similares) implica enviar los correos de las personas a un tercero, cargar scripts que la política de seguridad del sitio no permite y depender de una cuenta aparte. Con la base propia el dato queda en el mismo lugar que el resto y el equipo decide después a qué herramienta de envío llevarlo. **Desde el panel no se envía nada**: se descarga la lista y se usa en la herramienta de correo del equipo.
+
+**Qué se construyó.**
+
+- **Modelo `Subscriber`** (migración `20261112120000_boletin`): correo en minúsculas (único, con `CHECK`), nombre opcional, **fecha y texto exacto del consentimiento**, fecha de baja y un secreto para el enlace de baja. Con seguridad a nivel de fila (RLS) y sin acceso desde la Data API de Supabase, como el resto de las tablas.
+- **Sección «Boletín»** en el inicio, editable desde _Secciones_ (título, bajada, texto de la casilla, aviso de privacidad, texto del botón y mensaje de éxito). **Nace oculta**: antes de mostrarla, el equipo revisa los textos de consentimiento.
+- **Formulario público:** correo, nombre opcional y una casilla **sin marcar** con el texto de consentimiento. Sin la casilla no se suscribe a nadie (lo exigen el formulario y la API). Con pocos campos, los errores se dicen junto a cada campo y el foco va al primero; la confirmación recibe el foco. Incluye el campo trampa y un límite de 6 solicitudes por hora por conexión.
+- **El texto que se guarda es el del servidor**, no el que mande el navegador: si el equipo cambia la casilla, las nuevas suscripciones guardan el texto nuevo y las antiguas conservan el que aceptaron.
+- **Baja con enlace secreto** (`/boletin/baja?t=…`). Abrir el enlace **no** da de baja: hay que pulsar «Darme de baja», porque los programas de correo y antivirus abren los enlaces por su cuenta. La página no se indexa, no entra al sitemap y no envía el _referrer_ a otros sitios. Si el enlace es inválido, ofrece el correo de contacto para pedir la baja a mano.
+- **Panel «Suscriptores»** (administración y comunicación; la edición de contenido no ve datos personales): lista paginada con filtro _suscritas / dadas de baja / todas_ (el estado se dice con texto), contador, **descarga CSV** de las personas activas con su enlace de baja, y eliminación total (derecho de supresión).
+- **Bitácora de auditoría sin datos personales:** registra cuántos correos se descargaron y quién lo hizo, pero nunca los correos.
+
+**Decisiones y por qué.**
+
+- **Una baja no borra la fila.** Así no se le vuelve a escribir a quien pidió no recibir más. Si la persona vuelve a suscribirse, es un consentimiento nuevo (fecha y texto nuevos). Para borrar los datos por completo, existe «Eliminar».
+- **Respuesta idéntica si el correo ya estaba.** El formulario no revela quién está suscrito.
+- **El CSV neutraliza fórmulas.** Un nombre como `=HYPERLINK(…)` se exporta como texto, no como fórmula de Excel; lleva la marca de orden de bytes para que las tildes se lean bien.
+- **El enlace de baja viaja en el CSV**, y el panel recuerda incluirlo en cada envío.
+
+**Lo que falta, y es del equipo (no se puede resolver solo con código).**
+
+- **No hay correo de confirmación (doble opt-in).** El servidor no tiene envío de correo. Mientras tanto, alguien podría escribir el correo de otra persona. Antes del primer envío conviene confirmar las direcciones o activar un servicio de envío con confirmación.
+- **Revisión legal.** El aviso de privacidad y el texto de la casilla son un punto de partida. Los debe revisar quien asesore al equipo en la ley de datos personales (la 19.628 y su reemplazo, la 21.719).
+
+**Cómo se comprobó.**
+
+- Servidor (11 pruebas): exige consentimiento y correo válido; guarda en minúsculas con el texto aceptado; usa el texto y el mensaje del panel; responde igual al repetir; campo trampa; baja con el enlace secreto (404 si es falso, repetirla no cambia nada) y reactivación con consentimiento nuevo; límite por conexión; roles; lista sin el secreto; CSV solo con activas, sin fórmulas y con el registro de auditoría sin correos; eliminación; sección oculta y página de baja sin indexar.
+- Web (7 pruebas): casilla sin marcar con su aviso, errores y foco, envío, error del servidor, baja con confirmación, enlace inválido y red caída; todo con axe.
+- e2e: el boletín desde el inicio (errores, foco, confirmación) y, en el panel, el flujo completo: alta, lista, descarga del CSV, baja con el enlace descargado y cambio a «dadas de baja».
+
+**Problemas y cómo se resolvieron.**
+
+- El correo con espacios alrededor fallaba la validación del servidor; ahora se recorta antes de validar.
+- Un resumen de errores con `h2` dentro de una sección del inicio rompía el orden de encabezados; con solo tres campos se optó por errores junto a cada campo y foco al primero.

@@ -1,4 +1,5 @@
 import { createBrowserRouter } from "react-router";
+import BajaBoletin from "./Boletin";
 import { Layout } from "./Layout";
 import Contacto from "./pages/Contacto";
 import Galeria from "./pages/Galeria";
@@ -23,6 +24,7 @@ export function crearRouter() {
         { path: "recursos", Component: Recursos },
         { path: "galeria", Component: Galeria },
         { path: "contacto", Component: Contacto },
+        { path: "boletin/baja", Component: BajaBoletin },
         { path: "*", Component: NoEncontrada },
       ],
     },

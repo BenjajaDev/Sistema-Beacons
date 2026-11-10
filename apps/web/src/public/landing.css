@@ -2151,3 +2151,29 @@ a.respaldo__placa:hover {
   color: var(--color-text-muted);
   font-size: var(--text-sm);
 }
+
+/* --- Boletín --- */
+.boletin {
+  max-width: 40rem;
+}
+.boletin__formulario {
+  display: grid;
+  gap: var(--space-2);
+}
+.casilla {
+  display: inline-flex;
+  align-items: flex-start;
+  gap: var(--space-2);
+  min-height: var(--target);
+  cursor: pointer;
+}
+.casilla input {
+  flex: none;
+  width: 1.25rem;
+  height: 1.25rem;
+  margin-top: 0.15rem;
+  accent-color: var(--color-primary);
+}
+.boletin-baja {
+  max-width: 40rem;
+}
