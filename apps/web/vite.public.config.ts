@@ -45,6 +45,9 @@ export default defineConfig({
       },
       workbox: {
         globPatterns: ["**/*.{js,css,woff2,png,html}"],
+        // La fuente para dislexia pesa unos 235 KB y casi nadie la usa: no se
+        // precarga; se guarda la primera vez que alguien la activa (regla de abajo).
+        globIgnores: ["**/opendyslexic-*"],
         // index.html se sirve con datos y tema inyectados por el servidor: las
         // navegaciones van primero a la red (abajo), no al shell precargado.
         navigateFallback: null,
@@ -87,6 +90,16 @@ export default defineConfig({
               cacheName: "api-noticias",
               networkTimeoutSeconds: 4,
               expiration: { maxEntries: 60, maxAgeSeconds: 7 * 24 * 3600 },
+            },
+          },
+          {
+            // OJO: Workbox copia esta función como texto dentro de sw.js; la regex va literal.
+            urlPattern: ({ url }) => /^\/assets\/opendyslexic-[^/]+\.woff2?$/.test(url.pathname),
+            handler: "CacheFirst",
+            options: {
+              cacheName: "fuente-dislexia",
+              expiration: { maxEntries: 4 },
+              cacheableResponse: { statuses: [0, 200] },
             },
           },
           {

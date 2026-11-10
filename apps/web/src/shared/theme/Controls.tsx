@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { IconoLuna, IconoPantalla, IconoSol } from "../ui/Icons";
+import { IconoContraste, IconoLuna, IconoPantalla, IconoSol } from "../ui/Icons";
 import {
   aplicarEscala,
   aplicarTema,
@@ -7,6 +7,7 @@ import {
   escalaGuardada,
   ESCALAS,
   temaGuardado,
+  usePreferencia,
   zoomGuardado,
   ZOOMS,
   type TemaPreferido,
@@ -17,29 +18,42 @@ const OPCIONES: { valor: TemaPreferido; texto: string; Icono: typeof IconoSol }[
   { valor: "oscuro", texto: "Oscuro", Icono: IconoLuna },
   { valor: "sistema", texto: "Según el sistema", Icono: IconoPantalla },
 ];
+const ALTO_CONTRASTE = {
+  valor: "contraste",
+  texto: "Alto contraste",
+  Icono: IconoContraste,
+} as const;
 
 // Selector de tema como grupo de radios: se recorre con las flechas y el lector
-// anuncia «Tema de colores, Oscuro, seleccionado, 2 de 3».
-export function ThemeSwitcher() {
-  const [tema, setTema] = useState<TemaPreferido>(temaGuardado);
+// anuncia «Tema de colores, Oscuro, seleccionado, 2 de 4».
+// - conTexto: muestra el nombre de cada opción (el panel de accesibilidad); sin él
+//   solo hay íconos y el nombre queda para el lector de pantalla.
+// - altoContraste: agrega el tema de alto contraste (amarillo sobre negro).
+// Se vuelve a dibujar si otra parte cambia el tema (por ejemplo, «Restablecer»).
+export function ThemeSwitcher({
+  conTexto = false,
+  altoContraste = false,
+}: {
+  conTexto?: boolean;
+  altoContraste?: boolean;
+}) {
+  const tema = usePreferencia<TemaPreferido>(temaGuardado);
+  const opciones = altoContraste ? [...OPCIONES, ALTO_CONTRASTE] : OPCIONES;
 
   return (
-    <fieldset className="segmentado">
+    <fieldset className={`segmentado ${conTexto ? "segmentado--texto" : ""}`}>
       <legend>Tema de colores</legend>
-      {OPCIONES.map(({ valor, texto, Icono }) => (
+      {opciones.map(({ valor, texto, Icono }) => (
         <label key={valor} title={texto}>
           <input
             type="radio"
             name="tema"
             value={valor}
             checked={tema === valor}
-            onChange={() => {
-              setTema(valor);
-              aplicarTema(valor);
-            }}
+            onChange={() => aplicarTema(valor)}
           />
           <Icono width="1.25em" height="1.25em" />
-          <span className="visually-hidden">{texto}</span>
+          <span className={conTexto ? undefined : "visually-hidden"}>{texto}</span>
         </label>
       ))}
     </fieldset>
@@ -92,12 +106,11 @@ export function TextSizeControl() {
 // Zoom− / Zoom+ de toda la página (texto incluido), con el porcentaje a la vista.
 // Es el control del sitio público; el panel usa A−/A+. Se anuncia en una región de estado.
 export function ZoomControl() {
-  const [indice, setIndice] = useState(() => ZOOMS.indexOf(zoomGuardado()));
+  const indice = ZOOMS.indexOf(usePreferencia<number>(zoomGuardado) as (typeof ZOOMS)[number]);
 
   function cambiar(delta: number) {
     const nuevo = Math.min(ZOOMS.length - 1, Math.max(0, indice + delta));
     if (nuevo === indice) return;
-    setIndice(nuevo);
     aplicarZoom(ZOOMS[nuevo]!);
   }
 

@@ -2,6 +2,10 @@
 @import "@fontsource-variable/atkinson-hyperlegible-next/wght.css";
 @import "@fontsource-variable/atkinson-hyperlegible-next/wght-italic.css";
 @import "@fontsource-variable/bricolage-grotesque/wght.css";
+/* Solo se descarga si la persona activa «Fuente para dislexia»: el navegador pide
+   cada archivo cuando algún texto la usa. */
+@import "@fontsource/opendyslexic/latin-400.css";
+@import "@fontsource/opendyslexic/latin-700.css";
 
 @import "./theme-default.css";
 @import "./tokens.css";

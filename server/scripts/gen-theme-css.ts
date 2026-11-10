@@ -5,7 +5,13 @@
 
 import { writeFileSync } from "node:fs";
 import path from "node:path";
-import { DEFAULT_FONTS, DEFAULT_PALETTE, fontsToCss, paletteToCss } from "../src/content/theme.js";
+import {
+  contrastToCss,
+  DEFAULT_FONTS,
+  DEFAULT_PALETTE,
+  fontsToCss,
+  paletteToCss,
+} from "../src/content/theme.js";
 
 export const THEME_DEFAULT_CSS_PATH = path.resolve(
   import.meta.dirname,
@@ -17,6 +23,8 @@ export function themeDefaultCss(): string {
     "/* Generado por `npm run gen:theme -w server` desde server/src/content/theme.ts.\n" +
     "   No editar a mano: el servidor inyecta los valores de Identidad visual sobre estos. */\n" +
     paletteToCss(DEFAULT_PALETTE) +
+    "\n" +
+    contrastToCss() +
     "\n" +
     fontsToCss(DEFAULT_FONTS) +
     "\n"

@@ -100,3 +100,20 @@ export const IconoReanudar = (p: Props) => (
     <path d="M8 5.5v13l10.5-6.5z" />
   </Base>
 );
+
+// Mitad llena, mitad vacía: el tema de alto contraste.
+export const IconoContraste = (p: Props) => (
+  <Base {...p}>
+    <circle cx="12" cy="12" r="9" />
+    <path d="M12 3v18a9 9 0 0 0 0-18z" fill="currentColor" />
+  </Base>
+);
+
+// Figura humana con los brazos abiertos dentro de un círculo: accesibilidad universal.
+export const IconoAccesibilidad = (p: Props) => (
+  <Base {...p}>
+    <circle cx="12" cy="12" r="9.5" />
+    <circle cx="12" cy="7.5" r="1" fill="currentColor" />
+    <path d="M7 10.5l5 1 5-1M12 11.5v3.5M9.5 18.5L12 15l2.5 3.5" />
+  </Base>
+);

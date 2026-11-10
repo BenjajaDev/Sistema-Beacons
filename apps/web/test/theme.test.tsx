@@ -1,10 +1,17 @@
 import { readFileSync } from "node:fs";
 import path from "node:path";
-import { render, screen } from "@testing-library/react";
+import { act, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, expect, it } from "vitest";
 import { contrastRatio, DEFAULT_PALETTE } from "@server-theme";
 import { TextSizeControl, ThemeSwitcher, ZoomControl } from "@shared/theme/Controls";
+import {
+  aplicarFuente,
+  aplicarGuia,
+  aplicarTema,
+  aplicarZoom,
+  restablecerPreferencias,
+} from "@shared/theme/preferences";
 import { expectNoAxeViolations } from "./axe";
 
 describe("selector de tema", () => {
@@ -22,6 +29,90 @@ describe("selector de tema", () => {
     await usuario.click(screen.getByRole("radio", { name: "Según el sistema" }));
     expect(document.documentElement).not.toHaveAttribute("data-theme");
     await expectNoAxeViolations(container);
+  });
+});
+
+describe("alto contraste", () => {
+  it("es una opción más del selector: tema oscuro con atributo propio, y se puede dejar", async () => {
+    const usuario = userEvent.setup();
+    const { container } = render(<ThemeSwitcher altoContraste conTexto />);
+    // Con texto, el nombre de cada opción está a la vista (no solo para el lector).
+    expect(screen.getByText("Alto contraste")).not.toHaveClass("visually-hidden");
+
+    await usuario.click(screen.getByRole("radio", { name: "Alto contraste" }));
+    const raiz = document.documentElement;
+    // data-theme="dark" para que valgan las reglas del tema oscuro (logos, pie).
+    expect(raiz).toHaveAttribute("data-theme", "dark");
+    expect(raiz).toHaveAttribute("data-contraste");
+    expect(localStorage.getItem("signal-tema")).toBe("contraste");
+
+    await usuario.click(screen.getByRole("radio", { name: "Claro" }));
+    expect(raiz).toHaveAttribute("data-theme", "light");
+    expect(raiz).not.toHaveAttribute("data-contraste");
+    await expectNoAxeViolations(container);
+  });
+
+  it("sin la opción, el selector sigue con tres temas y los nombres ocultos", () => {
+    render(<ThemeSwitcher />);
+    expect(screen.getAllByRole("radio")).toHaveLength(3);
+    expect(screen.getByText("Oscuro")).toHaveClass("visually-hidden");
+  });
+});
+
+describe("restablecer las preferencias", () => {
+  it("vuelve todo a lo del sistema y los controles se actualizan solos", () => {
+    const raiz = document.documentElement;
+    render(
+      <>
+        <ThemeSwitcher altoContraste />
+        <ZoomControl />
+      </>,
+    );
+    act(() => {
+      aplicarTema("contraste");
+      aplicarFuente("dislexia");
+      aplicarGuia(true);
+      aplicarZoom(1.5);
+    });
+    expect(screen.getByRole("radio", { name: "Alto contraste" })).toBeChecked();
+    expect(screen.getByRole("group", { name: "Zoom de la página" })).toHaveTextContent("150 %");
+    expect(raiz).toHaveAttribute("data-fuente", "dislexia");
+
+    act(() => restablecerPreferencias());
+    expect(screen.getByRole("radio", { name: "Según el sistema" })).toBeChecked();
+    expect(screen.getByRole("group", { name: "Zoom de la página" })).toHaveTextContent("100 %");
+    expect(raiz).not.toHaveAttribute("data-theme");
+    expect(raiz).not.toHaveAttribute("data-contraste");
+    expect(raiz).not.toHaveAttribute("data-fuente");
+    expect(localStorage.getItem("signal-guia")).toBeNull();
+    expect(raiz.style.getPropertyValue("--zoom-pagina")).toBe("");
+  });
+});
+
+describe("theme-init.js (antes del primer pintado)", () => {
+  const script = readFileSync(
+    path.resolve(import.meta.dirname, "../src/shared/theme/theme-init.js"),
+    "utf-8",
+  );
+  const ejecutar = () => new Function(script)();
+
+  it("aplica alto contraste y fuente para dislexia desde lo guardado", () => {
+    localStorage.setItem("signal-tema", "contraste");
+    localStorage.setItem("signal-fuente", "dislexia");
+    ejecutar();
+    const raiz = document.documentElement;
+    expect(raiz).toHaveAttribute("data-theme", "dark");
+    expect(raiz).toHaveAttribute("data-contraste");
+    expect(raiz).toHaveAttribute("data-fuente", "dislexia");
+  });
+
+  it("ignora valores desconocidos", () => {
+    localStorage.setItem("signal-tema", "neon");
+    localStorage.setItem("signal-fuente", "comic");
+    ejecutar();
+    const raiz = document.documentElement;
+    expect(raiz).not.toHaveAttribute("data-theme");
+    expect(raiz).not.toHaveAttribute("data-fuente");
   });
 });
 

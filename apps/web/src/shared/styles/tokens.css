@@ -118,3 +118,16 @@
     --dur-lenta: 0ms;
   }
 }
+
+/* --- Fuente para dislexia (panel «Accesibilidad») ---
+   Reemplaza las dos familias del sitio por OpenDyslexic. Es más ancha: se aflojan
+   el tracking de los títulos y se da más aire entre palabras y líneas. */
+:root[data-fuente="dislexia"] {
+  --font-body: "OpenDyslexic", "Atkinson Hyperlegible Next Variable", system-ui, sans-serif;
+  --font-heading: "OpenDyslexic", "Atkinson Hyperlegible Next Variable", system-ui, sans-serif;
+  --leading: 1.8;
+  word-spacing: 0.1em;
+}
+:root[data-fuente="dislexia"] body * {
+  letter-spacing: normal;
+}

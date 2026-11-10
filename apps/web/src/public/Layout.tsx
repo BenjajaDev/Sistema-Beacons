@@ -1,12 +1,14 @@
 import { useQuery } from "@tanstack/react-query";
 import { useEffect, useId, useRef, useState, useSyncExternalStore } from "react";
 import { NavLink, Outlet, ScrollRestoration, useLocation } from "react-router";
-import { ThemeSwitcher, ZoomControl } from "@shared/theme/Controls";
-import { IconoCerrar, IconoMenu } from "@shared/ui/Icons";
+import { ZoomControl } from "@shared/theme/Controls";
+import { IconoAccesibilidad, IconoCerrar, IconoMenu } from "@shared/ui/Icons";
 import { ToastProvider } from "@shared/ui/Toast";
 import { configurarVoz } from "@shared/voz/voz";
 import { EnlaceEditable, Img, Isotipo, Logo, Redes, VozDeImagen } from "./components";
 import { consultas, PIE_POR_DEFECTO, type Respaldo } from "./data";
+import { GuiaLectura } from "./GuiaLectura";
+import { PanelAccesibilidad } from "./PanelAccesibilidad";
 
 const NAVEGACION = [
   { to: "/", texto: "Inicio", end: true },
@@ -35,7 +37,10 @@ function useEnLinea() {
 function Encabezado() {
   const { data: sitio } = useQuery(consultas.sitio());
   const menuId = useId();
+  const panelId = useId();
   const boton = useRef<HTMLButtonElement>(null);
+  const botonAccesibilidad = useRef<HTMLButtonElement>(null);
+  const [panelAbierto, setPanelAbierto] = useState(false);
   const { pathname } = useLocation();
   // Se guarda la ruta en que se abrió el menú: al navegar a otra, queda cerrado
   // sin necesidad de un efecto.
@@ -54,6 +59,19 @@ function Encabezado() {
     document.addEventListener("keydown", alTeclear);
     return () => document.removeEventListener("keydown", alTeclear);
   }, [abierto]);
+
+  // Escape cierra el panel de accesibilidad y devuelve el foco a su botón.
+  useEffect(() => {
+    if (!panelAbierto) return;
+    const alTeclear = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        setPanelAbierto(false);
+        botonAccesibilidad.current?.focus();
+      }
+    };
+    document.addEventListener("keydown", alTeclear);
+    return () => document.removeEventListener("keydown", alTeclear);
+  }, [panelAbierto]);
 
   return (
     <header className="encabezado">
@@ -75,6 +93,17 @@ function Encabezado() {
         <div className="encabezado__zoom">
           <ZoomControl />
         </div>
+        <button
+          ref={botonAccesibilidad}
+          type="button"
+          className="btn btn--secundario encabezado__accesibilidad"
+          aria-expanded={panelAbierto}
+          aria-controls={panelId}
+          onClick={() => setPanelAbierto(!panelAbierto)}
+        >
+          <IconoAccesibilidad width="1.25em" height="1.25em" />
+          Accesibilidad
+        </button>
         <div
           id={menuId}
           className={`encabezado__menu ${abierto ? "encabezado__menu--abierto" : ""}`}
@@ -90,11 +119,16 @@ function Encabezado() {
               ))}
             </ul>
           </nav>
-          <div className="encabezado__ajustes">
-            <ThemeSwitcher />
-          </div>
         </div>
       </div>
+      <PanelAccesibilidad
+        id={panelId}
+        abierto={panelAbierto}
+        onCerrar={() => {
+          setPanelAbierto(false);
+          botonAccesibilidad.current?.focus();
+        }}
+      />
     </header>
   );
 }
@@ -239,6 +273,7 @@ export function Layout() {
         <Outlet />
       </main>
       <Pie />
+      <GuiaLectura />
       <ScrollRestoration />
     </ToastProvider>
   );

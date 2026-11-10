@@ -187,11 +187,57 @@ test.describe("landing pública", () => {
   test("tema y zoom se recuerdan al recargar; el sitio no tiene A−/A+", async ({ page }) => {
     await page.goto("/");
     await expect(page.getByRole("button", { name: /^A\+/ })).toHaveCount(0);
+    await page.getByRole("button", { name: "Accesibilidad" }).click();
     await page.getByRole("radio", { name: "Oscuro" }).check();
     await page.getByRole("button", { name: /^Zoom\+/ }).click();
     await page.reload();
     await expect(page.locator("html")).toHaveAttribute("data-theme", "dark");
     await expect(page.locator("html")).toHaveAttribute("style", /--zoom-pagina: 1.1/);
+  });
+
+  test("alto contraste y fuente para dislexia: axe en todas las páginas, sin desborde y sin parpadeo", async ({
+    page,
+  }) => {
+    await page.goto("/");
+    await page.getByRole("button", { name: "Accesibilidad" }).click();
+    await sinViolaciones(page, "/ con el panel de accesibilidad abierto");
+    await page.getByRole("radio", { name: "Alto contraste" }).check();
+    await page.getByRole("switch", { name: "Fuente para dislexia" }).check();
+    await sinViolaciones(page, "/ con el panel abierto en alto contraste");
+
+    const html = page.locator("html");
+    for (const { ruta } of PAGINAS) {
+      await page.goto(ruta);
+      // theme-init.js aplica las preferencias antes del primer pintado.
+      await expect(html).toHaveAttribute("data-contraste", "");
+      await expect(html).toHaveAttribute("data-fuente", "dislexia");
+      await recorrer(page);
+      await sinViolaciones(page, `${ruta} en alto contraste`);
+      await sinScrollHorizontal(page);
+    }
+
+    await page.setViewportSize({ width: 320, height: 800 });
+    for (const { ruta } of PAGINAS) {
+      await page.goto(ruta);
+      await sinScrollHorizontal(page);
+    }
+    // En alto contraste con el panel abierto a 320 px tampoco se desborda.
+    await page.getByRole("button", { name: "Accesibilidad" }).click();
+    await sinScrollHorizontal(page);
+    await sinViolaciones(page, "/ en alto contraste a 320 px con el panel abierto");
+  });
+
+  test("la guía de lectura sigue al puntero y no bloquea los clics", async ({ page }) => {
+    await page.goto("/");
+    await page.getByRole("button", { name: "Accesibilidad" }).click();
+    await page.getByRole("switch", { name: "Guía de lectura" }).check();
+    const guia = page.locator(".guia-lectura");
+    await expect(guia).toBeAttached();
+    await page.mouse.move(400, 500);
+    await expect(guia).toHaveCSS("--guia-y", "500px");
+    // Se puede seguir usando la página por debajo de la guía.
+    await page.getByRole("switch", { name: "Guía de lectura" }).uncheck();
+    await expect(guia).toHaveCount(0);
   });
 
   test("el formulario de contacto valida, anuncia errores y envía", async ({ page }) => {

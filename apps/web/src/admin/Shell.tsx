@@ -158,7 +158,7 @@ function BarraSuperior({ onAbrirMenu }: { onAbrirMenu?: () => void }) {
       </a>
       <div className="panel-barra__ajustes">
         <TextSizeControl />
-        <ThemeSwitcher />
+        <ThemeSwitcher altoContraste />
       </div>
       <div className="panel-barra__cuenta">
         <Link to="/perfil" className="perfil-chip">

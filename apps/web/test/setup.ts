@@ -30,8 +30,11 @@ afterEach(() => {
   cleanup();
   localStorage.clear();
   sessionStorage.clear();
-  document.documentElement.removeAttribute("data-theme");
+  for (const atributo of ["data-theme", "data-contraste", "data-fuente"]) {
+    document.documentElement.removeAttribute(atributo);
+  }
   document.documentElement.style.fontSize = "";
+  document.documentElement.style.removeProperty("--zoom-pagina");
 });
 
 // jsdom no implementa del todo <dialog>: lo justo para los tests.

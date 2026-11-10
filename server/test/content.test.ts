@@ -104,6 +104,42 @@ describe("parseLegacyBeacons", () => {
   });
 });
 
+describe("alto contraste", () => {
+  it("cumple las mismas reglas de contraste que la paleta editable, con margen", async () => {
+    const { HIGH_CONTRAST, HIGH_CONTRAST_STATES: e } = await import("../src/content/theme.js");
+    expect(checkPaletteContrast({ light: HIGH_CONTRAST, dark: HIGH_CONTRAST })).toEqual([]);
+    // Es el tema de quien más lo necesita: pide AAA (7:1) en el texto, no solo AA.
+    for (const [f, b] of [
+      ["texto", "fondo"],
+      ["texto", "superficie"],
+      ["textoSuave", "fondo"],
+      ["textoSuave", "superficie"],
+      ["enlace", "fondo"],
+      ["enlace", "superficie"],
+      ["textoSobrePrimario", "primario"],
+    ] as const) {
+      expect(contrastRatio(HIGH_CONTRAST[f], HIGH_CONTRAST[b])).toBeGreaterThanOrEqual(7);
+    }
+    // Cada estado se lee sobre su fondo y sobre el fondo de la página.
+    for (const [texto, fondo] of [
+      [e.ok, e.okBg],
+      [e.error, e.errorBg],
+      [e.aviso, e.avisoBg],
+    ] as const) {
+      expect(contrastRatio(texto, fondo)).toBeGreaterThanOrEqual(7);
+      expect(contrastRatio(texto, HIGH_CONTRAST.fondo)).toBeGreaterThanOrEqual(7);
+    }
+  });
+
+  it("se activa con data-contraste sobre el tema oscuro y gana a la paleta editada", async () => {
+    const { contrastToCss } = await import("../src/content/theme.js");
+    // (0,3,0): más específico que :root[data-theme="dark"] y que la regla de
+    // prefers-color-scheme, así un tema guardado en Identidad visual no lo pisa.
+    expect(contrastToCss()).toMatch(/^:root\[data-theme="dark"\]\[data-contraste\]\{/);
+    expect(contrastToCss()).toContain("--color-text:#FFFF00");
+  });
+});
+
 describe("CSS del tema", () => {
   it("el CSS por defecto del frontend está sincronizado con la paleta del servidor", async () => {
     const { readFileSync } = await import("node:fs");

@@ -1,5 +1,5 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { render, screen, waitFor, within } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { createMemoryRouter, RouterProvider } from "react-router";
 import { afterEach, describe, expect, it, vi } from "vitest";
@@ -163,6 +163,77 @@ describe("pie de página", () => {
     expect(within(pie).queryByRole("heading", { name: "Accesibilidad" })).toBeNull();
     expect(within(pie).queryByRole("link", { name: "Instagram" })).toBeNull();
     expect(pie).toHaveTextContent("Proyecto académico.");
+  });
+});
+
+describe("panel de accesibilidad", () => {
+  const montarInicio = () =>
+    montar("/", [
+      [["site"], sitio],
+      [["pagina", "inicio"], { secciones: [] }],
+    ]);
+
+  it("se abre y se cierra con el botón, anuncia su estado y Escape devuelve el foco", async () => {
+    const usuario = userEvent.setup();
+    const { container } = montarInicio();
+    const boton = screen.getByRole("button", { name: "Accesibilidad" });
+    expect(boton).toHaveAttribute("aria-expanded", "false");
+    // Cerrado, el panel no está en el árbol de accesibilidad (ni se recorre con Tab).
+    expect(screen.queryByRole("radio", { name: "Alto contraste" })).toBeNull();
+
+    await usuario.click(boton);
+    expect(boton).toHaveAttribute("aria-expanded", "true");
+    const panel = screen.getByRole("region", { name: "Accesibilidad" });
+    expect(within(panel).getByRole("radio", { name: "Alto contraste" })).toBeInTheDocument();
+    expect(within(panel).getByRole("switch", { name: "Fuente para dislexia" })).not.toBeChecked();
+    expect(within(panel).getByRole("switch", { name: "Guía de lectura" })).not.toBeChecked();
+    await expectNoAxeViolations(container);
+
+    await usuario.keyboard("{Escape}");
+    expect(boton).toHaveAttribute("aria-expanded", "false");
+    expect(boton).toHaveFocus();
+  });
+
+  it("el zoom queda en el encabezado, fuera del panel, aunque esté cerrado", () => {
+    montarInicio();
+    expect(screen.getByRole("group", { name: "Zoom de la página" })).toBeInTheDocument();
+  });
+
+  it("cada ajuste se aplica y se recuerda, y «Restablecer todo» los deshace", async () => {
+    const usuario = userEvent.setup();
+    montarInicio();
+    await usuario.click(screen.getByRole("button", { name: "Accesibilidad" }));
+    const raiz = document.documentElement;
+
+    await usuario.click(screen.getByRole("radio", { name: "Alto contraste" }));
+    await usuario.click(screen.getByRole("switch", { name: "Fuente para dislexia" }));
+    expect(raiz).toHaveAttribute("data-contraste");
+    expect(raiz).toHaveAttribute("data-fuente", "dislexia");
+    expect(screen.getByRole("switch", { name: "Fuente para dislexia" })).toBeChecked();
+    expect(localStorage.getItem("signal-fuente")).toBe("dislexia");
+
+    await usuario.click(screen.getByRole("button", { name: "Restablecer todo" }));
+    expect(raiz).not.toHaveAttribute("data-contraste");
+    expect(raiz).not.toHaveAttribute("data-fuente");
+    expect(screen.getByRole("radio", { name: "Según el sistema" })).toBeChecked();
+    expect(screen.getByRole("switch", { name: "Fuente para dislexia" })).not.toBeChecked();
+  });
+
+  it("la guía de lectura es decorativa, sigue al puntero y no intercepta clics", async () => {
+    const usuario = userEvent.setup();
+    montarInicio();
+    expect(document.querySelector(".guia-lectura")).toBeNull();
+
+    await usuario.click(screen.getByRole("button", { name: "Accesibilidad" }));
+    await usuario.click(screen.getByRole("switch", { name: "Guía de lectura" }));
+    const guia = document.querySelector<HTMLElement>(".guia-lectura")!;
+    expect(guia).toHaveAttribute("aria-hidden", "true");
+
+    fireEvent.pointerMove(document, { clientY: 321 });
+    await waitFor(() => expect(guia.style.getPropertyValue("--guia-y")).toBe("321px"));
+
+    await usuario.click(screen.getByRole("switch", { name: "Guía de lectura" }));
+    expect(document.querySelector(".guia-lectura")).toBeNull();
   });
 });
 

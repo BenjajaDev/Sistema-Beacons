@@ -1268,20 +1268,6 @@
   margin-bottom: 0;
 }
 
-/* --- Filtro por área (bitácora): control segmentado con texto visible --- */
-
-.segmentado--texto {
-  flex-wrap: wrap;
-  margin-bottom: var(--space-4);
-}
-.segmentado--texto label {
-  padding-inline: var(--space-4);
-  font-weight: var(--peso-medio);
-}
-.segmentado--texto label:hover:not(:has(input:checked)) {
-  background: color-mix(in srgb, var(--color-primary) 12%, transparent);
-}
-
 .detalle-error {
   max-width: 100%;
   padding: var(--space-3);

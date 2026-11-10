@@ -264,6 +264,97 @@ textarea.campo__control {
   outline-offset: var(--foco-separacion);
 }
 
+/* Con el nombre de cada opción a la vista (panel de accesibilidad, filtro de la
+   bitácora): las opciones pasan a línea siguiente si no caben. */
+.segmentado--texto {
+  flex-wrap: wrap;
+  gap: 2px;
+  border-radius: var(--radius-lg);
+}
+.segmentado--texto label {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding-inline: var(--space-4);
+  font-weight: var(--peso-medio);
+}
+.segmentado--texto label:hover:not(:has(input:checked)) {
+  background: color-mix(in srgb, var(--color-primary) 12%, transparent);
+}
+
+/* --- Conmutador (interruptor de encendido y apagado) --- */
+
+.conmutador__fila {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-3);
+  min-height: var(--target);
+  cursor: pointer;
+}
+/* El control nativo cubre la fila: recibe foco y clics, pero no se ve. */
+.conmutador__control {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  opacity: 0;
+  cursor: pointer;
+}
+.conmutador__pista {
+  position: relative;
+  flex: none;
+  width: 3rem;
+  height: 1.75rem;
+  border: 2px solid var(--color-border-control);
+  border-radius: var(--radius-pill);
+  background: var(--color-bg);
+  transition: background-color var(--dur-rapida) ease;
+}
+.conmutador__perilla {
+  position: absolute;
+  top: 50%;
+  left: 0.2rem;
+  display: grid;
+  place-items: center;
+  width: 1.15rem;
+  height: 1.15rem;
+  border-radius: 50%;
+  background: var(--color-border-control);
+  color: var(--color-on-primary);
+  font-size: 0.7rem;
+  line-height: 1;
+  transform: translateY(-50%);
+  transition: transform var(--dur-rapida) var(--curva);
+}
+.conmutador__control:checked + .conmutador__pista {
+  border-color: var(--color-primary);
+  background: var(--color-primary);
+}
+/* Activo: la perilla se desplaza y lleva una marca (no depende del color). */
+.conmutador__control:checked + .conmutador__pista .conmutador__perilla {
+  background: var(--color-on-primary);
+  color: var(--color-primary);
+  transform: translate(1.25rem, -50%);
+}
+.conmutador__control:checked + .conmutador__pista .conmutador__perilla::after {
+  content: "✓";
+  font-weight: 800;
+}
+.conmutador__control:focus-visible + .conmutador__pista {
+  outline: var(--foco-ancho) solid var(--color-focus);
+  outline-offset: var(--foco-separacion);
+}
+.conmutador__texto {
+  font-weight: var(--peso-fuerte);
+}
+.conmutador__ayuda {
+  margin: 0 0 0 calc(3rem + var(--space-3));
+  color: var(--color-text-muted);
+  font-size: var(--text-sm);
+}
+
 .tamano-texto,
 .zoom-pagina {
   display: inline-flex;
@@ -419,4 +510,11 @@ textarea.campo__control {
     opacity: 1;
     transform: none;
   }
+}
+
+/* --- Alto contraste: lo que las sombras separaban lo separa un borde --- */
+
+:root[data-contraste] .dialogo,
+:root[data-contraste] .aviso {
+  border: 2px solid var(--color-border-control);
 }

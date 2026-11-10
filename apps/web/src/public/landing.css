@@ -234,13 +234,6 @@
   }
 }
 
-.encabezado__ajustes {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: var(--space-3);
-}
-
 @container encabezado (min-width: 72rem) {
   .encabezado__menu-boton {
     display: none;
@@ -1727,4 +1720,83 @@ a.respaldo__placa:hover {
 
 .no-encontrada {
   min-height: 50vh;
+}
+
+/* --- Panel de accesibilidad (encabezado) --- */
+
+/* Va en el flujo, bajo el encabezado: con zoom o texto grande no tapa contenido. */
+.panel-accesibilidad {
+  border-top: 1px solid var(--color-border);
+  background: var(--color-surface);
+}
+.panel-accesibilidad[hidden] {
+  display: none;
+}
+.panel-accesibilidad__cuerpo {
+  display: grid;
+  gap: var(--space-4);
+  padding-block: var(--space-5);
+}
+.panel-accesibilidad__titulo {
+  margin: 0;
+  font-size: var(--text-xl);
+}
+.panel-accesibilidad__intro {
+  margin: 0;
+  color: var(--color-text-muted);
+}
+.panel-accesibilidad__rejilla {
+  display: grid;
+  gap: var(--space-5);
+  align-items: start;
+}
+@media (min-width: 48rem) {
+  .panel-accesibilidad__rejilla {
+    grid-template-columns: repeat(auto-fit, minmax(16rem, 1fr));
+  }
+  /* El selector de tema, con sus cuatro opciones, ocupa más. */
+  .panel-accesibilidad__rejilla > .segmentado {
+    grid-column: 1 / -1;
+  }
+}
+/* Las cuatro opciones de tema en cuadrícula pareja: a 320 px quedan de a dos. */
+.panel-accesibilidad .segmentado--texto {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(9.5rem, 1fr));
+}
+.panel-accesibilidad .segmentado--texto label {
+  justify-content: center;
+}
+.panel-accesibilidad__acciones {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+}
+
+/* --- Guía de lectura --- */
+
+/* Oscurece la página y deja libre una franja que sigue a la persona (GuiaLectura.tsx).
+   Va bajo los avisos y los diálogos y no intercepta clics ni toques. */
+.guia-lectura {
+  --guia-alto: 5rem;
+  position: fixed;
+  inset: 0;
+  z-index: 800;
+  pointer-events: none;
+  background: linear-gradient(
+    to bottom,
+    rgb(0 0 0 / 0.5) calc(var(--guia-y, 40vh) - var(--guia-alto) / 2),
+    transparent calc(var(--guia-y, 40vh) - var(--guia-alto) / 2),
+    transparent calc(var(--guia-y, 40vh) + var(--guia-alto) / 2),
+    rgb(0 0 0 / 0.5) calc(var(--guia-y, 40vh) + var(--guia-alto) / 2)
+  );
+}
+/* Bordes de la franja, para ubicarla también cuando el fondo ya es oscuro. */
+.guia-lectura::before {
+  content: "";
+  position: absolute;
+  inset-inline: 0;
+  top: calc(var(--guia-y, 40vh) - var(--guia-alto) / 2);
+  height: var(--guia-alto);
+  border-block: 2px solid var(--color-primary);
 }

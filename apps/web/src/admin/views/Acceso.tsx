@@ -19,7 +19,7 @@ function MarcoAcceso({ children }: { children: React.ReactNode }) {
         <span className="panel-marca">SIGNAL · Panel</span>
         <div className="panel-barra__ajustes">
           <TextSizeControl />
-          <ThemeSwitcher />
+          <ThemeSwitcher altoContraste />
         </div>
       </header>
       <main id="contenido" tabIndex={-1} className="acceso__tarjeta">

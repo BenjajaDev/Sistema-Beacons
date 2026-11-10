@@ -1,5 +1,5 @@
 // Se ejecuta en <head>, antes del primer pintado, para que no haya un destello
-// del tema claro ni un salto al aplicar el tamaño de texto o el zoom elegidos.
+// del tema claro ni un salto al aplicar el tamaño de texto, el zoom o la fuente elegidos.
 // Archivo externo y sin dependencias: la CSP no permite scripts inline.
 (function () {
   try {
@@ -7,6 +7,14 @@
     var tema = localStorage.getItem("signal-tema");
     if (tema === "claro") raiz.setAttribute("data-theme", "light");
     else if (tema === "oscuro") raiz.setAttribute("data-theme", "dark");
+    else if (tema === "contraste") {
+      // Alto contraste = tema oscuro + atributo propio (ver aplicarTema en preferences.ts).
+      raiz.setAttribute("data-theme", "dark");
+      raiz.setAttribute("data-contraste", "");
+    }
+    if (localStorage.getItem("signal-fuente") === "dislexia") {
+      raiz.setAttribute("data-fuente", "dislexia");
+    }
     // El sitio y el panel comparten dominio (y localStorage): el panel usa A−/A+
     // (tamaño de texto) y el sitio, Zoom−/Zoom+. Cada uno aplica solo lo suyo.
     if (raiz.getAttribute("data-app") === "panel") {

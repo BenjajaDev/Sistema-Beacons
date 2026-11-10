@@ -195,6 +195,45 @@ export function paletteToCss(palette: Palette): string {
   ].join("\n");
 }
 
+// --- Alto contraste ------------------------------------------------------------
+// Tercer tema, distinto del oscuro: amarillo sobre negro, con bordes fuertes. Lo
+// elige la persona en el panel «Accesibilidad» del sitio. No se edita en Identidad
+// visual: su razón de ser es no variar. Se aplica con data-theme="dark" más
+// data-contraste, así toda regla del tema oscuro (logos, pie) sigue valiendo.
+
+export const HIGH_CONTRAST: PaletteMode = {
+  fondo: "#000000",
+  superficie: "#101010",
+  texto: "#FFFF00",
+  textoSuave: "#FFF28A",
+  primario: "#FFFF00",
+  textoSobrePrimario: "#000000",
+  enlace: "#00E5FF",
+  borde: "#FFD400",
+  bordeControl: "#FFFF00",
+  foco: "#00E5FF",
+  acento: "#00E5FF",
+};
+
+// Estados (éxito, error, aviso): texto sobre su propio fondo y sobre el fondo de la página.
+export const HIGH_CONTRAST_STATES = {
+  ok: "#7CFFB2",
+  okBg: "#00381A",
+  error: "#FF9E9E",
+  errorBg: "#4D0000",
+  aviso: "#FFE066",
+  avisoBg: "#3D3200",
+} as const;
+
+export function contrastToCss(): string {
+  const e = HIGH_CONTRAST_STATES;
+  return (
+    `:root[data-theme="dark"][data-contraste]{color-scheme:dark;${declaraciones(HIGH_CONTRAST)}` +
+    `--color-ok:${e.ok};--color-ok-bg:${e.okBg};--color-error:${e.error};--color-error-bg:${e.errorBg};` +
+    `--color-aviso:${e.aviso};--color-aviso-bg:${e.avisoBg};--sombra:none;--sombra-alta:none;}`
+  );
+}
+
 export function fontsToCss(fonts: Fonts): string {
   return `:root{--font-body:${FONT_OPTIONS[fonts.cuerpo].stack};--font-heading:${FONT_OPTIONS[fonts.titulos].stack};}`;
 }
