@@ -32,6 +32,10 @@ export interface Sitio {
   accesibilidad: string;
   // Puede faltar en datos guardados por el service worker antes del pie editable.
   pie?: Pie;
+  // Audiodescriptor (panel); puede faltar en datos guardados antes de existir.
+  voz?: { idioma: string; voz: string; velocidad: number };
+  // Instituciones que respaldan el proyecto; pueden faltar en datos guardados antes.
+  respaldos?: Respaldo[];
 }
 
 export interface EnlacePie {
@@ -60,6 +64,9 @@ export const PIE_POR_DEFECTO: Pie = {
 
 // Ver server/src/content/footer.ts.
 export interface Pie {
+  // Sin logo se muestra el isotipo vectorial.
+  logo?: Imagen;
+  imagen?: Imagen;
   descripcion?: string;
   columnas: { titulo: string; enlaces: EnlacePie[] }[];
   mostrarContacto: boolean;
@@ -97,12 +104,23 @@ export interface NoticiaDetalle extends NoticiaResumen {
   lectura: { palabras: number; minutosLectura: number } | null;
 }
 
+// Encuadre de la foto de una persona: punto de enfoque en % y zoom (1 a 3).
+export interface Encuadre {
+  x: number;
+  y: number;
+  zoom: number;
+}
+
 export interface Persona {
   name: string;
   position: string;
   bio: string | null;
+  area: string | null;
+  education: string | null;
+  email: string | null;
   links: RedSocial[];
   photo: Imagen | null;
+  photoFrame: Encuadre | null;
 }
 
 export interface Colaborador {
@@ -110,6 +128,10 @@ export interface Colaborador {
   description: string | null;
   url: string | null;
   logo: Imagen | null;
+}
+
+export interface Respaldo extends Colaborador {
+  kind: string;
 }
 
 export type SlugPagina = "inicio" | "nosotros" | "noticias" | "contacto";
@@ -160,7 +182,9 @@ export function crearQueryClient() {
         retry: (intentos, error) =>
           intentos < 1 &&
           !(error && "status" in error && (error as { status: number }).status === 404),
-        refetchOnWindowFocus: false,
+        // Al volver a la pestaña (por ejemplo, desde el panel) se piden los datos de
+        // nuevo: lo recién guardado aparece sin recargar.
+        refetchOnWindowFocus: "always",
       },
     },
   });

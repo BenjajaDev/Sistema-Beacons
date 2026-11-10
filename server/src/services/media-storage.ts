@@ -1,6 +1,8 @@
 import { mkdir, readFile, rm, writeFile } from "node:fs/promises";
 import path from "node:path";
 import type { ServerEnv } from "../config/env.js";
+import { cabecerasDeSupabase, problemaDeClaveDeServidor } from "../config/supabase-key.js";
+import { ApiError } from "../http/errors.js";
 
 // Dónde se guardan los archivos subidos. En desarrollo, en disco (server/uploads,
 // servido en /uploads). En producción, en un bucket público de Supabase Storage.
@@ -29,50 +31,94 @@ export function localStorage(dir: string): MediaStorage {
   };
 }
 
-// Usa la API REST de Storage directamente (sin SDK). La service role key solo vive
-// en el servidor: nunca debe llegar al navegador.
+// Un fallo de Supabase Storage se informa con su motivo (lo que responde Storage,
+// sin la clave), para poder corregir la configuración desde el panel: bucket
+// inexistente o privado, clave equivocada, cuota llena. 503 (y no 502): la
+// Function de Cloudflare cambia los 502 por la página «sin servidor».
+async function falloDeStorage(accion: string, res: Response): Promise<ApiError> {
+  const cuerpo = await res.text().catch(() => "");
+  let motivo = cuerpo;
+  try {
+    const json = JSON.parse(cuerpo) as { message?: unknown; error?: unknown };
+    motivo = String(json.message ?? json.error ?? cuerpo);
+  } catch {
+    // No era JSON: queda el texto tal cual.
+  }
+  motivo = motivo.replace(/\s+/g, " ").trim().slice(0, 200) || "sin detalle";
+  return new ApiError(
+    503,
+    "STORAGE_FAILED",
+    `El almacenamiento de imágenes (Supabase Storage) no pudo ${accion}: ${res.status} ${motivo}. Revisa en Supabase que exista el bucket público y que la clave del servidor sea la service_role o la secret key (sb_secret_…).`,
+  );
+}
+
+async function pedir(fetchFn: typeof fetch, url: string, init: RequestInit) {
+  try {
+    return await fetchFn(url, init);
+  } catch {
+    throw new ApiError(
+      503,
+      "STORAGE_UNREACHABLE",
+      "No se pudo conectar con el almacenamiento de imágenes (Supabase Storage). Revisa SUPABASE_URL en el servidor e intenta de nuevo.",
+    );
+  }
+}
+
+// Usa la API REST de Storage directamente (sin SDK). La clave del servidor solo vive
+// en el servidor: nunca debe llegar al navegador. Va en las cabeceras que pide su
+// tipo: una sb_secret_ como Bearer hace que Storage rechace todo («Invalid Compact JWS»).
 export function supabaseStorage(
   config: { url: string; serviceRoleKey: string; bucket: string },
   fetchFn: typeof fetch = fetch,
 ): MediaStorage {
   const base = config.url.replace(/\/$/, "");
-  const headers = {
-    Authorization: `Bearer ${config.serviceRoleKey}`,
-    apikey: config.serviceRoleKey,
+  const headers = cabecerasDeSupabase(config.serviceRoleKey);
+  // Una clave que no puede escribir (anon, publishable) se informa en cada uso, sin
+  // llamar a Storage: el servidor arranca igual y el panel muestra qué corregir.
+  const problema = problemaDeClaveDeServidor(config.serviceRoleKey);
+  const pedirConClave: typeof pedir = (...args) => {
+    if (problema) {
+      return Promise.reject(new ApiError(503, "STORAGE_MISCONFIGURED", problema));
+    }
+    return pedir(...args);
   };
   return {
     async put(key, data, contentType) {
-      const res = await fetchFn(`${base}/storage/v1/object/${config.bucket}/${key}`, {
-        method: "POST",
-        headers: {
-          ...headers,
-          "Content-Type": contentType,
-          "Cache-Control": "max-age=31536000",
-          "x-upsert": "false",
+      const res = await pedirConClave(
+        fetchFn,
+        `${base}/storage/v1/object/${config.bucket}/${key}`,
+        {
+          method: "POST",
+          headers: {
+            ...headers,
+            "Content-Type": contentType,
+            "Cache-Control": "max-age=31536000",
+            "x-upsert": "false",
+          },
+          body: new Uint8Array(data),
         },
-        body: new Uint8Array(data),
-      });
-      if (!res.ok) {
-        throw new Error(`Supabase Storage respondió ${res.status}: ${await res.text()}`);
-      }
+      );
+      if (!res.ok) throw await falloDeStorage("guardar la imagen", res);
       return { url: `${base}/storage/v1/object/public/${config.bucket}/${key}` };
     },
     async get(key) {
-      const res = await fetchFn(`${base}/storage/v1/object/${config.bucket}/${key}`, { headers });
-      if (!res.ok) {
-        throw new Error(`Supabase Storage respondió ${res.status} al leer: ${await res.text()}`);
-      }
+      const res = await pedirConClave(
+        fetchFn,
+        `${base}/storage/v1/object/${config.bucket}/${key}`,
+        {
+          headers,
+        },
+      );
+      if (!res.ok) throw await falloDeStorage("leer la imagen", res);
       return Buffer.from(await res.arrayBuffer());
     },
     async remove(key) {
-      const res = await fetchFn(`${base}/storage/v1/object/${config.bucket}`, {
+      const res = await pedirConClave(fetchFn, `${base}/storage/v1/object/${config.bucket}`, {
         method: "DELETE",
         headers: { ...headers, "Content-Type": "application/json" },
         body: JSON.stringify({ prefixes: [key] }),
       });
-      if (!res.ok) {
-        throw new Error(`Supabase Storage respondió ${res.status} al borrar: ${await res.text()}`);
-      }
+      if (!res.ok) throw await falloDeStorage("borrar la imagen", res);
     },
   };
 }

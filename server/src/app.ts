@@ -7,6 +7,7 @@ import { createSessionService } from "./auth/session.js";
 import type { BeaconReader } from "./beacons/store.js";
 import type { ServerEnv } from "./config/env.js";
 import { ApiError, errorHandler } from "./http/errors.js";
+import { edgeGate } from "./http/edge-gate.js";
 import { corsPolicy, originCheck, securityHeaders } from "./http/security.js";
 import type { Logger } from "./lib/logger.js";
 import type { Db } from "./lib/prisma.js";
@@ -14,6 +15,7 @@ import { adminPanel } from "./routes/admin-panel.js";
 import { adminApi } from "./routes/admin/index.js";
 import { landing } from "./routes/landing.js";
 import { legacyBeaconsRouter } from "./routes/legacy-beacons.js";
+import { beaconCatalogRouter } from "./routes/beacon-catalog.js";
 import { writeBeaconSnapshot } from "./beacons/snapshot.js";
 import { themeCss } from "./content/theme.js";
 import { publicApi } from "./routes/public.js";
@@ -40,7 +42,7 @@ export function createApp(deps: AppDeps) {
   app.use(
     pinoHttp({
       logger,
-      autoLogging: { ignore: (req) => req.url === "/api/health" },
+      autoLogging: { ignore: (req) => req.url?.startsWith("/api/health") ?? false },
       // Nunca se registra la ruta oculta del panel en los logs de acceso.
       serializers: {
         req: (req: { method: string; url: string }) => ({
@@ -53,6 +55,8 @@ export function createApp(deps: AppDeps) {
       },
     }),
   );
+  // Antes que todo lo demás: fija req.ip con la IP real que informa Cloudflare.
+  app.use(edgeGate(env.EDGE_PROXY_SECRET));
   app.use(securityHeaders(env));
   // gzip/brotli para HTML, JS, CSS y JSON: el bundle baja de ~360 KB a ~115 KB.
   app.use(compression());
@@ -65,6 +69,13 @@ export function createApp(deps: AppDeps) {
 
   // --- API ---
   app.use("/api", corsPolicy(env), originCheck(env));
+
+  // Para el health check del host: solo dice que el proceso responde. No depende de
+  // la base, para que una caída de Supabase no reinicie el servidor (la app Android
+  // sigue respondiendo desde el snapshot).
+  app.get("/api/health/live", (_req, res) => {
+    res.json({ ok: true });
+  });
 
   app.get("/api/health", async (_req, res) => {
     try {
@@ -82,6 +93,8 @@ export function createApp(deps: AppDeps) {
   });
   const csrf = createCsrf({ secret: env.CSRF_SECRET, secureCookies: env.COOKIE_SECURE });
   app.use("/api/public", publicApi({ db, logger }));
+  // Catálogo de beacons para que la app funcione sin conexión (con el snapshot de respaldo).
+  app.use(beaconCatalogRouter({ ...deps.beacons, logger }));
 
   const admin = adminApi({
     db,
@@ -130,7 +143,22 @@ export function createApp(deps: AppDeps) {
       return null;
     }
   };
-  app.use(adminPanel({ adminPath: env.ADMIN_PATH, distDir: env.adminDistDir, getThemeCss }));
+  // El favicon de Identidad visual también va en el panel.
+  const getFavicon = async () => {
+    try {
+      const s = await db.siteSettings.findUnique({
+        where: { id: 1 },
+        select: { favicon: { select: { url: true } } },
+      });
+      return s?.favicon?.url ?? null;
+    } catch (err) {
+      logger.warn({ err }, "No se pudo leer el favicon; se usa el por defecto");
+      return null;
+    }
+  };
+  app.use(
+    adminPanel({ adminPath: env.ADMIN_PATH, distDir: env.adminDistDir, getThemeCss, getFavicon }),
+  );
 
   // --- Landing pública ---
   app.use(

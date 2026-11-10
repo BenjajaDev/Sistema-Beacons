@@ -7,10 +7,10 @@
 // "Supabase" del README y la migración inicial.
 
 generator client {
-  provider               = "prisma-client"
-  output                 = "../src/generated/prisma"
-  moduleFormat           = "esm"
-  importFileExtension    = "js"
+  provider            = "prisma-client"
+  output              = "../src/generated/prisma"
+  moduleFormat        = "esm"
+  importFileExtension = "js"
 }
 
 datasource db {
@@ -95,6 +95,8 @@ model SiteSettings {
   accessibilityStatement String
   // Textos, columnas de enlaces y bloques visibles del pie. Ver src/content/footer.ts.
   footer                 Json     @default("{}")
+  // Audiodescriptor: idioma, voz preferida y velocidad. Ver src/content/voice.ts.
+  voice                  Json     @default("{}")
   updatedAt              DateTime @updatedAt
   updatedById            String?
 
@@ -161,18 +163,25 @@ model News {
 }
 
 model TeamMember {
-  id        String   @id @default(uuid())
-  name      String
-  position  String
-  bio       String?
-  photoId   String?
-  photoAlt  String?
+  id         String   @id @default(uuid())
+  name       String
+  position   String
+  bio        String?
+  // Datos opcionales de la card: área («Ingeniería»), formación y un correo
+  // público (conviene el institucional).
+  area       String?
+  education  String?
+  email      String?
+  photoId    String?
+  photoAlt   String?
+  // Encuadre no destructivo de la foto: { x, y, zoom }. Null = centrada, sin zoom.
+  photoFrame Json?
   // [{ red, url, etiqueta }]
-  links     Json     @default("[]")
-  order     Int
-  visible   Boolean  @default(true)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  links      Json     @default("[]")
+  order      Int
+  visible    Boolean  @default(true)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
 
   photo Media? @relation(fields: [photoId], references: [id], onDelete: Restrict)
 
@@ -196,6 +205,28 @@ model Collaborator {
 
   @@index([order])
   @@map("collaborators")
+}
+
+// Instituciones que respaldan el proyecto (financiamiento, patrocinio). No son
+// colaboradores: se muestran en el pie de todas las páginas.
+model Backer {
+  id          String   @id @default(uuid())
+  name        String
+  // Cómo respalda, tal como se lee en el sitio: «Financia», «Patrocina»…
+  kind        String
+  description String?
+  url         String?
+  logoId      String?
+  logoAlt     String?
+  order       Int
+  visible     Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  logo Media? @relation(fields: [logoId], references: [id], onDelete: Restrict)
+
+  @@index([order])
+  @@map("backers")
 }
 
 // Ficha que la app Android lee en GET /beacons/:major/:minor. Los nombres de los
@@ -229,13 +260,14 @@ model Media {
   uploadedById String?
   createdAt    DateTime @default(now())
 
-  uploadedBy     User?          @relation(fields: [uploadedById], references: [id])
-  newsCovers     News[]
-  teamPhotos     TeamMember[]
-  collabLogos    Collaborator[]
-  logoLightOf    SiteSettings[] @relation("LogoLight")
-  logoDarkOf     SiteSettings[] @relation("LogoDark")
-  faviconOf      SiteSettings[] @relation("Favicon")
+  uploadedBy  User?          @relation(fields: [uploadedById], references: [id])
+  newsCovers  News[]
+  teamPhotos  TeamMember[]
+  collabLogos Collaborator[]
+  backerLogos Backer[]
+  logoLightOf SiteSettings[] @relation("LogoLight")
+  logoDarkOf  SiteSettings[] @relation("LogoDark")
+  faviconOf   SiteSettings[] @relation("Favicon")
 
   @@map("media")
 }

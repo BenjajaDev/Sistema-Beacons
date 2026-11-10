@@ -1,5 +1,6 @@
 import type { ComponentType } from "react";
 import { createBrowserRouter, Link, Navigate, Outlet } from "react-router";
+import { importarConRecarga } from "@shared/recarga";
 import { ToastProvider } from "@shared/ui/Toast";
 import type { Rol } from "./api";
 import { ErrorDeRuta } from "./ErrorDeRuta";
@@ -25,8 +26,13 @@ function basename() {
 }
 
 // Las vistas con el editor de texto enriquecido (el código más pesado) se cargan al entrar.
-const diferida = (cargar: () => Promise<{ default: ComponentType }>) => async () => ({
-  Component: (await cargar()).default,
+// Si el módulo ya no existe (build nuevo), la página se recarga sola: ver @shared/recarga.
+type Modulo = () => Promise<{ default: ComponentType }>;
+const diferida = (cargar: Modulo) => async () => ({
+  Component: (await importarConRecarga(cargar)).default,
+});
+const diferidaAdmin = (cargar: Modulo) => async () => ({
+  element: soloAdmin((await importarConRecarga(cargar)).default),
 });
 
 const soloAdmin = (Vista: ComponentType) => {
@@ -107,8 +113,13 @@ export function crearRouter() {
                         lazy: diferida(() => import("./views/SeccionEditor")),
                       },
                       { path: "equipo", Component: Equipo },
+                      { path: "respaldos", lazy: diferida(() => import("./views/Respaldos")) },
                       { path: "identidad", lazy: diferida(() => import("./views/Identidad")) },
                       { path: "pie", lazy: diferida(() => import("./views/Pie")) },
+                      {
+                        path: "audiodescriptor",
+                        lazy: diferida(() => import("./views/Audiodescriptor")),
+                      },
                     ],
                   },
                   { path: "contacto", Component: Contacto },
@@ -116,9 +127,7 @@ export function crearRouter() {
                   { path: "perfil", Component: Perfil },
                   {
                     path: "beacons",
-                    lazy: async () => ({
-                      element: soloAdmin((await import("./views/Beacons")).default),
-                    }),
+                    lazy: diferidaAdmin(() => import("./views/Beacons")),
                   },
                   { path: "usuarios", element: soloAdmin(Usuarios) },
                   { path: "bitacora", element: soloAdmin(Bitacora) },

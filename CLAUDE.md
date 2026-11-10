@@ -4,13 +4,15 @@ SIGNAL es navegación interior con beacons BLE para personas con discapacidad vi
 
 - `server/`: Express 5 y Prisma 7 sobre PostgreSQL (Supabase). API pública (`/api/public`), API del panel (`/api/admin`), landing con datos iniciales en el HTML y el endpoint de la app Android.
 - `apps/web/`: dos builds de Vite. `index.html` es la landing y la PWA (`dist/public`); `admin.html` es el panel (`dist/admin`), servido solo bajo `/<ADMIN_PATH>`.
+- `apps/edge/` y `functions/[[path]].ts`: Function de Cloudflare Pages. Sirve los estáticos de `dist/public` y reenvía el resto a Express con `EDGE_PROXY_SECRET`. No conoce `ADMIN_PATH`.
 - `BeaconsAndroid/`: app Android en Kotlin y Jetpack Compose.
 - `e2e/`: Playwright y axe. `lighthouserc.cjs`: Lighthouse CI móvil.
-- `docs/`: guías ([`.env`](docs/configurar-env.md), [Supabase](docs/supabase.md)) y [diagramas](docs/diagramas/README.md).
+- `docs/`: guías ([`.env`](docs/configurar-env.md), [Supabase](docs/supabase.md), [despliegue](docs/cloudflare-pages.md)) y [diagramas](docs/diagramas/README.md).
+- Producción: Cloudflare Pages + Render (`render.yaml`) + Supabase, desplegados **desde `main`**.
 
 ## Reglas que no se rompen
 
-1. **Contrato de la app Android.** `GET /beacons/:major/:minor` responde `{ titulo, descripcion, ubicacion }` y un 404 `{ error: "No hay información para el beacon M-m" }`, en el puerto 3000. No cambia; `server/test/legacy-beacons.test.ts` lo verifica.
+1. **Contrato de la app Android.** `GET /beacons/:major/:minor` responde `{ titulo, descripcion, ubicacion }` y un 404 `{ error: "No hay información para el beacon M-m" }`, en el puerto 3000. No cambia (lo usan las versiones anteriores de la app); `server/test/legacy-beacons.test.ts` lo verifica. La app actual usa `GET /api/public/beacons` (catálogo con `version` y `ETag`) y orienta sin conexión: no la hagas depender de la red para anunciar un beacon.
 2. **Nada del panel en el bundle público.** `ADMIN_PATH` vive solo en `server/.env`, nunca en variables `VITE_*`. `apps/web/scripts/check-public-bundle.mjs` corre en cada build.
 3. **Accesibilidad WCAG 2.1 AA.** Un `h1` por página, foco visible y gestionado, labels, errores con `aria-live`, objetivos de 44 px, `prefers-reduced-motion` y nada que dependa solo del color. axe con 0 violaciones críticas o graves.
 4. **Español.** Textos de interfaz, comentarios y commits en español. Los commits terminan con la línea `Co-Authored-By` que indique la sesión.
@@ -36,14 +38,14 @@ La fuente de verdad es la app Android: `BeaconsAndroid/app/src/main/java/com/exa
 - Si cambias un color, cámbialo **en los dos lados** en el mismo commit y ejecuta `npm run gen:theme -w server`.
 - Toda paleta nueva debe pasar `checkPaletteContrast` (en `theme.ts`). Si un color de Android no llega al contraste en la web, se ajusta en ambos lados; no se rompe la accesibilidad para calzar un color.
 - No escribas colores sueltos en CSS: usa las variables `--color-*` (editables desde Identidad visual) o los tokens de `apps/web/src/shared/styles/tokens.css`.
-- `apps/web/public/offline.html`, `index.html` (`theme-color`), el manifest de `vite.public.config.ts` y `apps/web/scripts/gen-icons.mjs` tienen colores fijos: mantenlos alineados.
+- `apps/web/public/offline.html` (de ella se derivan `404.html` y `sin-servidor.html` para Pages), `index.html` (`theme-color`), el manifest de `vite.public.config.ts` y `apps/web/scripts/gen-icons.mjs` tienen colores fijos: mantenlos alineados.
 - Las tipografías son Atkinson Hyperlegible Next (cuerpo) y Bricolage Grotesque (títulos), autoalojadas. No se cambian sin pedirlo.
 
 ## Lenguaje visual y movimiento
 
 - El motivo es **la señal del beacon**: punto de luz, ondas concéntricas, barras que barren. Un componente nuevo usa ese vocabulario antes que inventar otro.
 - Movimiento al apuntar: siempre dentro de `@media (hover: hover) and (pointer: fine) and (prefers-reduced-motion: no-preference)`, solo `transform` y `opacity`, curva `--curva` y duración `--dur-*` (≤ 300 ms). Presionar: `scale(0.97)`.
-- Lo único que se mueve solo es la entrada de las ondas del hero, una vez. El panel es sobrio: se usa a diario.
+- Lo único que se mueve solo: la entrada de las ondas del hero (una vez) y el carrusel de Nosotros cuando el equipo no cabe completo (en escritorio caben 5 y no hay carrusel), que avanza cada 10 s con botón para pausarlo (WCAG 2.2.2), se detiene al apuntarlo o enfocarlo y no corre con `prefers-reduced-motion` (`useAutoavance` en `useCarrusel.ts`). El panel es sobrio: se usa a diario.
 - Nada de texto subrayado plano ni acciones que parezcan texto: los enlaces del texto llevan la barra inferior de `base.css` y las acciones son botones (`.btn--fantasma` es una ficha, no un enlace).
 
 ## Skills de diseño, UX y animación
@@ -97,4 +99,10 @@ Por ejemplo, `frontend-design` pide elegir tipografías y paletas «distintivas�
 - `server/prisma/data/beacons.json` está excluido de Prettier: son datos.
 - `e2e/pwa.spec.ts` usa un perfil persistente: en incógnito Chrome no permite instalar la PWA.
 - Los textos `.visually-hidden` dentro de contenedores con scroll necesitan un ancestro con `position: relative`.
+- Cloudflare Pages redirige `/archivo.html` a `/archivo`; la Function sigue esa redirección para responder en la misma URL. `index.html` nunca se sirve desde Pages: es la plantilla que completa el servidor.
+- Detrás de Pages, el servidor ve el host de Render: el chequeo de `Origin` acepta `SITE_URL` y la IP real llega en `x-signal-client-ip` (`server/src/http/edge-gate.ts`).
+- Una sección nueva del catálogo (`server/src/content/sections.ts`) se crea al arrancar el servidor con `createMissingSections`; ponle `visibleInicial: false` si necesita contenido antes de mostrarse. Toda imagen de sección se guarda con `imagenSchema` y pasa por `resolveSectionImages`: no confíes en la URL que manda el navegador.
+- Respaldos (`backers`: universidad, programa que financia) y colaboradores son cosas distintas: no los mezcles. Los respaldos van en el pie de todas las páginas y viajan en `getSite`; sus logos usan la placa `--placa-logo` (blanca en ambos temas).
+- El equipo se muestra de dos formas: en el inicio, círculos que crecen hasta ser una card (`EquipoFila.tsx`); en Nosotros, tarjetas grandes: hasta 5 por fila según el ancho del carrusel (consultas `@container` en `landing.css`) y, si no caben, carrusel (`EquipoTarjetas.tsx`, `useCarrusel.ts`). La foto pasa siempre por `FotoPersona` (encuadre con `object-position` y `--zoom`). Las cards del inicio quedan cerradas en el layout con `visibility: hidden` para poder medirlas: `.seccion:has(.equipo)` lleva `overflow-x: clip` para que no agreguen scroll horizontal.
+- El minificador de CSS une `transform` y `translate` de una misma regla en un solo `transform`: para anular un `translate` heredado, ponlos en reglas separadas (ver `.integrante__card--estatica` en `admin.css`).
 - La paleta de una base existente vive en `site_settings`: un cambio de `DEFAULT_PALETTE` solo afecta a bases nuevas. En las existentes, usa «Volver a los colores y tipografías por defecto» en Identidad visual y guarda.

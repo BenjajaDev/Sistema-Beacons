@@ -47,9 +47,12 @@ export function corsPolicy(env: ServerEnv): RequestHandler {
 const METODOS_SEGUROS = new Set(["GET", "HEAD", "OPTIONS"]);
 
 // Defensa adicional contra CSRF: si el navegador envía Origin en una petición que
-// modifica datos, debe ser el propio sitio o uno de CORS_ORIGINS.
+// modifica datos, debe ser el propio sitio (el host de la petición o SITE_URL) o
+// uno de CORS_ORIGINS. SITE_URL cuenta porque detrás de Cloudflare Pages el host
+// que ve el servidor es el de su plataforma, no el dominio público.
 export function originCheck(env: ServerEnv): RequestHandler {
   const permitidos = new Set(env.CORS_ORIGINS);
+  if (env.SITE_URL) permitidos.add(new URL(env.SITE_URL).origin);
   return (req, _res, next) => {
     const origin = req.get("origin");
     if (!origin || METODOS_SEGUROS.has(req.method)) return next();

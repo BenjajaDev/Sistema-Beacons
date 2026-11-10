@@ -22,6 +22,9 @@ function spaFallback(): Plugin {
 export default defineConfig({
   ...shared,
   plugins: [...shared.plugins, spaFallback()],
+  // Caché propia: si comparte la de la landing, al correr los dos (npm run dev:all)
+  // cada uno pisa las dependencias del otro y las vistas del panel no cargan.
+  cacheDir: "node_modules/.vite/admin",
   base: "./",
   publicDir: false,
   resolve: {
@@ -31,6 +34,8 @@ export default defineConfig({
       "@server-theme": path.resolve(import.meta.dirname, "../../server/src/content/theme.ts"),
       // Esquema y valores por defecto del pie de página.
       "@server-footer": path.resolve(import.meta.dirname, "../../server/src/content/footer.ts"),
+      // Idiomas, límites y valores por defecto del audiodescriptor.
+      "@server-voice": path.resolve(import.meta.dirname, "../../server/src/content/voice.ts"),
       // Vista previa de textos enriquecidos con el mismo renderizado que el servidor.
       "@server-rich-text": path.resolve(
         import.meta.dirname,

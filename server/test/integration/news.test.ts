@@ -143,7 +143,8 @@ describe.skipIf(!hasTestDb)("noticias: flujo editorial", () => {
     const detalle = await request(app).get(`/api/public/news/${slug}`);
     expect(detalle.status).toBe(200);
     expect(detalle.body.news.bodyHtml).toContain("<p>");
-    expect(detalle.headers["cache-control"]).toContain("max-age=60");
+    expect(detalle.headers["cache-control"]).toBe("no-cache");
+    expect(detalle.headers.etag).toBeTruthy();
 
     const acciones = (
       await db.auditLog.findMany({ where: { entityId: id }, orderBy: { createdAt: "asc" } })

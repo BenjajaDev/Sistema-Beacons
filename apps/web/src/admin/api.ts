@@ -1,4 +1,5 @@
 import { apiFetch, ApiError, type ApiFetchOptions } from "@shared/api";
+import type { Encuadre } from "../public/data";
 
 // Cliente de /api/admin. Agrega el token CSRF en las peticiones que modifican,
 // lo renueva una vez si caducó, y avisa a la app cuando la sesión expiró o
@@ -151,9 +152,13 @@ export interface Persona {
   name: string;
   position: string;
   bio: string | null;
+  area: string | null;
+  education: string | null;
+  email: string | null;
   photoId: string | null;
   photoAlt: string | null;
   photo: Imagen | null;
+  photoFrame: Encuadre | null;
   links: Enlace[];
   order: number;
   visible: boolean;
@@ -169,6 +174,11 @@ export interface Colaborador {
   logo: Imagen | null;
   order: number;
   visible: boolean;
+}
+
+// Institución que respalda el proyecto: «kind» es el texto que acompaña al logo.
+export interface Respaldo extends Colaborador {
+  kind: string;
 }
 
 export interface Ajustes {
@@ -191,6 +201,8 @@ export interface Ajustes {
   accessibilityStatement: string;
   // Lo guardado puede venir vacío ({}) en bases anteriores al pie editable.
   footer: Partial<import("@server-footer").Footer>;
+  // Puede venir vacío ({}) en bases anteriores al audiodescriptor.
+  voice: Partial<import("@server-voice").Voice>;
 }
 
 export interface Beacon {

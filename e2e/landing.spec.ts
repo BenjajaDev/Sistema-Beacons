@@ -1,6 +1,6 @@
 import { expect, test } from "@playwright/test";
 import { ADMIN_PATH } from "./config.mjs";
-import { recorrer, sinScrollHorizontal, sinViolaciones } from "./ayuda";
+import { recorrer, sinScrollHorizontal, sinTarjetasCortadas, sinViolaciones } from "./ayuda";
 
 const PAGINAS = [
   { ruta: "/", nombre: "Inicio" },
@@ -29,12 +29,140 @@ test.describe("landing pública", () => {
       await page.setViewportSize({ width: 320, height: 720 });
       await page.goto(ruta);
       await sinScrollHorizontal(page);
-      // Texto al 200 %: el control A+ llega al 150 %; aquí se fuerza el 200 % (WCAG 1.4.4).
+      // Texto al 200 % (WCAG 1.4.4), como lo haría el navegador: se fuerza en la raíz.
       await page.evaluate(() => (document.documentElement.style.fontSize = "200%"));
       await page.setViewportSize({ width: 640, height: 720 });
       await sinScrollHorizontal(page);
     });
   }
+
+  test("Nosotros muestra al equipo completo en escritorio y un carrusel si no cabe", async ({
+    page,
+  }) => {
+    await page.goto("/nosotros");
+    const tarjetas = page.locator(".persona");
+    await expect(tarjetas).toHaveCount(5);
+    const enUnaFila = async () => {
+      const ys = await tarjetas.evaluateAll((els) => els.map((e) => e.getBoundingClientRect().top));
+      expect(Math.max(...ys) - Math.min(...ys)).toBeLessThan(2);
+    };
+
+    // A 1280 px caben las 5 enteras: sin flechas, sin avance automático y sin
+    // una región con scroll que enfocar.
+    await enUnaFila();
+    await sinTarjetasCortadas(page);
+    await expect(page.locator(".carrusel__controles")).toHaveCount(0);
+    await expect(page.getByRole("region", { name: "Integrantes del equipo" })).toHaveCount(0);
+    await sinViolaciones(page, "/nosotros con el equipo completo");
+
+    // Más angosto, tarjetas grandes (al menos 15rem) en un carrusel.
+    await page.setViewportSize({ width: 700, height: 720 });
+    const caja = (await tarjetas.first().boundingBox())!;
+    expect(caja.width).toBeGreaterThanOrEqual(240);
+    await enUnaFila();
+
+    const carrusel = page.getByRole("region", { name: "Integrantes del equipo" });
+    await expect(carrusel).toHaveAttribute("tabindex", "0");
+    const anterior = page.getByRole("button", { name: "Ver integrantes anteriores" });
+    const siguiente = page.getByRole("button", { name: "Ver más integrantes" });
+    await expect(anterior).toHaveAttribute("aria-disabled", "true");
+    await sinViolaciones(page, "/nosotros con el carrusel");
+
+    // Avanza hasta el final sin dejar tarjetas cortadas en los bordes: la última
+    // queda a la vista y «siguiente» se inactiva.
+    await sinTarjetasCortadas(page);
+    for (let i = 0; i < 5 && (await siguiente.getAttribute("aria-disabled")) !== "true"; i++) {
+      await siguiente.click();
+      await page.waitForTimeout(450);
+      await sinTarjetasCortadas(page);
+    }
+    await expect(siguiente).toHaveAttribute("aria-disabled", "true");
+    await expect(anterior).not.toHaveAttribute("aria-disabled");
+    await expect(page.getByRole("link", { name: "persona5@e2e.test" })).toBeInViewport();
+
+    // A 320 px el carrusel se recorre dentro de su región, sin scroll en la página.
+    await page.setViewportSize({ width: 320, height: 720 });
+    await sinScrollHorizontal(page);
+    await sinTarjetasCortadas(page);
+    await sinViolaciones(page, "/nosotros a 320 px");
+  });
+
+  test("en el inicio, el círculo de cada persona crece hasta ser una card al apuntar", async ({
+    page,
+  }) => {
+    await page.goto("/");
+    const primera = page.getByRole("button", { name: /^Ana Rojas/ });
+    const ultima = page.getByRole("button", { name: /^Valentina Muñoz/ });
+    // Cinco en una fila en pantalla ancha.
+    const [y1, y5] = await Promise.all(
+      [primera, ultima].map(async (b) => (await b.boundingBox())!.y),
+    );
+    expect(Math.abs(y1! - y5!)).toBeLessThan(2);
+    const antes = (await primera.boundingBox())!;
+
+    await ultima.hover();
+    await expect(ultima).toHaveAttribute("aria-expanded", "true");
+    const card = page.locator(`[id="${await ultima.getAttribute("aria-controls")}"]`);
+    await expect(card).toBeVisible();
+    await expect(card.getByRole("link", { name: "persona5@e2e.test" })).toBeVisible();
+    // La card nace sobre el círculo: al terminar de crecer, su borde superior queda a
+    // la altura de la persona. Se espera a que termine la animación de entrada.
+    await expect
+      .poll(async () => {
+        const [cajaCard, cajaBoton] = [(await card.boundingBox())!, (await ultima.boundingBox())!];
+        return Math.abs(cajaCard.y - cajaBoton.y);
+      })
+      .toBeLessThan(2);
+    // Las demás personas se corren hacia afuera (aquí, a la izquierda) y se achican.
+    await expect
+      .poll(async () => {
+        const despues = (await primera.boundingBox())!;
+        return [despues.width / antes.width < 0.85, despues.x < antes.x];
+      })
+      .toEqual([true, true]);
+    await sinViolaciones(page, "/ con una card abierta");
+    await page.keyboard.press("Escape");
+    await expect(ultima).toHaveAttribute("aria-expanded", "false");
+
+    // A 320 px, con el teclado, la card se corre para no salirse.
+    await page.setViewportSize({ width: 320, height: 720 });
+    await ultima.focus();
+    await page.keyboard.press("Enter");
+    await expect(card).toBeVisible();
+    const caja = (await card.boundingBox())!;
+    expect(caja.x).toBeGreaterThanOrEqual(0);
+    expect(caja.x + caja.width).toBeLessThanOrEqual(320);
+    await sinScrollHorizontal(page);
+  });
+
+  test("Zoom+ agranda la página sin scroll horizontal y se recuerda al recargar", async ({
+    page,
+  }) => {
+    await page.goto("/");
+    const zoom = page.getByRole("group", { name: "Zoom de la página" });
+    await expect(zoom).toContainText("100 %");
+    // 100 → 110 → 125 → 150 %.
+    for (let i = 0; i < 3; i++) {
+      await zoom.getByRole("button", { name: /^Zoom\+/ }).click();
+    }
+    await expect(zoom.getByRole("status")).toHaveText("Zoom al 150 %");
+    await sinScrollHorizontal(page);
+    await page.reload();
+    // Con zoom, el encabezado pasa a «Menú», pero el zoom sigue a la vista para volver atrás.
+    await expect(page.getByRole("button", { name: "Menú" })).toBeVisible();
+    await expect(page.getByRole("group", { name: "Zoom de la página" })).toContainText("150 %");
+    await sinScrollHorizontal(page);
+    await sinViolaciones(page, "/ con zoom al 150 %");
+  });
+
+  test("las secciones principales se pueden escuchar", async ({ page }) => {
+    await page.goto("/");
+    const escuchar = page.locator("#hero").getByRole("button", { name: "Escuchar esta sección" });
+    // Solo si el navegador tiene voz (Web Speech API).
+    if (await page.evaluate(() => "speechSynthesis" in window)) {
+      await expect(escuchar).toBeVisible();
+    }
+  });
 
   test("el enlace «Saltar al contenido» es lo primero y lleva al contenido", async ({ page }) => {
     await page.goto("/");
@@ -56,13 +184,14 @@ test.describe("landing pública", () => {
     await expect(page).toHaveTitle(/^Contacto · /);
   });
 
-  test("tema y tamaño de texto se recuerdan al recargar", async ({ page }) => {
+  test("tema y zoom se recuerdan al recargar; el sitio no tiene A−/A+", async ({ page }) => {
     await page.goto("/");
+    await expect(page.getByRole("button", { name: /^A\+/ })).toHaveCount(0);
     await page.getByRole("radio", { name: "Oscuro" }).check();
-    await page.getByRole("button", { name: /^A\+/ }).click();
+    await page.getByRole("button", { name: /^Zoom\+/ }).click();
     await page.reload();
     await expect(page.locator("html")).toHaveAttribute("data-theme", "dark");
-    await expect(page.locator("html")).toHaveAttribute("style", /font-size: 112.5%/);
+    await expect(page.locator("html")).toHaveAttribute("style", /--zoom-pagina: 1.1/);
   });
 
   test("el formulario de contacto valida, anuncia errores y envía", async ({ page }) => {

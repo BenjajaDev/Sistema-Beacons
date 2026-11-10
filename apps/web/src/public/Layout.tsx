@@ -1,11 +1,12 @@
 import { useQuery } from "@tanstack/react-query";
 import { useEffect, useId, useRef, useState, useSyncExternalStore } from "react";
 import { NavLink, Outlet, ScrollRestoration, useLocation } from "react-router";
-import { TextSizeControl, ThemeSwitcher } from "@shared/theme/Controls";
+import { ThemeSwitcher, ZoomControl } from "@shared/theme/Controls";
 import { IconoCerrar, IconoMenu } from "@shared/ui/Icons";
 import { ToastProvider } from "@shared/ui/Toast";
-import { EnlaceEditable, Logo, Redes } from "./components";
-import { consultas, PIE_POR_DEFECTO } from "./data";
+import { configurarVoz } from "@shared/voz/voz";
+import { EnlaceEditable, Img, Isotipo, Logo, Redes, VozDeImagen } from "./components";
+import { consultas, PIE_POR_DEFECTO, type Respaldo } from "./data";
 
 const NAVEGACION = [
   { to: "/", texto: "Inicio", end: true },
@@ -69,6 +70,11 @@ function Encabezado() {
           {abierto ? <IconoCerrar /> : <IconoMenu />}
           <span className="visually-hidden">Menú</span>
         </button>
+        {/* Fuera del menú: al agrandar, el encabezado pasa a «Menú» y el control
+            tiene que seguir a mano para poder volver atrás. */}
+        <div className="encabezado__zoom">
+          <ZoomControl />
+        </div>
         <div
           id={menuId}
           className={`encabezado__menu ${abierto ? "encabezado__menu--abierto" : ""}`}
@@ -85,12 +91,44 @@ function Encabezado() {
             </ul>
           </nav>
           <div className="encabezado__ajustes">
-            <TextSizeControl />
             <ThemeSwitcher />
           </div>
         </div>
       </div>
     </header>
+  );
+}
+
+// Instituciones que respaldan el proyecto (panel → Respaldos), al inicio del pie
+// en todas las páginas. Los logos van sobre placas blancas del mismo tamaño: se
+// leen en tema claro y oscuro y ninguno pesa más que otro. Sin logo, el nombre.
+function Respaldos({ respaldos }: { respaldos: Respaldo[] }) {
+  return (
+    <div className="container respaldos">
+      <h2 className="pie__titulo">Con el respaldo de</h2>
+      <ul className="respaldos__lista">
+        {respaldos.map((r) => {
+          const placa = r.logo ? (
+            <Img imagen={r.logo} className="respaldo__logo" />
+          ) : (
+            <span className="respaldo__nombre">{r.name}</span>
+          );
+          return (
+            <li key={r.name} className="respaldo">
+              <p className="respaldo__tipo">{r.kind}</p>
+              {r.url ? (
+                <a href={r.url} rel="noopener noreferrer" className="respaldo__placa">
+                  {placa}
+                </a>
+              ) : (
+                <div className="respaldo__placa">{placa}</div>
+              )}
+              {r.description && <p className="respaldo__mencion">{r.description}</p>}
+            </li>
+          );
+        })}
+      </ul>
+    </div>
   );
 }
 
@@ -105,10 +143,22 @@ function Pie() {
   const hayRedes = pie.mostrarRedes && redes.length > 0;
   return (
     <footer className="pie">
+      {sitio.respaldos?.length ? <Respaldos respaldos={sitio.respaldos} /> : null}
       <div className="container pie__rejilla">
         <div className="pie__marca">
+          {pie.logo ? (
+            <Img imagen={pie.logo} className="pie__logo" />
+          ) : (
+            <Isotipo className="isotipo pie__isotipo" />
+          )}
           <p className="pie__nombre">{sitio.siteName}</p>
           {pie.descripcion && <p className="pie__descripcion">{pie.descripcion}</p>}
+          {pie.imagen && (
+            <figure className="pie__imagen con-voz">
+              <Img imagen={pie.imagen} />
+              <VozDeImagen imagen={pie.imagen} />
+            </figure>
+          )}
           {hayRedes && <Redes redes={redes} etiqueta="Redes sociales" variante="iconos" />}
         </div>
         {pie.columnas.map((col, i) => (
@@ -164,8 +214,18 @@ function Pie() {
   );
 }
 
+// La voz del sitio (idioma, voz y velocidad) se configura en el panel y llega con los datos.
+function useConfigVoz() {
+  const { data: sitio } = useQuery(consultas.sitio());
+  const voz = sitio?.voz;
+  useEffect(() => {
+    if (voz) configurarVoz(voz);
+  }, [voz]);
+}
+
 export function Layout() {
   const enLinea = useEnLinea();
+  useConfigVoz();
   return (
     <ToastProvider>
       <a className="skip-link" href="#contenido">

@@ -7,6 +7,7 @@ Navegación interior con beacons BLE para personas con discapacidad visual.
 | `server/`         | API en Express + Prisma (PostgreSQL / Supabase): ficha de cada beacon para la app, API pública de la landing y API del panel. |
 | `BeaconsAndroid/` | App Android (Kotlin + Compose). Consume `GET /beacons/:major/:minor`.                                                         |
 | `apps/web/`       | Frontend: landing pública y panel, en dos builds de Vite separados.                                                           |
+| `apps/edge/`      | Function de Cloudflare Pages (`functions/[[path]].ts`): sirve los estáticos y reenvía el resto al servidor.                   |
 | `e2e/`            | Pruebas de punta a punta con Playwright y axe, y el servidor de pruebas que comparten con Lighthouse CI.                      |
 | `docs/`           | Guías (audiodescripciones, revisión con lector de pantalla) y [diagramas](docs/diagramas/README.md) de arquitectura y flujo.  |
 
@@ -61,6 +62,7 @@ Todas están documentadas en [`server/.env.example`](server/.env.example). `serv
 | `LOGIN_*`, `API_RATE_LIMIT`                          | Bloqueo de cuenta por intentos fallidos y límites de peticiones por IP.                                    |
 | `SITE_URL`                                           | Dominio público (https://…) para el sitemap, el canonical y Open Graph.                                    |
 | `CORS_ORIGINS`, `TRUST_PROXY`, `CSP_IMG_HOSTS`       | Orígenes extra permitidos, proxy delante del servidor y hosts de imágenes para la CSP.                     |
+| `EDGE_PROXY_SECRET`                                  | Solo detrás de Cloudflare Pages: sin este secreto, el servidor responde 404 (salvo `/api/health`).         |
 | `STORAGE_DRIVER`, `UPLOAD_*`, `SUPABASE_*`           | Dónde se guardan las imágenes: disco local en desarrollo, Supabase Storage en producción.                  |
 | `SEED_ADMIN_*`, `SEED_EDITOR_*`                      | Cuentas iniciales que crea `npm run seed`.                                                                 |
 | `BACKUP_DIR`, `BACKUP_INTERVAL_HOURS`, `BACKUP_KEEP` | Respaldos locales automáticos.                                                                             |
@@ -93,18 +95,18 @@ La ruta oculta evita que el panel aparezca a simple vista, pero **no es la segur
 
 Todas las respuestas de error tienen la forma `{ error, code, campos? }`. `error` es un mensaje para la persona que usa el sitio y `campos` indica el error de cada input del formulario.
 
-**Pública** (`/api/public`, solo lectura, caché de 60 s): `GET /site`, `GET /pages/:page` (`inicio`, `nosotros`, `noticias` o `contacto`), `GET /news?pagina&porPagina&categoria`, `GET /news/:slug`, `GET /team` y `GET /collaborators`, más `POST /contact` (limitado a 5 por hora por IP y con campo trampa contra bots). Solo entrega lo visible y lo publicado.
+**Pública** (`/api/public`, solo lectura, caché de 60 s): `GET /site`, `GET /pages/:page` (`inicio`, `nosotros`, `noticias` o `contacto`), `GET /news?pagina&porPagina&categoria`, `GET /news/:slug`, `GET /team`, `GET /collaborators` y `GET /beacons` (el catálogo de la app, ver «Contrato con la app Android»), más `POST /contact` (limitado a 5 por hora por IP y con campo trampa contra bots). Solo entrega lo visible y lo publicado.
 
 **Panel** (`/api/admin`, con sesión y CSRF):
 
-| Módulo                                                  | Comunicación | Editor                                                                | Administrador                                                  |
-| ------------------------------------------------------- | ------------ | --------------------------------------------------------------------- | -------------------------------------------------------------- |
-| Noticias                                                | —            | Crea, edita sus borradores, los envía a revisión y ve la vista previa | Además publica, devuelve con observaciones, despublica y borra |
-| Secciones                                               | —            | Edita borradores y los envía a revisión                               | Además publica, devuelve, oculta y ordena                      |
-| Imágenes                                                | —            | Sube y lista                                                          | Además borra (si no están en uso)                              |
-| Equipo, colaboradores, identidad visual y pie de página | —            | Todo                                                                  | Todo                                                           |
-| Mensajes, datos de contacto y redes                     | Todo         | Todo                                                                  | Todo                                                           |
-| Beacons, usuarios y bitácora                            | —            | —                                                                     | Todo                                                           |
+| Módulo                                                             | Comunicación | Editor                                                                | Administrador                                                  |
+| ------------------------------------------------------------------ | ------------ | --------------------------------------------------------------------- | -------------------------------------------------------------- |
+| Noticias                                                           | —            | Crea, edita sus borradores, los envía a revisión y ve la vista previa | Además publica, devuelve con observaciones, despublica y borra |
+| Secciones                                                          | —            | Edita borradores y los envía a revisión                               | Además publica, devuelve, oculta y ordena                      |
+| Imágenes                                                           | —            | Sube y lista                                                          | Además borra (si no están en uso)                              |
+| Equipo, colaboradores, respaldos, identidad visual y pie de página | —            | Todo                                                                  | Todo                                                           |
+| Mensajes, datos de contacto y redes                                | Todo         | Todo                                                                  | Todo                                                           |
+| Beacons, usuarios y bitácora                                       | —            | —                                                                     | Todo                                                           |
 
 Garantías que impone el servidor, no solo la interfaz:
 
@@ -127,7 +129,9 @@ Garantías que impone el servidor, no solo la interfaz:
 - **Nada del panel llega al bundle público.** ESLint prohíbe que `src/public` y `src/shared` importen código de `src/admin`, y `scripts/check-public-bundle.mjs` (corre en cada build y en CI) falla si `dist/public` contiene el marcador del panel, `/api/admin`, la ruta secreta o source maps.
 - **La ruta secreta no está en ningún build:** el del panel usa rutas relativas y Express inyecta `<base href>` al servirlo.
 - **Tema:** los colores y las fuentes son variables CSS. El servidor inyecta los de Identidad visual en el HTML antes del primer pintado. `theme-default.css` es el respaldo, generado desde el servidor con `npm run gen:theme -w server`, y un test verifica que esté sincronizado. La paleta por defecto es la misma de la app Android (`SignalColors.kt`): azul de marca `#004AAD`, tinta ciruela `#3D1534` y fondo crema `#FFF4EB`, con su versión oscura; la correspondencia color por color está en [`CLAUDE.md`](CLAUDE.md).
-- **Preferencias de la persona:** tema claro, oscuro o del sistema, y tamaño de texto (A−/A+ de 87,5 % a 150 %). Se guardan en el navegador y se aplican antes de pintar con `theme-init.js`, un script externo porque la CSP no permite scripts inline.
+- **Preferencias de la persona:** tema claro, oscuro o del sistema y, en el sitio, **Zoom− / Zoom+** con el porcentaje a la vista (80 % a 200 %): agranda toda la página, letras e imágenes, y el contenido se reacomoda sin scroll horizontal (`zoom` del `<body>`). El panel usa en su lugar **A− / A+** (texto de 87,5 % a 150 %). Se guardan en el navegador y se aplican antes de pintar con `theme-init.js`, un script externo porque la CSP no permite scripts inline; como sitio y panel comparten dominio, cada uno aplica solo su preferencia (`data-app="panel"` en `admin.html`).
+- **Audiodescriptor:** en el panel (Contenido → Audiodescriptor) se eligen el idioma, la voz y la velocidad, con un texto de prueba. Las voces son las del dispositivo de cada visitante: si no tiene la elegida, se usa la mejor para el idioma.
+- **Voz:** «Escuchar esta sección» lee la audiodescripción de las secciones principales (Portada, Qué es SIGNAL, Nosotros en el inicio, Quiénes somos y Contacto), editable en el panel. Cada imagen con texto alternativo tiene un botón para escucharlo. Usa la voz del dispositivo (Web Speech API, `es-CL`); suena una lectura a la vez y sin voz en el navegador los botones no aparecen.
 - **Componentes accesibles** en `src/shared/ui`: botones con estado de carga, campos con label y error asociados, resumen de errores, avisos con regiones `aria-live`, diálogo de confirmación sobre `<dialog>` nativo, y estados de carga, vacío y error. Cada uno tiene tests con axe-core.
 - **Animaciones** de 150 a 300 ms. Con `prefers-reduced-motion` se desactivan todas.
 - **Fuentes autoalojadas** (Atkinson Hyperlegible Next y Bricolage Grotesque): sin dependencia de Google Fonts y disponibles offline.
@@ -137,7 +141,7 @@ Garantías que impone el servidor, no solo la interfaz:
 Express sirve la landing en sus rutas: `/`, `/nosotros`, `/noticias`, `/noticias/:slug` y `/contacto`.
 
 - **Datos incluidos en el HTML:** cada página sale con su `<title>`, meta description, Open Graph, canonical, el tema de Identidad visual y los datos iniciales en `<script type="application/json" id="datos-iniciales">`. El primer render no espera a la API, y el JSON va escapado para que ningún texto pueda cerrar el `<script>`.
-- **Sin contenido fijo en el código:** secciones (incluida «Nosotros» en el inicio, con fotos del equipo), textos, noticias, equipo, colaboradores, logos, colores, pie de página y contacto salen de la base de datos. Lo publicado en el panel se ve al recargar, sin redeploy.
+- **Sin contenido fijo en el código:** secciones (incluida «Nosotros» en el inicio, con fotos del equipo), textos, noticias, equipo, colaboradores, respaldos, logos, colores, pie de página y contacto salen de la base de datos. Lo publicado en el panel se ve al recargar, sin redeploy.
 - **404 real:** cualquier otra ruta (incluidas `/admin` o `/login`) responde 404 con la página «no encontrada», también cuando la base de datos no responde. Una noticia en borrador o inexistente también es 404.
 - **SEO:** `/robots.txt` y `/sitemap.xml` se generan en el servidor. Solo listan lo publicado y no mencionan el panel.
 - **Accesibilidad:**
@@ -157,18 +161,18 @@ Express sirve la landing en sus rutas: `/`, `/nosotros`, `/noticias`, `/noticias
 
 Se abre en `/<ADMIN_PATH>` (en desarrollo: `npm run dev:admin`, en http://localhost:5174/admin.html, con el servidor corriendo). El menú lateral se ordena en seis secciones (**Resumen, Contenido, Comunicación, CMS, Usuarios y Bitácora**), muestra solo lo que permite el rol y en el teléfono pasa a un cajón modal.
 
-| Sección      | Vista                                                    | Comunicación                                                      | Editor                                                           | Administrador                                                           |
-| ------------ | -------------------------------------------------------- | ----------------------------------------------------------------- | ---------------------------------------------------------------- | ----------------------------------------------------------------------- |
-| Resumen      | Resumen                                                  | Mensajes sin leer                                                 | Sus borradores, sus notas en revisión y los mensajes sin leer    | Notas por revisar, secciones pendientes, mensajes y beacons incompletos |
-| Contenido    | Secciones                                                | —                                                                 | Edita borradores con vista previa en vivo y los envía a revisión | Además publica, muestra u oculta y reordena                             |
-| Contenido    | Noticias                                                 | —                                                                 | Escribe, guarda y envía a revisión                               | Además publica, devuelve con observaciones, despublica y borra          |
-| Contenido    | Equipo y colaboradores, Identidad visual y Pie de página | —                                                                 | Todo                                                             | Todo                                                                    |
-| Comunicación | Mensajes                                                 | Lee, marca como leído, responde por Gmail y borra                 | Todo                                                             | Todo                                                                    |
-| Comunicación | Contacto y redes                                         | Teléfono, correo, dirección, redes y declaración de accesibilidad | Lo edita en Pie de página                                        | Lo edita en Pie de página                                               |
-| CMS          | Beacons                                                  | —                                                                 | —                                                                | Todo                                                                    |
-| Usuarios     | Usuarios                                                 | —                                                                 | —                                                                | Crea, edita, desactiva, restablece contraseñas y elimina cuentas        |
-| Bitácora     | Bitácora                                                 | —                                                                 | —                                                                | Todo, filtrable por área (sesiones, contenido, CMS, usuarios)           |
-| (todas)      | Mi perfil (chip con el nombre, arriba a la derecha)      | Cambia su nombre y su contraseña                                  | Cambia su nombre y su contraseña                                 | Además, accesos para configurar el sitio                                |
+| Sección      | Vista                                                                                | Comunicación                                                                                                                  | Editor                                                           | Administrador                                                           |
+| ------------ | ------------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------- | ----------------------------------------------------------------------- |
+| Resumen      | Resumen                                                                              | Mensajes sin leer                                                                                                             | Sus borradores, sus notas en revisión y los mensajes sin leer    | Notas por revisar, secciones pendientes, mensajes y beacons incompletos |
+| Contenido    | Secciones                                                                            | —                                                                                                                             | Edita borradores con vista previa en vivo y los envía a revisión | Además publica, muestra u oculta y reordena                             |
+| Contenido    | Noticias                                                                             | —                                                                                                                             | Escribe, guarda y envía a revisión                               | Además publica, devuelve con observaciones, despublica y borra          |
+| Contenido    | Equipo y colaboradores, Respaldos, Identidad visual, Pie de página y Audiodescriptor | —                                                                                                                             | Todo                                                             | Todo                                                                    |
+| Comunicación | Mensajes                                                                             | Lee, marca como leído, responde (Gmail con la cuenta del proyecto, Outlook, la app de correo o copiando la dirección) y borra | Todo                                                             | Todo                                                                    |
+| Comunicación | Contacto y redes                                                                     | Teléfono, correo, dirección, redes y declaración de accesibilidad                                                             | Lo edita en Pie de página                                        | Lo edita en Pie de página                                               |
+| CMS          | Beacons                                                                              | —                                                                                                                             | —                                                                | Todo                                                                    |
+| Usuarios     | Usuarios                                                                             | —                                                                                                                             | —                                                                | Crea, edita, desactiva, restablece contraseñas y elimina cuentas        |
+| Bitácora     | Bitácora                                                                             | —                                                                                                                             | —                                                                | Todo, filtrable por área (sesiones, contenido, CMS, usuarios)           |
+| (todas)      | Mi perfil (chip con el nombre, arriba a la derecha)                                  | Cambia su nombre y su contraseña                                                                                              | Cambia su nombre y su contraseña                                 | Además, accesos para configurar el sitio                                |
 
 Si alguien entra por URL a una vista que su rol no incluye, ve «sin acceso», y la API responde 403.
 
@@ -180,8 +184,17 @@ Si alguien entra por URL a una vista que su rol no incluye, ve «sin acceso», y
 - **No se pierde lo escrito:** las noticias guardan una copia local mientras se editan (y ofrecen recuperarla) y el panel avisa antes de salir con cambios sin guardar.
 - **Revisión de accesibilidad** en cada nota: lo que impide publicar y las recomendaciones. La vista previa usa los mismos componentes que la landing.
 - **Identidad visual:** paleta clara y oscura con verificación de contraste WCAG en vivo y vista previa de ambos temas. Una paleta que no cumple no se guarda.
-- **Pie de página:** descripción, hasta 3 columnas de enlaces, qué bloques se muestran (contacto, redes, accesibilidad), texto legal, y los datos de contacto y redes. Cada red se muestra con su ícono (Instagram, Facebook, X, LinkedIn, YouTube, TikTok, WhatsApp, GitHub, Telegram; el resto, uno de web).
-- **Encuadre de imágenes:** la foto del equipo (cuadrada) y la portada de las noticias (16:9) se pueden encuadrar en su marco. Se abre sola si la imagen no calza; se arrastra o se ajusta con controles deslizantes (alternativa sin arrastre, WCAG 2.5.7). El servidor recorta con `sharp` y crea una imagen nueva: la original queda en la biblioteca.
+- **Favicon:** el panel usa el mismo ícono que la landing, o el de Identidad visual si se cargó uno.
+- **Pie de página:** logo (sin él, el isotipo vectorial con los colores del pie) e imagen bajo la descripción, ambos con texto alternativo o marcados como decorativos; descripción, hasta 3 columnas de enlaces, qué bloques se muestran (contacto, redes, accesibilidad), texto legal, y los datos de contacto y redes. Cada red se muestra con su ícono (Instagram, Facebook, X, LinkedIn, YouTube, TikTok, WhatsApp, GitHub, Telegram; el resto, uno de web).
+- **Imágenes en las secciones:**
+  - portada, encabezados de sección, cada paso, objetivo y proyección, «Quiénes somos», «Nosotros» del inicio y los bloques **Imagen y texto** (uno en Inicio y otro en Nosotros, nacen ocultos);
+  - cada imagen exige texto alternativo o se marca como decorativa;
+  - el servidor guarda la URL y el tamaño leídos de la biblioteca (`server/src/content/section-images.ts`), así una imagen usada en una sección, aunque sea en un borrador, no se puede borrar;
+  - las listas son flexibles: de 1 a 6 pasos, y los botones de la portada y de «Nosotros» son opcionales;
+  - una sección nueva del catálogo se crea sola, oculta, al arrancar el servidor sobre una base existente.
+- **Equipo:** cada persona tiene área, formación y un correo público opcionales. En **Nosotros**, tarjetas grandes con toda la información: en escritorio caben hasta 5 por fila (el equipo completo, sin flechas, con una versión compacta de la tarjeta); si no caben, un carrusel que avanza solo cada 10 s (con botón para pausarlo; se detiene al apuntar o enfocar y no corre con «reducir movimiento»): también se recorre con flechas con forma de beacon, deslizando o con el teclado. En el **inicio**, una fila de círculos: al apuntar, el círculo crece hasta ser una card; con teclado o un toque se abre igual y Escape la cierra (WCAG 1.4.13). Al editar a una persona, el panel muestra en vivo el círculo, la card y la tarjeta, y permite ajustar el encuadre de la foto (enfoque y zoom) sin recortar el archivo.
+- **Respaldos:** las instituciones que financian o patrocinan el proyecto (por ejemplo, la universidad y el programa que lo financia). No son colaboradores: tienen su propia vista y tabla (`backers`). Cada una lleva nombre, tipo de respaldo («Financia», «Patrocina»), una mención opcional («Proyecto financiado por…»), sitio web y logo con texto alternativo. Se muestran al inicio del pie de todas las páginas, bajo «Con el respaldo de», con los logos sobre placas blancas del mismo alto (se leen en claro y oscuro y ninguno pesa más que otro, como piden los manuales de marca institucionales); llegan con los datos del sitio (`GET /api/public/site`, campo `respaldos`).
+- **Encuadre de imágenes:** la foto del equipo (cuadrada), la portada de las noticias (16:9) y las imágenes de las secciones (en la proporción de su marco) se pueden encuadrar. Se abre sola si la imagen no calza; se arrastra o se ajusta con controles deslizantes (alternativa sin arrastre, WCAG 2.5.7). El servidor recorta con `sharp` y crea una imagen nueva: la original queda en la biblioteca.
 - **Beacons:** el CMS anterior integrado como módulo, con fichas completas e incompletas, conteo por ubicación, búsqueda, cambio de major/minor en un solo paso y botón para escuchar la descripción como la leerá la app.
 - **Usuarios:** cuentas con contraseña temporal que se muestra una sola vez; desactivar o restablecer la contraseña cierra las sesiones de esa persona. Solo administración gestiona cuentas. Eliminar se permite si la cuenta no tiene noticias, borradores, imágenes ni beacons a su nombre (si los tiene, se desactiva para conservar la autoría), nunca la propia ni la última administradora.
 
@@ -216,7 +229,9 @@ El servidor también hace un respaldo cada `BACKUP_INTERVAL_HOURS` horas. Los re
 
 - **No se puede cambiar** sin actualizar la app. `test/legacy-beacons.test.ts` comprueba que cada entrada del `beacons.json` original se responde de forma idéntica.
 - Si la base de datos no responde, el servidor contesta desde el snapshot local (`BEACON_SNAPSHOT_PATH`), que se actualiza al arrancar, al importar y en cada respaldo.
-- El listado (`GET /beacons`) y la escritura sin autenticación (`POST` y `DELETE`) se eliminaron. La edición está en el panel (vista Beacons, `/api/admin/beacons`), solo para administradores.
+- **Sin conexión:** la app guarda en el teléfono el catálogo completo de fichas y responde cada beacon desde ahí, sin esperar a la red. Lo sincroniza con `GET /api/public/beacons` (solo lectura: `{ version, beacons: [{ major, minor, titulo, descripcion, ubicacion }] }`, con `ETag`; si la versión no cambió responde `304`) al abrirse, cada hora y cuando detecta un beacon que no tiene. Si la base no responde, el catálogo sale del snapshot. La primera vez usa la copia incluida en la APK (`BeaconsAndroid/app/src/main/assets/catalogo-beacons.json`), y si la información tiene más de 7 días sin confirmarse, la pantalla principal lo avisa.
+- **Antes de cada APK de release**, actualiza la copia incluida con `npm run catalogo:app` (la descarga de producción; con `-- http://localhost:3000`, del servidor local).
+- El listado en `GET /beacons` y la escritura sin autenticación (`POST` y `DELETE`) se eliminaron. La edición está en el panel (vista Beacons, `/api/admin/beacons`), solo para administradores.
 - El servidor anterior (`BeaconsAndroid/server/`) y el CMS anterior (`cms/`) se eliminaron. Los datos históricos quedan en `server/prisma/data/beacons.json`.
 
 ## Tests y calidad
@@ -246,32 +261,24 @@ El CI (`.github/workflows/ci.yml`) tiene tres jobs: chequeos y tests (con Postgr
 
 ## Despliegue
 
-**Requisitos:** un proyecto de Supabase, un servidor con Node.js 22.12 o superior (VPS, Render, Railway, Fly…) y **HTTPS**, porque las cookies de sesión son `Secure`. Debe correr **una sola instancia**: los límites de intentos viven en memoria.
+**Producción se despliega siempre desde `main`**, por pull request desde `develop`. Guía paso a paso: [`docs/cloudflare-pages.md`](docs/cloudflare-pages.md).
 
-1. **Supabase:** copia las cadenas de conexión (ver [Supabase](#supabase)) y crea un bucket **público** de Storage para las imágenes (por defecto `media`).
-2. **Variables de producción** en `server/.env` o en el panel de la plataforma:
-   - `NODE_ENV=production` y `COOKIE_SECURE=true` (el servidor no arranca sin ella en producción);
-   - `ADMIN_PATH`, `JWT_SECRET` y `CSRF_SECRET` **nuevos**, generados con `npm run secret` (nunca los de desarrollo);
-   - `DATABASE_URL` y `DIRECT_URL` de Supabase, y `STORAGE_DRIVER=supabase` con `SUPABASE_URL` y `SUPABASE_SERVICE_ROLE_KEY`;
-   - `SITE_URL=https://tu-dominio`, y `TRUST_PROXY=1` si hay un proxy o balanceador delante (casi siempre);
-   - `SEED_*` con los correos reales y contraseñas temporales.
-3. **Build y base de datos:**
-   ```bash
-   npm ci
-   npm run build            # frontends + verificación del bundle + servidor (server/dist)
-   npm run db:deploy        # migraciones (usa DIRECT_URL)
-   npm run import:beacons   # solo la primera vez
-   npm run seed             # idempotente
-   npm start                # node server/dist/index.js
-   ```
-   Usa un gestor de procesos (systemd, pm2 o el de la plataforma) que reinicie el servidor si se cae.
-4. **HTTPS:** si usas un VPS, pon Nginx o Caddy delante con un certificado de Let's Encrypt, reenviando a `127.0.0.1:3000` con la cabecera `X-Forwarded-Proto`. Las plataformas como Render o Railway ya entregan HTTPS.
-5. **App Android:** el contrato no cambia, pero su `BASE_URL` (`RetrofitClient.kt`) hoy apunta a una IP de la red local por HTTP. Para usar el servidor desplegado hay que cambiarla a `https://tu-dominio/` y recompilar la app. Con HTTPS ya no hace falta la excepción de `network_security_config.xml`.
-6. **Después de desplegar:**
-   - entra en `https://tu-dominio/<ADMIN_PATH>` con cada cuenta del seed y crea la contraseña definitiva;
-   - comprueba que `/admin` responde 404 y que `https://tu-dominio/beacons/1/1` responde la ficha;
-   - copia `server/backups/` fuera del servidor periódicamente (Supabase tiene además sus propios respaldos).
-7. **Actualizar:** `git pull && npm ci && npm run build && npm run db:deploy` y reinicia el proceso.
+| Pieza               | Servicio                   | Qué hace                                                                                                                            |
+| ------------------- | -------------------------- | ----------------------------------------------------------------------------------------------------------------------------------- |
+| Dominio y estáticos | **Cloudflare Pages**       | HTTPS y CDN para la landing. Su Function reenvía al servidor el HTML, `/api`, `/beacons` y el panel.                                |
+| Servidor Express    | **Render** (`render.yaml`) | Plan gratis y una sola instancia (los límites de intentos viven en memoria). Se suspende sin uso: un monitor lo mantiene despierto. |
+| Base e imágenes     | **Supabase**               | PostgreSQL por los poolers y el bucket público `media`. Solo el servidor se conecta.                                                |
+
+En resumen:
+
+1. **Supabase:** cadenas de los poolers, bucket `media` y, una vez, `npm run db:deploy`, `npm run import:beacons` y `npm run seed` desde tu computador ([`docs/supabase.md`](docs/supabase.md)).
+2. **Secretos:** `npm run secret`; en producción se usan `ADMIN_PATH` y `EDGE_PROXY_SECRET` **nuevos**. `JWT_SECRET` y `CSRF_SECRET` los genera Render.
+3. **Render:** New → Blueprint con este repositorio (branch `main`). Compila con `npm ci --include=dev && npm run build`, migra con `npm run db:deploy` al final del build y solo despliega si el CI pasó. Sin disco, los respaldos se hacen con `npm run backup` desde tu computador.
+4. **Cloudflare Pages:** conectar el repositorio con build `npm run build:pages`, salida `apps/web/dist/public`, y las variables `BACKEND_ORIGIN` (URL de Render) y `EDGE_PROXY_SECRET` (el mismo de Render). Luego, el dominio propio y `SITE_URL` en Render.
+5. **App Android:** ejecuta `npm run catalogo:app` para actualizar la copia del catálogo que viaja en la APK. La URL del servidor depende del tipo de build y se define en `BeaconsAndroid/gradle.properties`: el **release** usa `signal.urlProduccion` (`https://proyectosignal.pages.dev/`, solo HTTPS) y el **debug**, `signal.urlDesarrollo` (el servidor local por HTTP). Siempre el dominio de Pages, nunca la URL ni las IPs de Render: el servidor rechaza lo que no llega por Cloudflare. Una URL sin `/` final, o sin `https://` en release, corta la compilación. El contrato no cambia.
+6. **Después de desplegar:** entra a `https://tu-dominio/<ADMIN_PATH>` con cada cuenta del seed y crea la contraseña definitiva; comprueba que `/admin` responde 404 y que `/beacons/1/1` responde la ficha.
+
+**Sin Cloudflare (VPS propio):** `npm ci && npm run build && npm run db:deploy && npm start` detrás de Nginx o Caddy con HTTPS, reenviando a `127.0.0.1:3000` con `X-Forwarded-Proto`, `TRUST_PROXY=1` y sin `EDGE_PROXY_SECRET`. Las variables de producción están en [`docs/configurar-env.md`](docs/configurar-env.md#10-en-producción).
 
 ## Criterios de aceptación
 
@@ -300,4 +307,4 @@ El CI (`.github/workflows/ci.yml`) tiene tres jobs: chequeos y tests (con Postgr
 - ajustar el diseño cuando llegue la propuesta visual;
 - un ícono cuadrado de la PWA;
 - la revisión con NVDA y TalkBack;
-- conectar Supabase en producción.
+- desplegar en Supabase, Render y Cloudflare Pages siguiendo [`docs/cloudflare-pages.md`](docs/cloudflare-pages.md).

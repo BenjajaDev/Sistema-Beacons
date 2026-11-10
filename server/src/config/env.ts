@@ -1,5 +1,6 @@
 import path from "node:path";
 import { z } from "zod";
+import { normalizarUrlSupabase, problemaDeClaveDeServidor } from "./supabase-key.js";
 
 // Raíz del paquete del servidor (server/). Las rutas relativas del .env se
 // resuelven desde aquí, no desde el directorio de trabajo.
@@ -62,13 +63,20 @@ const serverEnvSchema = z
     CORS_ORIGINS: lista,
     TRUST_PROXY: z.string().default("false"),
     CSP_IMG_HOSTS: lista,
+    // Secreto compartido con la Function de Cloudflare Pages (ver docs/cloudflare-pages.md).
+    // Con él, el servidor rechaza lo que no pase por Cloudflare.
+    EDGE_PROXY_SECRET: secreto("EDGE_PROXY_SECRET").optional(),
 
     // --- Imágenes subidas ---
     STORAGE_DRIVER: z.enum(["local", "supabase"]).default("local"),
     UPLOAD_DIR: z.string().default("uploads"),
     UPLOAD_MAX_MB: z.coerce.number().min(0.1).max(50).default(5),
-    SUPABASE_URL: z.url().optional(),
-    SUPABASE_SERVICE_ROLE_KEY: z.string().min(20).optional(),
+    // Un error en estas dos no impide arrancar: sin imágenes, el sitio y la app
+    // Android siguen funcionando. Ver avisos en loadServerEnv.
+    SUPABASE_URL: z
+      .url("SUPABASE_URL debe ser una URL completa, por ejemplo https://<ref>.supabase.co.")
+      .optional(),
+    SUPABASE_SERVICE_ROLE_KEY: z.string().trim().min(20).optional(),
     SUPABASE_BUCKET: z.string().default("media"),
 
     // --- Respaldos ---
@@ -93,7 +101,14 @@ const serverEnvSchema = z
   .refine((e) => e.JWT_SECRET !== e.CSRF_SECRET, {
     path: ["CSRF_SECRET"],
     message: "CSRF_SECRET debe ser distinto de JWT_SECRET.",
-  });
+  })
+  .refine(
+    (e) => !e.EDGE_PROXY_SECRET || ![e.JWT_SECRET, e.CSRF_SECRET].includes(e.EDGE_PROXY_SECRET),
+    {
+      path: ["EDGE_PROXY_SECRET"],
+      message: "EDGE_PROXY_SECRET debe ser distinto de JWT_SECRET y de CSRF_SECRET.",
+    },
+  );
 
 type ParsedEnv = z.infer<typeof serverEnvSchema>;
 
@@ -108,6 +123,9 @@ export type ServerEnv = ParsedEnv & {
   uploadDir: string;
   // Hosts de imágenes para la CSP, incluido Supabase Storage si se usa.
   imgHosts: string[];
+  // Configuración corregida o que impide una función (no el arranque). Se
+  // registran al iniciar; nunca incluyen secretos.
+  avisos: string[];
 };
 
 function parseTrustProxy(valor: string): boolean | number | string {
@@ -115,6 +133,26 @@ function parseTrustProxy(valor: string): boolean | number | string {
   if (valor === "false") return false;
   if (/^\d+$/.test(valor)) return Number(valor);
   return valor;
+}
+
+// Avisos de Storage: la URL se corrige al origen del proyecto y una clave que no
+// puede subir imágenes se informa (las subidas responderán con el mismo motivo).
+function revisarSupabase(env: ParsedEnv): { url: string | undefined; avisos: string[] } {
+  if (env.STORAGE_DRIVER !== "supabase" || !env.SUPABASE_URL) {
+    return { url: env.SUPABASE_URL, avisos: [] };
+  }
+  const avisos: string[] = [];
+  const url = normalizarUrlSupabase(env.SUPABASE_URL);
+  if (url !== env.SUPABASE_URL) {
+    avisos.push(
+      `SUPABASE_URL debe ser solo el origen del proyecto: se usa ${url}. Corrígela en el entorno (Project Settings → Data API → Project URL).`,
+    );
+  }
+  const problema = env.SUPABASE_SERVICE_ROLE_KEY
+    ? problemaDeClaveDeServidor(env.SUPABASE_SERVICE_ROLE_KEY)
+    : null;
+  if (problema) avisos.push(problema);
+  return { url, avisos };
 }
 
 // Valida el entorno de una vez al arrancar y corta con un mensaje claro si
@@ -127,9 +165,11 @@ export function loadServerEnv(source: NodeJS.ProcessEnv = process.env): ServerEn
       .join("\n");
     throw new Error(`Configuración inválida en server/.env:\n${detalle}`);
   }
-  const env = parsed.data;
+  const supabase = revisarSupabase(parsed.data);
+  const env = { ...parsed.data, SUPABASE_URL: supabase.url };
   return {
     ...env,
+    avisos: supabase.avisos,
     isProduction: env.NODE_ENV === "production",
     adminDistDir: path.resolve(SERVER_ROOT, env.ADMIN_DIST_DIR),
     publicDistDir: path.resolve(SERVER_ROOT, env.PUBLIC_DIST_DIR),

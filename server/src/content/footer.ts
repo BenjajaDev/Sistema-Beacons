@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { imagenSchema } from "./image-schema.js";
 
 // Contenido editable del pie de página. Los datos de contacto, las redes y la
 // declaración de accesibilidad siguen en sus columnas de SiteSettings; aquí van
@@ -16,6 +17,10 @@ const href = z
 const texto = (max: number, mensaje: string) => z.string().trim().min(1, mensaje).max(max);
 
 export const footerSchema = z.object({
+  // Logo sobre el nombre del sitio (sin él, el isotipo vectorial) e imagen bajo
+  // la descripción. El servidor completa su URL y tamaño (section-images.ts).
+  logo: imagenSchema.optional(),
+  imagen: imagenSchema.optional(),
   descripcion: z.string().trim().max(300).optional(),
   columnas: z
     .array(
@@ -35,6 +40,18 @@ export const footerSchema = z.object({
 });
 
 export type Footer = z.infer<typeof footerSchema>;
+
+// Imagen del pie tal como queda guardada: además de lo que envía el panel, la
+// URL y el tamaño que agrega el servidor.
+type ImagenGuardada = z.infer<typeof imagenSchema> & {
+  url?: string;
+  width?: number | null;
+  height?: number | null;
+};
+export type FooterGuardado = Omit<Footer, "logo" | "imagen"> & {
+  logo?: ImagenGuardada;
+  imagen?: ImagenGuardada;
+};
 
 export const DEFAULT_FOOTER: Footer = {
   descripcion:
@@ -56,7 +73,14 @@ export const DEFAULT_FOOTER: Footer = {
 };
 
 // Lo guardado en la base, o el pie por defecto si no es válido (no debería pasar).
-export function parseFooter(valor: unknown): Footer {
+// El esquema descarta la URL y el tamaño de las imágenes: se recuperan de lo guardado.
+export function parseFooter(valor: unknown): FooterGuardado {
   const r = footerSchema.safeParse(valor);
-  return r.success ? r.data : DEFAULT_FOOTER;
+  if (!r.success) return DEFAULT_FOOTER;
+  const guardado = valor as Partial<Record<"logo" | "imagen", ImagenGuardada>>;
+  return {
+    ...r.data,
+    ...(r.data.logo && { logo: { ...guardado.logo, ...r.data.logo } }),
+    ...(r.data.imagen && { imagen: { ...guardado.imagen, ...r.data.imagen } }),
+  };
 }

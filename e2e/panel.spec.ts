@@ -35,17 +35,26 @@ test("el editor solo ve lo suyo y escribe una nota que envía a revisión", asyn
     "Secciones",
     "Noticias",
     "Equipo y colaboradores",
+    "Respaldos",
     "Identidad visual",
     "Pie de página",
+    "Audiodescriptor",
     /^Mensajes/, // con el contador de no leídos, si hay mensajes
   ]);
   await sinViolaciones(page, "resumen (editor)");
+  await page.getByRole("link", { name: "Equipo y colaboradores" }).click();
+  await expect(
+    page.getByRole("heading", { level: 1, name: "Equipo y colaboradores" }),
+  ).toBeVisible();
+  await expect(page.getByText("Ana Rojas").first()).toBeVisible();
 
   // Por URL tampoco: la vista dice «sin acceso» (y la API respondería 403).
-  await page.goto(`${PANEL}/beacons`);
-  await expect(
-    page.getByRole("heading", { level: 1, name: "No tienes acceso a esta sección" }),
-  ).toBeVisible();
+  for (const ruta of ["/beacons", "/usuarios", "/bitacora"]) {
+    await page.goto(`${PANEL}${ruta}`);
+    await expect(
+      page.getByRole("heading", { level: 1, name: "No tienes acceso a esta sección" }),
+    ).toBeVisible();
+  }
   expect((await page.request.get("/api/admin/beacons")).status()).toBe(403);
 
   await page.goto(`${PANEL}/noticias/nueva`);
@@ -156,6 +165,65 @@ test("agregar una persona con foto encuadrada no cierra el formulario", async ({
   await expect(page.getByText("Ana Prueba", { exact: true }).first()).toBeVisible();
 });
 
+test("el editor agrega un respaldo y aparece en el pie, aparte de los colaboradores", async ({
+  page,
+}) => {
+  await iniciarSesion(page, "editor");
+  await page.getByRole("link", { name: "Respaldos" }).click();
+  await expect(page.getByRole("heading", { level: 1, name: "Respaldos" })).toBeVisible();
+  await page.getByRole("button", { name: "Agregar respaldo" }).first().click();
+  const dialogo = page.getByRole("dialog");
+  // El tipo de respaldo es obligatorio y su error queda junto al campo.
+  await dialogo.getByLabel("Nombre de la institución").fill("Conocimientos 2030");
+  await dialogo.getByRole("button", { name: "Guardar" }).click();
+  await expect(dialogo.getByText(/Escribe el tipo de respaldo/)).toBeVisible();
+  await dialogo.getByLabel("Tipo de respaldo").fill("Financia");
+  await dialogo
+    .getByLabel(/Mención/)
+    .fill("Proyecto financiado por el programa Conocimientos 2030.");
+  await dialogo.getByRole("button", { name: "Guardar" }).click();
+  await expect(page.getByText("Respaldo agregado.")).toBeVisible();
+
+  for (const ruta of ["/", "/contacto"]) {
+    await page.goto(ruta);
+    const pie = page.getByRole("contentinfo");
+    await expect(pie.getByRole("heading", { name: "Con el respaldo de" })).toBeVisible();
+    await expect(pie.getByText("Conocimientos 2030", { exact: true })).toBeVisible();
+    await expect(pie.getByText("Financia", { exact: true })).toBeVisible();
+  }
+  await sinViolaciones(page, "pie con respaldos");
+  expect((await (await page.request.get("/api/public/collaborators")).json()).items).toEqual([]);
+});
+
+test("un mensaje se responde por Gmail, Outlook, la app de correo o copiando la dirección", async ({
+  page,
+}) => {
+  const envio = await page.request.post("/api/public/contact", {
+    data: {
+      nombre: "Persona de la prueba",
+      correo: "persona.prueba@e2e.test",
+      asunto: "Consulta",
+      mensaje: "Quiero saber más sobre SIGNAL.",
+    },
+  });
+  expect(envio.status()).toBe(201);
+  await iniciarSesion(page, "admin");
+  await page.goto(`${PANEL}/contacto`);
+  const responder = page.getByRole("button", { name: "Responder a Persona de la prueba" }).first();
+  await responder.click();
+  await expect(responder).toHaveAttribute("aria-expanded", "true");
+  await expect(page.getByRole("link", { name: /^En Gmail/ }).first()).toHaveAttribute(
+    "href",
+    /mail\.google\.com.*to=persona\.prueba%40e2e\.test&su=Re%3A%20Consulta/,
+  );
+  for (const esquema of ["light", "dark"] as const) {
+    await page.emulateMedia({ colorScheme: esquema });
+    await sinViolaciones(page, `responder un mensaje (${esquema})`);
+  }
+  await page.keyboard.press("Escape");
+  await expect(responder).toHaveAttribute("aria-expanded", "false");
+});
+
 test("todas las vistas del panel pasan axe en claro y oscuro", async ({ page }) => {
   // 10 vistas × 2 temas, con un análisis de axe en cada una.
   test.setTimeout(180_000);
@@ -166,8 +234,10 @@ test("todas las vistas del panel pasan axe en claro y oscuro", async ({ page }) 
     ["/secciones", "Secciones"],
     ["/secciones/hero", "Portada"],
     ["/equipo", "Equipo y colaboradores"],
+    ["/respaldos", "Respaldos"],
     ["/identidad", "Identidad visual"],
     ["/pie", "Pie de página"],
+    ["/audiodescriptor", "Audiodescriptor"],
     ["/contacto", "Mensajes"],
     ["/redes", "Contacto y redes"],
     ["/perfil", "Mi perfil"],

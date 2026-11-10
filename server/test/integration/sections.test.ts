@@ -113,13 +113,17 @@ describe.skipIf(!hasTestDb)("secciones de la landing", () => {
       "nosotros-inicio",
       "objetivos",
       "noticias-recientes",
+      // Oculta: entra en el orden, pero la landing no la muestra.
+      "imagen-texto-inicio",
     ];
     expect(
       (await as(app, admin, "put", "/api/admin/sections/order").send({ page: "INICIO", keys }))
         .status,
     ).toBe(200);
     const res = await request(app).get("/api/public/pages/inicio");
-    expect(res.body.secciones.map((s: { key: string }) => s.key)).toEqual(keys);
+    expect(res.body.secciones.map((s: { key: string }) => s.key)).toEqual(
+      keys.filter((k) => k !== "imagen-texto-inicio"),
+    );
 
     const incompleto = await as(app, admin, "put", "/api/admin/sections/order").send({
       page: "INICIO",

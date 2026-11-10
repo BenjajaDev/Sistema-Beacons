@@ -39,6 +39,7 @@ const ACCIONES: Record<string, string> = {
   SETTINGS_IDENTITY_UPDATE: "Cambió la identidad visual",
   SETTINGS_CONTACT_UPDATE: "Cambió los datos de contacto",
   SETTINGS_FOOTER_UPDATE: "Cambió el pie de página",
+  SETTINGS_VOICE_UPDATE: "Cambió el audiodescriptor",
   MEDIA_UPLOAD: "Subió una imagen",
   MEDIA_DELETE: "Borró una imagen",
   BEACON_CREATE: "Registró un beacon",
@@ -53,6 +54,10 @@ const ACCIONES: Record<string, string> = {
   COLLABORATOR_UPDATE: "Editó un colaborador",
   COLLABORATOR_DELETE: "Quitó un colaborador",
   COLLABORATOR_REORDER: "Reordenó los colaboradores",
+  BACKER_CREATE: "Agregó un respaldo",
+  BACKER_UPDATE: "Editó un respaldo",
+  BACKER_DELETE: "Quitó un respaldo",
+  BACKER_REORDER: "Reordenó los respaldos",
   MESSAGE_DELETE: "Borró un mensaje",
 };
 
@@ -62,7 +67,7 @@ const AREAS = [
   { valor: "sesiones", texto: "Sesiones" },
   { valor: "contenido", texto: "Contenido" },
   { valor: "cms", texto: "CMS" },
-  { valor: "usuarios", texto: "Usuarios" },
+  { valor: "administracion", texto: "Administración" },
 ] as const;
 
 function detalle(e: EntradaBitacora) {

@@ -260,6 +260,10 @@ function Formulario({ ajustes }: { ajustes: Ajustes }) {
             onChange={(e) => setForm({ ...form, tagline: e.target.value })}
             ayuda="Aparece junto al nombre en el título de la página de inicio."
           />
+          <p className="campo__ayuda">
+            Sin logos subidos, el sitio muestra el isotipo de SIGNAL en vectores: se ve nítido en
+            cualquier tamaño y toma los colores de la paleta en tema claro y oscuro.
+          </p>
           <div className="rejilla-panel">
             <SelectorImagen
               etiqueta="Logo para tema claro (opcional)"

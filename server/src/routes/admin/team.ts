@@ -1,12 +1,14 @@
 import type { Response } from "express";
 import { z } from "zod";
 import { ApiError, notFound, parseOrThrow } from "../../http/errors.js";
+import { Prisma } from "../../generated/prisma/client.js";
 import { asJson } from "../../lib/json.js";
 import type { AdminDeps } from "./deps.js";
 import { assertImage, changedFields, idParam, textoOpcional, urlHttps } from "./helpers.js";
 import { CONTENT_ROLES, type AdminRoute } from "./registry.js";
 
-// Equipo y Colaboradores: listas ordenables que solo administra el rol ADMIN.
+// Equipo, Colaboradores y Respaldos: listas ordenables. Son contenido: las editan
+// ADMIN y EDITOR.
 
 const nombre = z.string("Escribe el nombre.").trim().min(1, "Escribe el nombre.").max(120);
 const imagenId = z
@@ -20,14 +22,38 @@ const enlace = z.object({
   etiqueta: z.string().trim().max(80).optional(),
 });
 
+// Encuadre de la foto: punto de enfoque en % y zoom. Lo aplica la landing con
+// object-position y escala, sin recortar el archivo.
+const encuadre = z
+  .object({
+    x: z.number().min(0).max(100),
+    y: z.number().min(0).max(100),
+    zoom: z.number().min(1).max(3),
+  })
+  .nullish()
+  .transform((v) => v ?? null);
+
 // Ojo: en Zod 4, .partial() aplica los .default(). Por eso el esquema base no tiene
 // defaults (sirve para editar) y el de creación los agrega.
 const teamBase = z.object({
   name: nombre,
   position: z.string("Escribe el cargo.").trim().min(1, "Escribe el cargo.").max(120),
   bio: textoOpcional(600),
+  area: textoOpcional(80),
+  education: textoOpcional(120),
+  email: z
+    .string()
+    .trim()
+    .max(200)
+    .refine(
+      (v) => v === "" || z.email().safeParse(v).success,
+      "Escribe un correo válido, por ejemplo nombre@institucion.cl.",
+    )
+    .nullish()
+    .transform((v) => v || null),
   photoId: imagenId,
   photoAlt: textoOpcional(300),
+  photoFrame: encuadre,
   links: z.array(enlace).max(6),
   visible: z.boolean(),
 });
@@ -46,6 +72,17 @@ const collaboratorBase = z.object({
 });
 const collaboratorCreate = collaboratorBase.extend({ visible: z.boolean().default(true) });
 
+// Respaldo institucional: quién financia o patrocina el proyecto. `kind` es el texto
+// que acompaña al logo en el sitio («Financia», «Patrocina»).
+const backerBase = collaboratorBase.extend({
+  kind: z
+    .string("Escribe el tipo de respaldo.")
+    .trim()
+    .min(1, "Escribe el tipo de respaldo, por ejemplo «Financia» o «Patrocina».")
+    .max(60, "El tipo de respaldo admite hasta 60 caracteres."),
+});
+const backerCreate = backerBase.extend({ visible: z.boolean().default(true) });
+
 const orderSchema = z.object({ ids: z.array(z.uuid()).min(1) });
 
 // Operaciones de Prisma que usan ambas colecciones.
@@ -61,6 +98,8 @@ interface Coleccion {
 interface Config {
   ruta: string;
   entidad: string;
+  // Nombre del modelo en el cliente de Prisma (para usarlo dentro de una transacción).
+  delegado: "teamMember" | "collaborator" | "backer";
   accion: string;
   que: string;
   createSchema: z.ZodObject;
@@ -82,9 +121,14 @@ function orderedCollection({ db, audit }: AdminDeps, c: Config): AdminRoute[] {
     res.status(status).json({ item });
   }
 
-  // Los enlaces son JSON; el resto de campos pasa tal cual.
-  const datos = (d: Record<string, unknown>) =>
-    d.links === undefined ? d : { ...d, links: asJson(d.links) };
+  // Los enlaces y el encuadre son JSON; el resto de campos pasa tal cual.
+  const datos = (d: Record<string, unknown>) => ({
+    ...d,
+    ...(d.links !== undefined && { links: asJson(d.links) }),
+    ...(d.photoFrame !== undefined && {
+      photoFrame: d.photoFrame === null ? Prisma.DbNull : asJson(d.photoFrame),
+    }),
+  });
 
   return [
     {
@@ -117,9 +161,7 @@ function orderedCollection({ db, audit }: AdminDeps, c: Config): AdminRoute[] {
           );
         }
         await db.$transaction(async (tx) => {
-          const col = (tx as unknown as Record<string, Coleccion>)[
-            c.entidad === "TeamMember" ? "teamMember" : "collaborator"
-          ]!;
+          const col = tx[c.delegado] as unknown as Coleccion;
           for (const [i, id] of ids.entries()) {
             await col.update({ where: { id }, data: { order: i + 1 } });
           }
@@ -194,6 +236,7 @@ export function teamRoutes(deps: AdminDeps): AdminRoute[] {
     ...orderedCollection(deps, {
       ruta: "/team",
       entidad: "TeamMember",
+      delegado: "teamMember",
       accion: "TEAM_MEMBER",
       que: "La persona",
       createSchema: teamCreate,
@@ -205,11 +248,24 @@ export function teamRoutes(deps: AdminDeps): AdminRoute[] {
     ...orderedCollection(deps, {
       ruta: "/collaborators",
       entidad: "Collaborator",
+      delegado: "collaborator",
       accion: "COLLABORATOR",
       que: "El colaborador",
       createSchema: collaboratorCreate,
       updateSchema: collaboratorBase.partial(),
       coleccion: deps.db.collaborator as unknown as Coleccion,
+      imagen: { id: "logoId", alt: "logoAlt" },
+      include: { logo: IMAGEN },
+    }),
+    ...orderedCollection(deps, {
+      ruta: "/backers",
+      entidad: "Backer",
+      delegado: "backer",
+      accion: "BACKER",
+      que: "El respaldo",
+      createSchema: backerCreate,
+      updateSchema: backerBase.partial(),
+      coleccion: deps.db.backer as unknown as Coleccion,
       imagen: { id: "logoId", alt: "logoAlt" },
       include: { logo: IMAGEN },
     }),

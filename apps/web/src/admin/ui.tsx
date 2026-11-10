@@ -198,6 +198,9 @@ export function SelectorImagen({
   sinAlt = false,
   marco,
   recortarBordes = false,
+  decorativa,
+  idAlt,
+  idBoton,
 }: {
   etiqueta: string;
   imagen: ImagenElegida | null;
@@ -213,6 +216,12 @@ export function SelectorImagen({
   marco?: { proporcion: number; nombre: string };
   // Al subir, el servidor quita el margen de color uniforme que rodea el dibujo (logos).
   recortarBordes?: boolean;
+  // Permite marcarla como decorativa (sin texto alternativo, el lector la omite).
+  decorativa?: { valor: boolean; onCambiar: (valor: boolean) => void };
+  // Ids del texto alternativo y del botón «Subir imagen», para que el resumen de
+  // errores lleve el foco al campo correcto.
+  idAlt?: string;
+  idBoton?: string;
 }) {
   const id = useId();
   const archivo = useRef<HTMLInputElement>(null);
@@ -277,6 +286,7 @@ export function SelectorImagen({
           onChange={(e) => e.target.files?.[0] && subir(e.target.files[0])}
         />
         <Button
+          id={idBoton}
           variante="secundario"
           cargando={subiendo}
           textoCargando="Subiendo…"
@@ -307,8 +317,19 @@ export function SelectorImagen({
         JPG, PNG, WebP o AVIF. Se quitan los datos de ubicación de las fotos.
         {marco && ` En el sitio se muestra en un marco ${marco.nombre}.`}
       </p>
-      {imagen && !sinAlt && (
+      {imagen && decorativa && (
+        <label className="casilla">
+          <input
+            type="checkbox"
+            checked={decorativa.valor}
+            onChange={(e) => decorativa.onCambiar(e.target.checked)}
+          />
+          Es decorativa: no aporta información y el lector de pantalla la omite
+        </label>
+      )}
+      {imagen && !sinAlt && !decorativa?.valor && (
         <TextArea
+          id={idAlt}
           label="Texto alternativo"
           ayuda={ayudaAlt}
           value={alt}
@@ -358,5 +379,71 @@ export function RegionDesplazable({
     <div className="tabla-contenedor" role="region" aria-label={etiqueta} tabIndex={0}>
       {children}
     </div>
+  );
+}
+
+// Imagen tal como la guarda el servidor dentro de un JSON (secciones y pie; ver
+// server/src/content/section-images.ts): id, URL, texto alternativo y si es decorativa.
+export interface ImagenValor {
+  mediaId: string;
+  url: string;
+  alt: string;
+  decorativa: boolean;
+  width?: number | null;
+  height?: number | null;
+}
+
+// SelectorImagen para una ImagenValor, con la opción «decorativa».
+export function CampoImagen({
+  etiqueta,
+  marco,
+  valor,
+  onCambiar,
+  idAlt,
+  idBoton,
+  errorAlt,
+  errorImagen,
+  ayudaAlt,
+}: {
+  etiqueta: string;
+  marco?: { proporcion: number; nombre: string };
+  valor: ImagenValor | undefined;
+  onCambiar: (v: ImagenValor | undefined) => void;
+  idAlt: string;
+  idBoton: string;
+  errorAlt?: string;
+  errorImagen?: string;
+  ayudaAlt?: string;
+}) {
+  return (
+    <SelectorImagen
+      etiqueta={etiqueta}
+      marco={marco}
+      imagen={valor ? { id: valor.mediaId, url: valor.url } : null}
+      alt={valor?.alt ?? ""}
+      onCambiar={(img, alt) =>
+        onCambiar(
+          img
+            ? {
+                mediaId: img.id,
+                url: img.url,
+                alt,
+                decorativa: valor?.mediaId === img.id ? valor.decorativa : false,
+              }
+            : undefined,
+        )
+      }
+      decorativa={
+        valor && {
+          valor: valor.decorativa,
+          onCambiar: (decorativa) => onCambiar({ ...valor, decorativa }),
+        }
+      }
+      idAlt={idAlt}
+      idBoton={idBoton}
+      errorAlt={errorAlt}
+      errorImagen={errorImagen}
+      {...(ayudaAlt && { ayudaAlt })}
+    />
   );
 }

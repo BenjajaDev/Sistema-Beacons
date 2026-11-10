@@ -1,3 +1,4 @@
+import path from "node:path";
 import { Writable } from "node:stream";
 import { pino } from "pino";
 import request from "supertest";
@@ -126,4 +127,26 @@ it("la ruta oculta no aparece en los logs de acceso", async () => {
   await request(conLogs).get(`${BASE}/noticias`);
   expect(logs).toContain("/<panel>/noticias");
   expect(logs).not.toContain(TEST_ADMIN_PATH);
+});
+
+describe("favicon del panel", () => {
+  it("usa el mismo ícono de la landing por defecto", async () => {
+    const res = await request(app).get(BASE);
+    expect(res.text).toContain('<link rel="icon" href="/icons/favicon-48.png"');
+  });
+
+  it("usa el favicon de Identidad visual si existe, escapando la URL", async () => {
+    const { adminPanel } = await import("../src/routes/admin-panel.js");
+    const express = (await import("express")).default;
+    const conFavicon = express().use(
+      adminPanel({
+        adminPath: TEST_ADMIN_PATH,
+        distDir: path.resolve(import.meta.dirname, "fixtures/admin-dist"),
+        getFavicon: async () => '/uploads/2026/10/icono".png',
+      }),
+    );
+    const res = await request(conFavicon).get(BASE);
+    expect(res.text).toContain('<link rel="icon" href="/uploads/2026/10/icono&quot;.png">');
+    expect(res.text).not.toContain("favicon-48.png");
+  });
 });

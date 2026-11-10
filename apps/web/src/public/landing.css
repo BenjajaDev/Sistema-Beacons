@@ -14,7 +14,11 @@
 
 /* --- Encabezado --- */
 
+/* El menú se despliega en línea según el ancho del encabezado, no el de la
+   pantalla: así, con Zoom+ o A+ (que achican el espacio útil) pasa solo al botón
+   «Menú» en vez de apilarse. */
 .encabezado {
+  container: encabezado / inline-size;
   border-bottom: 1px solid var(--color-border);
   background: var(--color-bg);
 }
@@ -25,6 +29,11 @@
   justify-content: space-between;
   gap: var(--space-3);
   padding-block: var(--space-3);
+}
+/* Con el menú plegado: logo a la izquierda y, a la derecha, «Menú» y el zoom
+   (que en pantallas angostas baja a la línea siguiente). */
+.encabezado__menu-boton {
+  margin-inline-start: auto;
 }
 
 .logo {
@@ -103,23 +112,67 @@
     display: block;
   }
 }
-.logo__texto {
-  font-family: var(--font-heading);
-  font-size: var(--text-xl);
-  font-weight: 800;
-  letter-spacing: 0.02em;
+/* El isotipo vectorial, en un marco redondeado con los colores del tema. */
+.logo__marca {
+  display: inline-flex;
+  align-items: center;
+  padding: var(--space-1) var(--space-2);
+  border: 2px solid color-mix(in srgb, var(--color-primary) 35%, transparent);
+  border-radius: var(--radius-lg);
 }
-/* El punto de luz del beacon antes del nombre. */
-.logo__texto::before {
-  content: "";
-  display: inline-block;
-  width: 0.55em;
-  height: 0.55em;
-  margin-inline-end: 0.35em;
-  border-radius: 50%;
-  background: var(--color-primary);
-  box-shadow: 0 0 0 0.18em color-mix(in srgb, var(--color-primary) 25%, transparent);
-  vertical-align: 0.08em;
+/* Colores del isotipo: los del tema, salvo donde el fondo cambia (el pie). */
+.isotipo {
+  --iso-senal: var(--color-primary);
+  --iso-trazo: var(--color-text);
+  --iso-luz: var(--color-bg);
+  display: block;
+  height: 2.25rem;
+  width: auto;
+  overflow: visible;
+}
+.isotipo__beacon {
+  fill: var(--iso-senal);
+  stroke: var(--iso-senal);
+  stroke-width: 6;
+  stroke-linejoin: round;
+}
+.isotipo__facetas {
+  fill: none;
+  stroke: var(--iso-luz);
+  stroke-width: 2;
+  stroke-linecap: round;
+  opacity: 0.35;
+}
+.isotipo__brillo {
+  fill: var(--iso-luz);
+  opacity: 0.3;
+}
+.isotipo__luz {
+  fill: var(--iso-luz);
+}
+.isotipo__onda,
+.isotipo__voz {
+  fill: none;
+  stroke: var(--iso-senal);
+  stroke-linecap: round;
+}
+.isotipo__onda {
+  stroke-width: 5;
+}
+.isotipo__onda--2 {
+  opacity: 0.7;
+}
+.isotipo__onda--3 {
+  opacity: 0.45;
+}
+.isotipo__telefono {
+  fill: none;
+  stroke: var(--iso-trazo);
+  stroke-width: 4;
+  stroke-linecap: round;
+}
+.isotipo__voz {
+  stroke-width: 3.5;
 }
 
 .encabezado__menu {
@@ -188,7 +241,7 @@
   gap: var(--space-3);
 }
 
-@media (min-width: 60rem) {
+@container encabezado (min-width: 72rem) {
   .encabezado__menu-boton {
     display: none;
   }
@@ -237,10 +290,11 @@ main:focus {
 
 /* --- Hero: lo único que se mueve solo, una vez --- */
 
+/* Mismo fondo que la página, en claro y en oscuro. */
 .seccion--hero {
   position: relative;
   overflow: hidden;
-  background: var(--color-surface);
+  background: var(--color-bg);
   padding-block: var(--space-8);
 }
 .hero {
@@ -361,7 +415,6 @@ main:focus {
 .pasos,
 .tarjetas,
 .rejilla-noticias,
-.personas,
 .colaboradores {
   display: grid;
   gap: var(--space-5);
@@ -369,8 +422,12 @@ main:focus {
   padding: 0;
   list-style: none;
 }
+/* De 1 a 6 pasos: data-columnas lo calcula el componente (4 pasos van de a 2). */
 @media (min-width: 48rem) {
-  .pasos {
+  .pasos[data-columnas="2"] {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  .pasos[data-columnas="3"] {
     grid-template-columns: repeat(3, 1fr);
   }
 }
@@ -385,7 +442,12 @@ main:focus {
     transform var(--dur) var(--curva);
 }
 @media (min-width: 48rem) {
-  /* El tramo de recorrido hacia el siguiente paso. */
+  /* El tramo de recorrido hacia el siguiente paso, solo dentro de la misma fila. */
+  .pasos[data-columnas="1"] .pasos__item::after,
+  .pasos[data-columnas="2"] .pasos__item:nth-child(2n)::after,
+  .pasos[data-columnas="3"] .pasos__item:nth-child(3n)::after {
+    display: none;
+  }
   .pasos__item:not(:last-child)::after {
     content: "";
     position: absolute;
@@ -491,53 +553,16 @@ main:focus {
   }
 }
 
-/* --- Nosotros en el inicio --- */
+/* --- Nosotros en el inicio: texto (e imagen opcional) y debajo la fila del equipo --- */
 
-.nosotros-inicio {
-  display: grid;
-  gap: var(--space-6);
-  align-items: center;
-}
-@media (min-width: 56rem) {
-  .nosotros-inicio {
-    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-  }
+.nosotros-inicio__texto {
+  max-width: var(--medida);
 }
 .nosotros-inicio__texto .seccion__intro {
   margin-bottom: var(--space-5);
 }
-.nosotros-inicio__fotos {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--space-4);
-  margin: 0;
-  padding: 0;
-  list-style: none;
-}
-.nosotros-inicio__foto {
-  display: grid;
-  justify-items: center;
-  gap: var(--space-2);
-  width: 7rem;
-  text-align: center;
-}
-.nosotros-inicio__foto img {
-  width: 6rem;
-  height: 6rem;
-  border-radius: 50%;
-  object-fit: cover;
-  border: 3px solid var(--color-surface);
-  box-shadow: 0 0 0 3px var(--color-primary);
-  transition: transform var(--dur) var(--curva);
-}
-.nosotros-inicio__nombre {
-  font-size: var(--text-sm);
-  font-weight: var(--peso-fuerte);
-}
-@media (hover: hover) and (pointer: fine) and (prefers-reduced-motion: no-preference) {
-  .nosotros-inicio__foto:hover img {
-    transform: translateY(-4px) rotate(-4deg);
-  }
+.nosotros-inicio + .equipo {
+  margin-top: var(--space-7);
 }
 
 /* --- Noticias --- */
@@ -752,15 +777,380 @@ main:focus {
   border-top: 1px solid var(--color-border);
 }
 
-/* --- Nosotros: tarjetas de persona con la foto en su marco cuadrado --- */
+/* --- Equipo: la fila de personas y su card desplegable ---
+   Cada persona es un botón; su card cae bajo ella (useCardsEquipo.ts). Cerrada,
+   la card queda con visibility: hidden: fuera del orden de tabulación y del
+   lector de pantalla, pero medible para ajustarla a los bordes. */
 
+/* Las cards cerradas siguen en el layout (para medirlas) y no deben agregar scroll
+   horizontal; clip no crea un contenedor con scroll ni corta la card abierta, que
+   ya se ajusta dentro de la pantalla. Vale para Nosotros y para el inicio. */
+.seccion:has(.equipo) {
+  overflow-x: clip;
+}
+.equipo {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-6) var(--space-4);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+@media (min-width: 36rem) {
+  .equipo {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+@media (min-width: 56rem) {
+  .equipo {
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+  }
+}
+.integrante {
+  position: relative;
+}
+.integrante[data-abierta] {
+  z-index: 2;
+}
+.integrante__titulo {
+  margin: 0;
+  font-size: inherit;
+}
+/* Al abrirse una card, las demás personas de la fila se corren hacia afuera y
+   se achican, como si la card las empujara: así no quedan tapadas a medias. Solo
+   en la fila de cinco (en pantallas angostas las cards ocupan casi todo el
+   ancho) y solo con puntero fino: lo abre apuntar con el mouse. Se corre el
+   título y no el <li>, que es la zona de apuntado y no debe moverse. */
+@media (min-width: 56rem) and (hover: hover) and (pointer: fine) and (prefers-reduced-motion: no-preference) {
+  .integrante__titulo {
+    --empuje: 3rem;
+    transform-origin: 50% 0;
+    transition: transform var(--dur-lenta) var(--curva);
+  }
+  .integrante[data-abierta] ~ .integrante .integrante__titulo {
+    transform: translateX(var(--empuje)) scale(0.8);
+  }
+  .integrante:has(~ .integrante[data-abierta]) .integrante__titulo {
+    transform: translateX(calc(-1 * var(--empuje))) scale(0.8);
+  }
+}
+.integrante__boton {
+  display: grid;
+  justify-items: center;
+  gap: var(--space-1);
+  width: 100%;
+  min-height: var(--target);
+  padding: var(--space-2);
+  border: 0;
+  border-radius: var(--radius-lg);
+  background: none;
+  text-align: center;
+  cursor: pointer;
+  transition: transform var(--dur-rapida) var(--curva);
+}
+.integrante__boton:active {
+  transform: scale(0.97);
+}
+/* Foto redonda con el anillo de la señal: se enciende al abrir la card. */
+.integrante__marco {
+  display: block;
+  overflow: hidden;
+  width: min(100%, 8.5rem);
+  aspect-ratio: 1 / 1;
+  margin-bottom: var(--space-2);
+  border: 3px solid var(--color-surface);
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--color-primary) 10%, var(--color-surface));
+  box-shadow: 0 0 0 2px var(--color-border);
+}
+.integrante[data-abierta] .integrante__marco,
+.integrante__boton:hover .integrante__marco {
+  box-shadow:
+    0 0 0 3px var(--color-primary),
+    0 0 0 0.6rem color-mix(in srgb, var(--color-primary) 16%, transparent);
+}
+.integrante__foto {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transform: scale(var(--zoom, 1));
+  transition: transform var(--dur-lenta) var(--curva);
+}
+/* Sin foto: la inicial sobre las ondas de la señal. */
+.integrante__inicial {
+  display: grid;
+  place-items: center;
+  height: 100%;
+  background: repeating-radial-gradient(
+    circle at 50% 50%,
+    transparent 0 1.2rem,
+    color-mix(in srgb, var(--color-primary) 16%, transparent) 1.2rem 1.32rem
+  );
+  color: var(--color-primary);
+  font-family: var(--font-heading);
+  font-size: 2.75rem;
+  font-weight: 800;
+}
+.integrante__nombre {
+  font-family: var(--font-heading);
+  font-size: var(--text-lg);
+  font-weight: var(--peso-fuerte);
+  line-height: var(--leading-tight);
+}
+.integrante__cargo {
+  color: var(--color-text-muted);
+  font-size: var(--text-sm);
+}
+@media (hover: hover) and (pointer: fine) and (prefers-reduced-motion: no-preference) {
+  .integrante__boton:hover .integrante__foto {
+    transform: scale(calc(var(--zoom, 1) * 1.06));
+  }
+}
+
+/* La card nace del círculo: aparece encima de la persona, desde su centro
+   superior, y crece hasta ser un rectángulo con la foto y la información. */
+.integrante__card {
+  position: absolute;
+  top: 0;
+  left: 50%;
+  /* Ancha para que un correo largo quepa en una línea. */
+  width: min(22rem, calc(100vw - 2rem));
+  padding: var(--space-4);
+  border: 1px solid var(--color-border);
+  border-top: 3px solid var(--color-primary);
+  border-radius: var(--radius-lg);
+  background: var(--color-surface);
+  box-shadow: var(--sombra-alta);
+  text-align: start;
+  translate: calc(-50% + var(--ajuste, 0px)) 0;
+  transform-origin: calc(50% - var(--ajuste, 0px)) 4rem;
+  visibility: hidden;
+  opacity: 0;
+  /* Salida más rápida que la entrada; visibility cambia al terminar. */
+  transition:
+    opacity var(--dur-rapida) var(--curva),
+    transform var(--dur-rapida) var(--curva),
+    visibility 0s linear var(--dur-rapida);
+}
+.integrante[data-abierta] .integrante__card {
+  visibility: visible;
+  opacity: 1;
+  transition:
+    opacity var(--dur) var(--curva),
+    transform var(--dur-lenta) var(--curva),
+    visibility 0s;
+}
+.integrante__card[data-instantanea] {
+  transition-duration: 0s;
+  transition-delay: 0s;
+}
+@media (prefers-reduced-motion: no-preference) {
+  /* Del tamaño del círculo (≈ la mitad de la card) a la card completa. */
+  .integrante__card {
+    transform: scale(0.5);
+  }
+  .integrante[data-abierta] .integrante__card {
+    transform: none;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .integrante__card {
+    transition-delay: 0s;
+  }
+}
+.integrante__card-marco {
+  display: block;
+  overflow: hidden;
+  aspect-ratio: 3 / 2;
+  margin-bottom: var(--space-3);
+  border-radius: var(--radius);
+  background: color-mix(in srgb, var(--color-primary) 10%, var(--color-surface));
+}
+.integrante__card > * {
+  margin: 0;
+}
+.integrante__card > * + * {
+  margin-top: var(--space-2);
+}
+.integrante__card-nombre {
+  font-family: var(--font-heading);
+  font-size: var(--text-lg);
+  font-weight: var(--peso-fuerte);
+  line-height: var(--leading-tight);
+}
+.integrante__card-cargo {
+  display: inline-block;
+  padding: var(--space-1) var(--space-3);
+  border-radius: var(--radius-pill);
+  background: color-mix(in srgb, var(--color-primary) 10%, transparent);
+  color: var(--color-link);
+  font-size: var(--text-sm);
+  font-weight: var(--peso-fuerte);
+}
+.integrante__detalle {
+  font-size: var(--text-sm);
+  font-weight: var(--peso-medio);
+}
+.integrante__bio {
+  color: var(--color-text-muted);
+}
+.integrante__correo {
+  overflow-wrap: anywhere;
+}
+.integrante__card .redes {
+  margin-top: var(--space-3);
+}
+
+/* --- Nosotros: tarjetas grandes de persona en un carrusel ---
+   Scroll nativo con snap; las flechas (beacons) avanzan una tarjeta. Caben de 1 a
+   5 tarjetas enteras según el ancho del carrusel (no de la pantalla: en la vista
+   previa del panel el marco es angosto), sin tarjetas cortadas en los bordes. En
+   escritorio el equipo completo (5) se ve de una vez: sin flechas ni avance
+   automático, porque el carrusel no desborda (useCarrusel). */
+
+.carrusel__pista {
+  /* Su ancho no depende de las tarjetas: así desplaza en vez de ensanchar la
+     página. Además es el contenedor de las consultas de abajo. */
+  container-type: inline-size;
+  /* Ancla los textos .visually-hidden de las redes: sin esto se escapan del
+     scroll y ensanchan la página (ver «Trampas conocidas» en CLAUDE.md). */
+  position: relative;
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+  scroll-snap-type: x mandatory;
+  scrollbar-width: none;
+  /* Espacio para el foco y para que la tarjeta suba al apuntar sin cortarse. El
+     snap cuenta ese relleno: si no, arranca desplazado y «anterior» no se inactiva. */
+  padding: var(--space-2) var(--space-1) var(--space-3);
+  scroll-padding-inline: var(--space-1);
+  border-radius: var(--radius-lg);
+}
+.carrusel__pista::-webkit-scrollbar {
+  display: none;
+}
 .personas {
-  grid-template-columns: repeat(auto-fill, minmax(min(100%, 16rem), 1fr));
+  --columnas: 1;
+  --hueco: var(--space-5);
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: calc((100% - (var(--columnas) - 1) * var(--hueco)) / var(--columnas));
+  gap: var(--hueco);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+/* Hasta 3 columnas, cada tarjeta mide al menos 15rem (2 × 15rem + el espacio
+   entre ellas, etc.). Con 4 y 5, al menos 12rem y un espacio menor: la tarjeta
+   pasa a su versión compacta (abajo). */
+@container (min-width: 31.5rem) {
+  .personas {
+    --columnas: 2;
+  }
+}
+@container (min-width: 48rem) {
+  .personas {
+    --columnas: 3;
+  }
+}
+@container (min-width: 51rem) {
+  .personas {
+    --columnas: 4;
+    --hueco: var(--space-4);
+  }
+}
+@container (min-width: 64rem) {
+  .personas {
+    --columnas: 5;
+  }
+}
+.carrusel__controles {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--space-3);
+  margin-top: var(--space-3);
+}
+.carrusel__flecha {
+  display: inline-grid;
+  place-items: center;
+  width: 3rem;
+  height: 3rem;
+  padding: 0;
+  border: 2px solid var(--color-primary);
+  border-radius: 50%;
+  background: var(--color-surface);
+  color: var(--color-primary);
+  cursor: pointer;
+  transition:
+    background-color var(--dur-rapida) ease,
+    color var(--dur-rapida) ease,
+    transform var(--dur-rapida) var(--curva);
+}
+.carrusel__flecha svg {
+  width: 2.125rem;
+  height: 2.125rem;
+  overflow: visible;
+}
+/* Pausar/Reanudar el avance automático: mismo botón redondo, ícono de trazo. */
+.carrusel__pausa svg {
+  width: 1.5rem;
+  height: 1.5rem;
+}
+/* «Anterior» es el mismo beacon, emitiendo hacia la izquierda. */
+.carrusel__flecha--anterior svg {
+  transform: scaleX(-1);
+}
+.carrusel__beacon {
+  fill: currentColor;
+}
+.carrusel__luz {
+  fill: var(--color-surface);
+  transition: fill var(--dur-rapida) ease;
+}
+.carrusel__onda {
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  transition:
+    transform var(--dur) var(--curva),
+    opacity var(--dur) var(--curva);
+}
+.carrusel__flecha:not([aria-disabled]):hover {
+  background: var(--color-primary);
+  color: var(--color-on-primary);
+}
+.carrusel__flecha:not([aria-disabled]):hover .carrusel__luz {
+  fill: var(--color-primary);
+}
+.carrusel__flecha:not([aria-disabled]):active {
+  transform: scale(0.97);
+}
+.carrusel__flecha[aria-disabled] {
+  border-color: var(--color-border-control);
+  color: var(--color-text-muted);
+  cursor: not-allowed;
+}
+.carrusel__flecha[aria-disabled] .carrusel__onda {
+  opacity: 0.35;
+}
+@media (hover: hover) and (pointer: fine) and (prefers-reduced-motion: no-preference) {
+  /* La señal se adelanta hacia donde avanza el carrusel. */
+  .carrusel__flecha:not([aria-disabled]):hover .carrusel__onda {
+    transform: translateX(1.5px);
+  }
+  .carrusel__flecha:not([aria-disabled]):hover .carrusel__onda--2 {
+    transform: translateX(3px);
+  }
 }
 .persona {
+  /* La tarjeta se adapta a su propio ancho: igual en el carrusel y en la vista
+     previa del panel. */
+  container: persona / inline-size;
   display: flex;
   flex-direction: column;
   overflow: hidden;
+  scroll-snap-align: start;
   border: 1px solid var(--color-border);
   border-radius: var(--radius-lg);
   background: var(--color-surface);
@@ -783,10 +1173,12 @@ main:focus {
   margin-bottom: var(--space-4);
   background: color-mix(in srgb, var(--color-primary) 10%, var(--color-surface));
 }
+/* El encuadre de cada foto (FotoPersona) llega en object-position y --zoom. */
 .persona__foto {
   width: 100%;
   height: 100%;
   object-fit: cover;
+  transform: scale(var(--zoom, 1));
   transition: transform var(--dur-lenta) var(--curva);
 }
 /* Sin foto: la inicial sobre las ondas de la señal. */
@@ -809,7 +1201,6 @@ main:focus {
   font-size: var(--text-lg);
 }
 .persona__cargo {
-  justify-self: start;
   align-self: flex-start;
   margin-bottom: var(--space-3);
   padding: var(--space-1) var(--space-3);
@@ -819,8 +1210,35 @@ main:focus {
   font-size: var(--text-sm);
   font-weight: var(--peso-fuerte);
 }
+.persona__detalle {
+  font-size: var(--text-sm);
+  font-weight: var(--peso-medio);
+}
 .persona__bio {
   color: var(--color-text-muted);
+}
+.persona__correo {
+  overflow-wrap: anywhere;
+}
+/* Tarjeta angosta (4 o 5 por fila): márgenes y textos secundarios más chicos,
+   para que la biografía no quede en columnas de pocas palabras. */
+@container persona (max-width: 15rem) {
+  .persona > :not(.persona__marco) {
+    margin-inline: var(--space-4);
+  }
+  .persona > :last-child {
+    margin-bottom: var(--space-4);
+  }
+  .persona__marco {
+    margin-bottom: var(--space-3);
+  }
+  .persona__nombre {
+    font-size: var(--text-base);
+  }
+  .persona__bio,
+  .persona__correo {
+    font-size: var(--text-sm);
+  }
 }
 .persona:hover {
   border-color: var(--color-primary);
@@ -830,8 +1248,94 @@ main:focus {
     transform: translateY(-4px);
   }
   .persona:hover .persona__foto {
-    transform: scale(1.06);
+    transform: scale(calc(var(--zoom, 1) * 1.06));
   }
+}
+
+/* --- Imágenes de las secciones --- */
+
+.seccion__imagen,
+.bloque__imagen,
+.hero__imagen {
+  margin: 0;
+}
+.seccion__imagen img,
+.bloque__imagen img,
+.hero__imagen img,
+.item__imagen {
+  display: block;
+  width: 100%;
+  height: auto;
+  border-radius: var(--radius-lg);
+  object-fit: cover;
+}
+.seccion__imagen {
+  max-width: none;
+  margin-top: var(--space-5);
+}
+.seccion__cabecera:has(.seccion__imagen) {
+  max-width: none;
+}
+.seccion__cabecera:has(.seccion__imagen) .seccion__intro {
+  max-width: var(--medida);
+}
+.seccion__imagen img {
+  aspect-ratio: 16 / 9;
+  max-height: 28rem;
+}
+.hero__imagen img {
+  aspect-ratio: 4 / 3;
+  box-shadow: var(--sombra-alta);
+}
+.bloque__imagen img {
+  aspect-ratio: 4 / 3;
+}
+.item__imagen {
+  aspect-ratio: 3 / 2;
+  margin-bottom: var(--space-4);
+  border-radius: var(--radius);
+}
+
+/* «Escuchar esta sección», bajo el título. */
+.audio-seccion {
+  margin-block: var(--space-2) var(--space-4);
+}
+
+/* Botón de voz en la esquina de una imagen: lee su texto alternativo. Fondo
+   opaco y borde para distinguirse sobre cualquier foto (WCAG 1.4.11). */
+.con-voz {
+  position: relative;
+}
+.con-voz__boton {
+  position: absolute;
+  top: var(--space-2);
+  inset-inline-end: var(--space-2);
+  z-index: 1;
+  border: 1px solid var(--color-border-control);
+  background: var(--color-surface);
+  box-shadow: var(--sombra);
+}
+.con-voz__boton:hover {
+  background: color-mix(in srgb, var(--color-primary) 12%, var(--color-surface));
+}
+
+/* Texto e imagen lado a lado en pantallas anchas; la imagen debajo en las angostas. */
+.dos-columnas {
+  display: grid;
+  gap: var(--space-6);
+  align-items: center;
+}
+@media (min-width: 56rem) {
+  .dos-columnas {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  }
+  /* Solo cambia el orden visual: el texto sigue antes en el DOM y en la lectura. */
+  .dos-columnas[data-imagen="izquierda"] .bloque__imagen {
+    order: -1;
+  }
+}
+.imagen-texto__texto .btn {
+  margin-top: var(--space-3);
 }
 
 .colaboradores {
@@ -981,6 +1485,8 @@ main:focus {
 .pie {
   --pie-fondo: var(--color-text);
   --pie-texto: var(--color-bg);
+  /* La señal del isotipo sobre la franja de tinta: el azul claro de la paleta. */
+  --pie-senal: var(--color-accent);
   --pie-suave: color-mix(in srgb, var(--color-bg) 78%, var(--color-text));
   --pie-linea: color-mix(in srgb, var(--color-bg) 20%, var(--color-text));
   margin-top: var(--space-8);
@@ -994,6 +1500,7 @@ main:focus {
   --pie-texto: var(--color-text);
   --pie-suave: var(--color-text-muted);
   --pie-linea: var(--color-border);
+  --pie-senal: var(--color-primary);
 }
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) .pie {
@@ -1001,7 +1508,75 @@ main:focus {
     --pie-texto: var(--color-text);
     --pie-suave: var(--color-text-muted);
     --pie-linea: var(--color-border);
+    --pie-senal: var(--color-primary);
   }
+}
+/* Respaldos: «Con el respaldo de» y los logos de las instituciones, en placas
+   del mismo alto (igual peso visual). */
+.respaldos {
+  padding-bottom: var(--space-6);
+}
+.respaldos__lista {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-5) var(--space-6);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.respaldo {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  max-width: 18rem;
+}
+.respaldo__tipo,
+.respaldo__mencion {
+  margin: 0;
+}
+.respaldo__tipo {
+  color: var(--pie-suave);
+  font-size: var(--text-sm);
+  font-weight: var(--peso-fuerte);
+}
+.respaldo__placa {
+  display: grid;
+  place-items: center;
+  width: fit-content;
+  min-width: 10rem;
+  max-width: 100%;
+  height: 5.5rem;
+  padding: var(--space-3) var(--space-4);
+  border-radius: var(--radius);
+  background: var(--placa-logo);
+  color: var(--placa-logo-texto);
+}
+/* base.css quita la barra de los enlaces con clase y su relleno inferior: se repone. */
+a.respaldo__placa {
+  padding-bottom: var(--space-3);
+}
+a.respaldo__placa:hover {
+  box-shadow: 0 0 0 3px var(--pie-senal);
+}
+.respaldo__logo {
+  width: auto;
+  max-width: 14rem;
+  height: auto;
+  max-height: 100%;
+  object-fit: contain;
+}
+.respaldo__nombre {
+  font-family: var(--font-heading);
+  font-weight: 800;
+  text-align: center;
+}
+.respaldo__mencion {
+  color: var(--pie-suave);
+  font-size: var(--text-sm);
+}
+.respaldos + .pie__rejilla {
+  padding-top: var(--space-6);
+  border-top: 1px solid var(--pie-linea);
 }
 .pie__rejilla {
   display: grid;
@@ -1035,6 +1610,32 @@ main:focus {
   background: var(--color-accent);
   vertical-align: 0.1em;
 }
+/* Logo del pie: el subido en «Pie de página» o el isotipo con los colores del pie. */
+.pie__logo,
+.pie__isotipo {
+  display: block;
+  height: 3rem;
+  width: auto;
+  max-width: 12rem;
+  margin-bottom: var(--space-3);
+  object-fit: contain;
+}
+.pie__isotipo {
+  --iso-senal: var(--pie-senal);
+  --iso-trazo: var(--pie-texto);
+  --iso-luz: var(--pie-fondo);
+}
+.pie__imagen {
+  max-width: 22rem;
+  margin: var(--space-4) 0 0;
+}
+.pie__imagen img {
+  display: block;
+  width: 100%;
+  height: auto;
+  border-radius: var(--radius-lg);
+}
+
 .pie__descripcion {
   max-width: 40ch;
   color: var(--pie-suave);

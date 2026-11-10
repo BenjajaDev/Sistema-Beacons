@@ -1,0 +1,176 @@
+import { useEffect, useId, useLayoutEffect, useRef } from "react";
+import { Redes } from "./components";
+import type { Persona } from "./data";
+import { FotoPersona } from "./FotoPersona";
+import {
+  ajusteDentroDePantalla,
+  useCardsEquipo,
+  zoomEfectivo,
+  type CardAbierta,
+} from "./useCardsEquipo";
+
+// El equipo en el inicio: una fila de círculos (5 por fila en pantallas anchas).
+// Cada persona es un botón de divulgación: al apuntar con el mouse, el círculo
+// crece y se convierte en una card con su información. Con el teclado o un toque
+// (no hay hover en pantallas táctiles) se abre igual.
+
+export function EquipoFila({ personas }: { personas: Persona[] }) {
+  const lista = useRef<HTMLUListElement>(null);
+  const cards = useCardsEquipo(lista);
+  return (
+    <ul ref={lista} className="equipo">
+      {personas.map((p, i) => (
+        <Integrante
+          key={`${p.name}-${i}`}
+          persona={p}
+          estado={cards.abierta?.indice === i ? cards.abierta : null}
+          onApuntar={() => cards.alApuntar(i)}
+          onRetirar={() => cards.alRetirar(i)}
+          onActivar={(conTeclado) => cards.alActivar(i, conTeclado)}
+          onCerrar={cards.cerrar}
+        />
+      ))}
+    </ul>
+  );
+}
+
+function Integrante({
+  persona: p,
+  estado,
+  onApuntar,
+  onRetirar,
+  onActivar,
+  onCerrar,
+}: {
+  persona: Persona;
+  estado: CardAbierta | null;
+  onApuntar: () => void;
+  onRetirar: () => void;
+  onActivar: (conTeclado: boolean) => void;
+  onCerrar: () => void;
+}) {
+  const idCard = useId();
+  const zona = useRef<HTMLLIElement>(null);
+  const boton = useRef<HTMLButtonElement>(null);
+  const card = useRef<HTMLDivElement>(null);
+  const abierta = estado !== null;
+
+  // Al abrir, corre la card lo justo para que no se salga de la pantalla. Se mide
+  // con el ancho de layout y el centro de la persona: la card cerrada está
+  // escalada y su caja en pantalla no es la final. Se calcula en píxeles de
+  // pantalla y se vuelve a los del CSS de la card dividiendo por el zoom.
+  // Se escribe directo en el elemento: es solo posición y no necesita otro render.
+  useLayoutEffect(() => {
+    const el = card.current;
+    const li = zona.current;
+    if (!abierta || !el || !li) return;
+    const zoom = zoomEfectivo(el);
+    const persona = li.getBoundingClientRect();
+    const centro = persona.left + persona.width / 2;
+    const mitad = (el.offsetWidth * zoom) / 2;
+    const ajuste = ajusteDentroDePantalla(
+      { left: centro - mitad, right: centro + mitad },
+      document.documentElement.clientWidth,
+    );
+    el.style.setProperty("--ajuste", `${ajuste / zoom}px`);
+  }, [abierta]);
+
+  // La persona y su card son la zona de apuntado; el control es el botón. Por eso
+  // estos eventos se escuchan en el elemento y no como props de un <li>.
+  useEffect(() => {
+    const el = zona.current;
+    if (!el) return;
+    // Solo el mouse abre al apuntar: en pantallas táctiles el toque es un clic.
+    const entra = (e: PointerEvent) => {
+      if (e.pointerType === "mouse") onApuntar();
+    };
+    const sale = (e: PointerEvent) => {
+      if (e.pointerType === "mouse") onRetirar();
+    };
+    // Escape cierra (lo maneja el hook) y devuelve el foco a la persona si estaba en la card.
+    const tecla = (e: KeyboardEvent) => {
+      if (e.key === "Escape" && card.current?.contains(document.activeElement)) {
+        boton.current?.focus();
+      }
+    };
+    // El foco salió de esta persona y su card: se cierra.
+    const foco = (e: FocusEvent) => {
+      if (abierta && !el.contains(e.relatedTarget as Node | null)) onCerrar();
+    };
+    el.addEventListener("pointerenter", entra);
+    el.addEventListener("pointerleave", sale);
+    el.addEventListener("keydown", tecla);
+    el.addEventListener("focusout", foco);
+    return () => {
+      el.removeEventListener("pointerenter", entra);
+      el.removeEventListener("pointerleave", sale);
+      el.removeEventListener("keydown", tecla);
+      el.removeEventListener("focusout", foco);
+    };
+  }, [abierta, onApuntar, onRetirar, onCerrar]);
+
+  return (
+    <li ref={zona} className="integrante" data-abierta={abierta || undefined}>
+      <h3 className="integrante__titulo">
+        <button
+          ref={boton}
+          type="button"
+          className="integrante__boton"
+          aria-expanded={abierta}
+          aria-controls={idCard}
+          // detail === 0: lo activó el teclado (Enter o Espacio), no un clic.
+          onClick={(e) => onActivar(e.detail === 0)}
+        >
+          <span className="integrante__marco">
+            {/* Decorativa: el nombre del botón ya identifica a la persona. */}
+            <FotoPersona
+              persona={p}
+              className="integrante__foto"
+              claseInicial="integrante__inicial"
+              decorativa
+            />
+          </span>
+          <span className="integrante__nombre">{p.name}</span>{" "}
+          <span className="integrante__cargo">{p.position}</span>
+        </button>
+      </h3>
+      <div
+        ref={card}
+        id={idCard}
+        className="integrante__card"
+        data-instantanea={estado?.instantanea || undefined}
+      >
+        <ContenidoCard persona={p} />
+      </div>
+    </li>
+  );
+}
+
+// Lo que muestra la card abierta. Exportado para la vista previa del panel.
+export function ContenidoCard({ persona: p }: { persona: Persona }) {
+  const detalle = [p.area, p.education].filter(Boolean).join(" · ");
+  return (
+    <>
+      <span className="integrante__card-marco">
+        <FotoPersona
+          persona={p}
+          className="integrante__foto"
+          claseInicial="integrante__inicial"
+          decorativa
+        />
+      </span>
+      <p className="integrante__card-nombre" aria-hidden="true">
+        {p.name}
+      </p>
+      <p className="integrante__card-cargo">{p.position}</p>
+      {detalle && <p className="integrante__detalle">{detalle}</p>}
+      {p.bio && <p className="integrante__bio">{p.bio}</p>}
+      {p.email && (
+        <p className="integrante__correo">
+          <a href={`mailto:${p.email}`}>{p.email}</a>
+        </p>
+      )}
+      <Redes redes={p.links} etiqueta={`Enlaces de ${p.name}`} variante="iconos" />
+    </>
+  );
+}

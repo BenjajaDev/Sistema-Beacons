@@ -264,10 +264,18 @@ textarea.campo__control {
   outline-offset: var(--foco-separacion);
 }
 
-.tamano-texto {
+.tamano-texto,
+.zoom-pagina {
   display: inline-flex;
+  flex-wrap: wrap;
   align-items: center;
   gap: var(--space-1);
+}
+.zoom-pagina__valor {
+  min-width: 3.5em;
+  font-variant-numeric: tabular-nums;
+  font-weight: var(--peso-fuerte);
+  text-align: center;
 }
 
 /* --- Avisos (toasts) --- */

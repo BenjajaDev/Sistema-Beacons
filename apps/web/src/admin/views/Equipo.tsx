@@ -1,210 +1,10 @@
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useState, type ReactNode } from "react";
-import { ApiError, mensajeDeError } from "@shared/api";
-import { Button, IconButton } from "@shared/ui/Button";
-import { ConfirmDialog, Dialog } from "@shared/ui/Dialog";
+import { Button } from "@shared/ui/Button";
 import { TextArea, TextField } from "@shared/ui/Field";
-import { Cargando, EmptyState, ErrorState, Skeleton } from "@shared/ui/States";
-import { useToast } from "@shared/ui/Toast";
-import { adminFetch, type Colaborador, type Enlace, type Persona } from "../api";
-import { Cabecera, Interruptor, SelectorImagen, usePanelPage, type ImagenElegida } from "../ui";
-
-interface Base {
-  id: string;
-  name: string;
-  visible: boolean;
-}
-
-interface Config<T extends Base, F> {
-  ruta: string;
-  titulo: string;
-  elemento: string;
-  // Aviso al crear, con el género correcto: «Persona agregada», «Colaborador agregado».
-  avisoAgregado: string;
-  vacio: string;
-  descripcion: (item: T) => ReactNode;
-  miniatura: (item: T) => string | null;
-  aFormulario: (item: T | null) => F;
-  aCuerpo: (form: F) => Record<string, unknown>;
-  Campos: (p: { form: F; set: (f: F) => void; errores: Record<string, string> }) => ReactNode;
-}
-
-function Coleccion<T extends Base, F>({ c }: { c: Config<T, F> }) {
-  const toast = useToast();
-  const queryClient = useQueryClient();
-  const clave = ["admin", c.ruta];
-  const [editando, setEditando] = useState<T | "nuevo" | null>(null);
-  const [form, setForm] = useState<F>(c.aFormulario(null));
-  const [errores, setErrores] = useState<Record<string, string>>({});
-  const [borrando, setBorrando] = useState<T | null>(null);
-  const [anuncio, setAnuncio] = useState("");
-
-  const { data, isPending, error, refetch } = useQuery({
-    queryKey: clave,
-    queryFn: () => adminFetch<{ items: T[] }>(c.ruta),
-  });
-  const invalidar = () => queryClient.invalidateQueries({ queryKey: clave });
-
-  const guardar = useMutation({
-    mutationFn: () => {
-      const cuerpo = c.aCuerpo(form);
-      return editando === "nuevo"
-        ? adminFetch(c.ruta, { method: "POST", body: cuerpo })
-        : adminFetch(`${c.ruta}/${(editando as T).id}`, { method: "PATCH", body: cuerpo });
-    },
-    onSuccess: () => {
-      toast.exito(editando === "nuevo" ? c.avisoAgregado : "Cambios guardados.");
-      setEditando(null);
-      invalidar();
-    },
-    onError: (err) => {
-      if (err instanceof ApiError && Object.keys(err.campos).length) setErrores(err.campos);
-      else toast.error(`No se pudo guardar. ${mensajeDeError(err)}`);
-    },
-  });
-
-  const parche = useMutation({
-    mutationFn: ({ id, body }: { id: string; body: unknown }) =>
-      adminFetch(`${c.ruta}/${id}`, { method: "PATCH", body }),
-    onSuccess: invalidar,
-    onError: (err) => toast.error(`No se pudo cambiar. ${mensajeDeError(err)}`),
-  });
-
-  const orden = useMutation({
-    mutationFn: (ids: string[]) => adminFetch(`${c.ruta}/order`, { method: "PUT", body: { ids } }),
-    onSuccess: invalidar,
-    onError: (err) => toast.error(`No se pudo cambiar el orden. ${mensajeDeError(err)}`),
-  });
-
-  function abrir(item: T | "nuevo") {
-    setForm(c.aFormulario(item === "nuevo" ? null : item));
-    setErrores({});
-    setEditando(item);
-  }
-
-  function mover(lista: T[], i: number, d: number) {
-    if (i + d < 0 || i + d >= lista.length) return;
-    const ids = lista.map((x) => x.id);
-    [ids[i], ids[i + d]] = [ids[i + d]!, ids[i]!];
-    orden.mutate(ids);
-    setAnuncio(`«${lista[i]!.name}» ahora está en la posición ${i + d + 1} de ${lista.length}.`);
-  }
-
-  return (
-    <section className="grupo-secciones" aria-labelledby={`grupo-${c.ruta}`}>
-      <div className="vista-cabecera">
-        <h2 id={`grupo-${c.ruta}`}>{c.titulo}</h2>
-        <Button onClick={() => abrir("nuevo")}>Agregar {c.elemento.toLowerCase()}</Button>
-      </div>
-      <p className="visually-hidden" role="status">
-        {anuncio}
-      </p>
-      {isPending ? (
-        <Cargando>
-          <Skeleton alto="8rem" />
-        </Cargando>
-      ) : error ? (
-        <ErrorState mensaje={mensajeDeError(error)} onReintentar={() => refetch()} />
-      ) : data.items.length === 0 ? (
-        <EmptyState
-          titulo={c.vacio}
-          accion={
-            <Button onClick={() => abrir("nuevo")}>Agregar {c.elemento.toLowerCase()}</Button>
-          }
-        />
-      ) : (
-        <ol className="lista-secciones">
-          {data.items.map((item, i) => (
-            <li key={item.id} className="fila-seccion">
-              {c.miniatura(item) ? (
-                <img src={c.miniatura(item)!} alt="" className="miniatura" />
-              ) : (
-                <span className="miniatura miniatura--vacia" aria-hidden="true" />
-              )}
-              <div className="fila-seccion__info">
-                <strong>{item.name}</strong>
-                <span className="texto-suave">
-                  {c.descripcion(item)}
-                  {!item.visible && " · oculto en el sitio"}
-                </span>
-              </div>
-              <div className="fila-seccion__acciones">
-                <Interruptor
-                  activo={item.visible}
-                  etiqueta={`Visible: ${item.name}`}
-                  onCambiar={(visible) => parche.mutate({ id: item.id, body: { visible } })}
-                />
-                <IconButton
-                  label={`Subir a ${item.name}`}
-                  aria-disabled={i === 0 || undefined}
-                  onClick={() => mover(data.items, i, -1)}
-                >
-                  <span aria-hidden="true">↑</span>
-                </IconButton>
-                <IconButton
-                  label={`Bajar a ${item.name}`}
-                  aria-disabled={i === data.items.length - 1 || undefined}
-                  onClick={() => mover(data.items, i, 1)}
-                >
-                  <span aria-hidden="true">↓</span>
-                </IconButton>
-                <Button variante="secundario" onClick={() => abrir(item)}>
-                  Editar<span className="visually-hidden"> a {item.name}</span>
-                </Button>
-                <Button variante="fantasma" onClick={() => setBorrando(item)}>
-                  Borrar<span className="visually-hidden"> a {item.name}</span>
-                </Button>
-              </div>
-            </li>
-          ))}
-        </ol>
-      )}
-
-      <Dialog
-        abierto={editando !== null}
-        onCerrar={() => setEditando(null)}
-        titulo={
-          editando === "nuevo"
-            ? `Agregar ${c.elemento.toLowerCase()}`
-            : `Editar: ${(editando as T | null)?.name ?? ""}`
-        }
-        acciones={
-          <>
-            <Button variante="secundario" onClick={() => setEditando(null)}>
-              Cancelar
-            </Button>
-            <Button
-              cargando={guardar.isPending}
-              textoCargando="Guardando…"
-              onClick={() => guardar.mutate()}
-            >
-              Guardar
-            </Button>
-          </>
-        }
-      >
-        <c.Campos form={form} set={setForm} errores={errores} />
-      </Dialog>
-
-      <ConfirmDialog
-        abierto={borrando !== null}
-        onCerrar={() => setBorrando(null)}
-        titulo={`¿Borrar a ${borrando?.name}?`}
-        mensaje="Dejará de aparecer en el sitio. No se puede deshacer; si solo quieres ocultarlo, usa el interruptor «Visible»."
-        textoConfirmar={`Borrar a ${borrando?.name}`}
-        onConfirmar={async () => {
-          try {
-            await adminFetch(`${c.ruta}/${borrando!.id}`, { method: "DELETE" });
-            toast.exito(`${borrando!.name} fue borrado.`);
-            invalidar();
-          } catch (err) {
-            toast.error(`No se pudo borrar. ${mensajeDeError(err)}`);
-          }
-        }}
-      />
-    </section>
-  );
-}
+import type { Encuadre, Persona as PersonaPublica } from "../../public/data";
+import type { Colaborador, Enlace, Persona } from "../api";
+import { Coleccion, type Config } from "../Coleccion";
+import { Cabecera, SelectorImagen, usePanelPage, type ImagenElegida } from "../ui";
+import { VistaPreviaPersona } from "../VistaPreviaPersona";
 
 // --- Equipo ---
 
@@ -212,10 +12,27 @@ interface FormPersona {
   name: string;
   position: string;
   bio: string;
+  area: string;
+  education: string;
+  email: string;
   photo: ImagenElegida | null;
   photoAlt: string;
+  photoFrame: Encuadre | null;
   links: Enlace[];
 }
+
+// La persona como la recibe la landing, para la vista previa.
+const comoEnLaLanding = (f: FormPersona): PersonaPublica => ({
+  name: f.name,
+  position: f.position,
+  bio: f.bio || null,
+  area: f.area || null,
+  education: f.education || null,
+  email: f.email || null,
+  links: f.links.filter((l) => l.url),
+  photo: f.photo ? { url: f.photo.url, alt: f.photoAlt, width: null, height: null } : null,
+  photoFrame: f.photoFrame,
+});
 
 function CamposPersona({
   form,
@@ -243,6 +60,36 @@ function CamposPersona({
         onChange={(e) => set({ ...form, position: e.target.value })}
         error={errores.position}
       />
+      <TextField
+        label="Área"
+        opcional
+        value={form.area}
+        maxLength={80}
+        placeholder="Ingeniería"
+        ayuda="Se muestra en su card junto a la formación."
+        onChange={(e) => set({ ...form, area: e.target.value })}
+        error={errores.area}
+      />
+      <TextField
+        label="Formación"
+        opcional
+        value={form.education}
+        maxLength={120}
+        placeholder="Ingeniería Civil, Universidad de Chile"
+        onChange={(e) => set({ ...form, education: e.target.value })}
+        error={errores.education}
+      />
+      <TextField
+        label="Correo de contacto"
+        opcional
+        type="email"
+        autoComplete="off"
+        value={form.email}
+        maxLength={200}
+        ayuda="Es público: aparece en la card de la persona. Usa un correo institucional, no uno personal."
+        onChange={(e) => set({ ...form, email: e.target.value })}
+        error={errores.email}
+      />
       <TextArea
         label="Biografía breve"
         opcional
@@ -257,9 +104,21 @@ function CamposPersona({
         marco={{ proporcion: 1, nombre: "cuadrado" }}
         imagen={form.photo}
         alt={form.photoAlt}
-        onCambiar={(photo, photoAlt) => set({ ...form, photo, photoAlt })}
+        onCambiar={(photo, photoAlt) =>
+          // Una foto distinta empieza centrada: el encuadre anterior era de otra imagen.
+          set({
+            ...form,
+            photo,
+            photoAlt,
+            photoFrame: photo?.id === form.photo?.id ? form.photoFrame : null,
+          })
+        }
         errorAlt={errores.photoAlt}
         ayudaAlt="Describe a la persona en la foto, por ejemplo «Ana sonriendo frente a un pizarrón». No repitas solo su nombre."
+      />
+      <VistaPreviaPersona
+        persona={comoEnLaLanding(form)}
+        onEncuadre={(photoFrame) => set({ ...form, photoFrame })}
       />
       <ListaEnlaces
         enlaces={form.links}
@@ -330,16 +189,24 @@ const equipo: Config<Persona, FormPersona> = {
     name: p?.name ?? "",
     position: p?.position ?? "",
     bio: p?.bio ?? "",
+    area: p?.area ?? "",
+    education: p?.education ?? "",
+    email: p?.email ?? "",
     photo: p?.photo ? { id: p.photo.id, url: p.photo.url } : null,
     photoAlt: p?.photoAlt ?? "",
+    photoFrame: p?.photoFrame ?? null,
     links: p?.links ?? [],
   }),
   aCuerpo: (f) => ({
     name: f.name,
     position: f.position,
     bio: f.bio || null,
+    area: f.area || null,
+    education: f.education || null,
+    email: f.email || null,
     photoId: f.photo?.id ?? null,
     photoAlt: f.photo ? f.photoAlt : null,
+    photoFrame: f.photo ? f.photoFrame : null,
     links: f.links,
   }),
   Campos: CamposPersona,

@@ -8,10 +8,10 @@
 import { z } from "zod";
 import { loadScriptEnv } from "../src/config/env.js";
 import { createPrisma } from "../src/lib/prisma.js";
-import { asJson } from "../src/lib/json.js";
 import { hashPassword, PASSWORD_MIN_LENGTH } from "../src/auth/password.js";
 import { DEFAULT_SITE_SETTINGS } from "../src/content/settings.js";
-import { SECTION_DEFINITIONS, sectionSchemas, type SectionKey } from "../src/content/sections.js";
+import { createMissingSections } from "../src/content/section-catalog.js";
+import { SECTION_DEFINITIONS } from "../src/content/sections.js";
 
 const email = (nombre: string) => z.email(`${nombre} debe ser un correo válido.`);
 const password = (nombre: string) =>
@@ -96,27 +96,9 @@ try {
   }
 
   console.log("Secciones:");
-  for (const key of Object.keys(SECTION_DEFINITIONS) as SectionKey[]) {
-    const def = SECTION_DEFINITIONS[key];
-    // Si el contenido inicial no cumple su propio esquema es un error de código: mejor fallar aquí.
-    const content = sectionSchemas[key].parse(def.contenidoInicial);
-    const existente = await db.section.findUnique({ where: { key } });
-    if (existente) {
-      console.log(`  = ${key} ya existe; sin cambios.`);
-      continue;
-    }
-    await db.section.create({
-      data: {
-        key,
-        page: def.page,
-        order: def.order,
-        visible: true,
-        content: asJson(content),
-        publishedAt: new Date(),
-      },
-    });
-    console.log(`  + ${key} creada (${def.nombre}).`);
-  }
+  const creadas = await createMissingSections(db);
+  for (const key of creadas) console.log(`  + ${key} creada (${SECTION_DEFINITIONS[key].nombre}).`);
+  if (!creadas.length) console.log("  = todas existen; sin cambios.");
 
   console.log("\nSeed completo.");
 } finally {

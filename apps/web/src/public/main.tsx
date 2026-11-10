@@ -2,10 +2,13 @@ import { QueryClientProvider } from "@tanstack/react-query";
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import { RouterProvider } from "react-router/dom";
+import { recargarSiFaltanModulos } from "@shared/recarga";
 import "@shared/styles/index.css";
 import "./landing.css";
 import { crearQueryClient } from "./data";
 import { crearRouter } from "./routes";
+
+recargarSiFaltanModulos();
 
 const queryClient = crearQueryClient();
 const router = crearRouter();

@@ -18,8 +18,10 @@ function urlDe(ruta: AdminRoute) {
 const nombre = (r: AdminRoute) => `${r.method.toUpperCase()} ${r.path} [${r.roles.join(", ")}]`;
 
 // Política del proyecto, independiente de lo que declare cada ruta: estas rutas son
-// SOLO de administración. Si alguien declara una por error como accesible a
-// editores, este test falla aunque la matriz de abajo pase.
+// SOLO de administración (CMS y Administración del menú, más publicar). Si alguien
+// declara una por error como accesible a editores, este test falla aunque la
+// matriz de abajo pase. El resto del Contenido (equipo, identidad, pie) lo
+// editan también los editores: ver CONTENIDO más abajo.
 const SOLO_ADMIN: [método: string, ruta: RegExp][] = [
   ["*", /^\/audit(\/|$)/],
   ["*", /^\/users(\/|$)/],
@@ -61,6 +63,40 @@ describe("política de roles", () => {
         ([m, p]) => (m === "*" || m === ruta.method) && p.test(ruta.path),
       );
       expect(ruta.roles.includes("SOCIAL")).toBe(permitida);
+    },
+  );
+
+  // Lo que el menú agrupa en «Contenido» es de ADMIN y EDITOR, y de nadie más.
+  // Quedan fuera las rutas que el rol de comunicación también usa (leer los ajustes
+  // y editar el contacto y las redes): las cubre el test de arriba.
+  const CONTENIDO = [
+    /^\/team(\/|$)/,
+    /^\/collaborators(\/|$)/,
+    /^\/backers(\/|$)/,
+    /^\/settings(\/|$)/,
+  ];
+  const contenido = rutas.filter(
+    (r) =>
+      CONTENIDO.some((p) => p.test(r.path)) &&
+      !SOCIAL.some(([m, p]) => (m === "*" || m === r.method) && p.test(r.path)),
+  );
+
+  it("cubre equipo, colaboradores, respaldos e identidad visual y pie", () => {
+    expect(contenido.map((r) => r.path)).toEqual(
+      expect.arrayContaining([
+        "/team",
+        "/collaborators",
+        "/backers",
+        "/settings/identity",
+        "/settings/footer",
+      ]),
+    );
+  });
+
+  it.each(contenido.map((r) => [nombre(r), r] as const))(
+    "%s es para ADMIN y EDITOR",
+    (_n, ruta) => {
+      expect(ruta.roles).toEqual(["ADMIN", "EDITOR"]);
     },
   );
 });

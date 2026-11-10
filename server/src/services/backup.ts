@@ -20,6 +20,7 @@ const TABLAS = [
   "news",
   "teamMember",
   "collaborator",
+  "backer",
   "beacon",
   "auditLog",
   "contactMessage",

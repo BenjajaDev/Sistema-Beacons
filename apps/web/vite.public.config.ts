@@ -10,6 +10,8 @@ import { shared } from "./vite.shared.ts";
 
 export default defineConfig({
   ...shared,
+  // Caché propia, separada de la del panel (ver vite.admin.config.ts).
+  cacheDir: "node_modules/.vite/public",
   plugins: [
     ...shared.plugins,
     VitePWA({
@@ -66,10 +68,16 @@ export default defineConfig({
             },
           },
           {
+            // Contenido editable desde el panel: red primero, para que lo guardado se vea
+            // al recargar. La copia guardada solo se usa sin conexión.
             urlPattern: ({ url }) =>
               /^\/api\/public\/(?:site|pages\/|team|collaborators)/.test(url.pathname),
-            handler: "StaleWhileRevalidate",
-            options: { cacheName: "api-contenido", expiration: { maxEntries: 20 } },
+            handler: "NetworkFirst",
+            options: {
+              cacheName: "api-contenido",
+              networkTimeoutSeconds: 4,
+              expiration: { maxEntries: 20 },
+            },
           },
           {
             // Noticias publicadas: disponibles offline una vez leídas.

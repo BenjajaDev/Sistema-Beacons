@@ -26,7 +26,8 @@ anota qué se escuchó.
 | 5 | Pulsar «Nosotros» en el menú | Se anuncia el título de la nueva página (el foco va a su h1) | | |
 | 6 | En móvil, activar «Menú» | Se anuncia «Menú, botón, contraído/expandido»; Escape (o atrás) lo cierra | | |
 | 7 | Grupo «Tema de colores» | Se anuncia como grupo de 3 opciones con la elegida marcada; las flechas cambian | | |
-| 8 | Botones A− / A+ | Al pulsar se anuncia «Texto al 113 %», etc. En el límite siguen enfocables | | |
+| 8 | Grupo «Zoom de la página» (Zoom− / Zoom+) | Al pulsar se anuncia «Zoom al 110 %», etc. En el límite siguen enfocables; con zoom, el encabezado pasa a «Menú» y el zoom sigue visible | | |
+| 8b | «Escuchar esta sección» y el botón de voz de una imagen | Se lee en voz alta la audiodescripción o el texto alternativo; el botón pasa a «Detener la lectura» | | |
 | 9 | Noticias: recorrer la lista | Cada tarjeta anuncia su título como enlace una sola vez (no tres enlaces repetidos) | | |
 | 10 | Paginación | «Paginación de noticias, navegación»; la página actual se anuncia como actual | | |
 | 11 | Abrir una noticia con imágenes | Cada imagen lee su texto alternativo; el pie de foto se lee después | | |

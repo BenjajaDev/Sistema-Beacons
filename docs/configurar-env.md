@@ -69,6 +69,8 @@ Qué es cada una:
 
 **Guarda tu `ADMIN_PATH`**: es la dirección por la que entrarás al panel.
 
+El comando imprime además `EDGE_PROXY_SECRET`. En tu computador **no la pegues**: solo se usa en producción, detrás de Cloudflare Pages ([`docs/cloudflare-pages.md`](cloudflare-pages.md)). Con ella definida, el servidor responde 404 a todo lo que no llegue a través de Cloudflare.
+
 ## 3. Elegir la base de datos
 
 Elige **una** de las dos opciones.
@@ -144,6 +146,7 @@ Para encender la página en tu computador **no hace falta tocar nada más**. Est
 | `CORS_ORIGINS`                               | vacía                       | Déjala vacía: el servidor sirve la página y el panel desde el mismo origen.                                          |
 | `TRUST_PROXY`                                | `false`                     | `1` en producción si hay un proxy o balanceador delante (Render, Railway, Nginx…).                                   |
 | `CSP_IMG_HOSTS`                              | vacía                       | Solo si muestras imágenes de otro dominio.                                                                           |
+| `EDGE_PROXY_SECRET`                          | comentada                   | Solo en producción con Cloudflare Pages delante ([`docs/cloudflare-pages.md`](cloudflare-pages.md)).                 |
 | `STORAGE_DRIVER`                             | `local`                     | `supabase` para guardar las imágenes en Supabase Storage ([`docs/supabase.md`](supabase.md), paso 7).                |
 | `UPLOAD_DIR`, `UPLOAD_MAX_MB`                | `uploads`, `5`              | Carpeta y tamaño máximo de las imágenes subidas en modo `local`.                                                     |
 | `BACKUP_INTERVAL_HOURS`, `BACKUP_KEEP`       | `24`, `14`                  | Cada cuántas horas se respalda la base y cuántos respaldos se conservan. `0` desactiva el automático.                |
@@ -213,7 +216,9 @@ Un `.env` de producción parte del mismo archivo, con estos cambios:
 8. Sin `TEST_DATABASE_URL`.
 9. `SEED_*` con correos reales y contraseñas temporales; bórralas después del primer ingreso.
 
-En plataformas como Render o Railway no se sube el archivo: se crean las mismas variables en su panel de variables de entorno. Los comandos de compilación y arranque están en la sección [Despliegue](../README.md#despliegue) del README.
+10. Con Cloudflare Pages delante, `EDGE_PROXY_SECRET` con el mismo valor que en Cloudflare.
+
+En plataformas como Render no se sube el archivo: se crean las mismas variables en su panel. El despliegue con Render y Cloudflare Pages, con `render.yaml` ya preparado, está en [`docs/cloudflare-pages.md`](cloudflare-pages.md).
 
 ## Problemas frecuentes
 

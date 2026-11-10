@@ -40,6 +40,8 @@ export function parseOrThrow<T extends z.ZodType>(schema: T, data: unknown): z.i
 export function errorHandler(logger: Logger): ErrorRequestHandler {
   return (err, req, res, _next) => {
     if (err instanceof ApiError) {
+      // Los 5xx previstos (un servicio externo que falla) también quedan en el registro.
+      if (err.status >= 500) logger.error({ err, url: req.originalUrl }, err.message);
       res.status(err.status).json({ error: err.message, code: err.code, ...err.extra });
       return;
     }

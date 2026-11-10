@@ -1,7 +1,10 @@
 import type { Page } from "../generated/prisma/enums.js";
 import type { Db } from "../lib/prisma.js";
 import { SLUG_REGEX } from "../lib/slug.js";
-import { parseFooter } from "./footer.js";
+import { parseFooter, type Footer } from "./footer.js";
+import { parseVoice } from "./voice.js";
+import { publicSectionImages, type ImagenPublica } from "./section-images.js";
+import { conAudiodescripcionInicial } from "./sections.js";
 import { PUBLIC_NEWS_INCLUDE, toNewsCard, toNewsDetail } from "./news-view.js";
 import { FONT_OPTIONS, type Fonts } from "./theme.js";
 
@@ -30,11 +33,19 @@ function soloHtml(valor: unknown): unknown {
   return valor;
 }
 
+type PiePublico = Omit<Footer, "logo" | "imagen"> & {
+  logo?: ImagenPublica;
+  imagen?: ImagenPublica;
+};
+
 export async function getSite(db: Db) {
-  const s = await db.siteSettings.findUnique({
-    where: { id: 1 },
-    include: { logoLight: IMAGEN, logoDark: IMAGEN, favicon: IMAGEN },
-  });
+  const [s, respaldos] = await Promise.all([
+    db.siteSettings.findUnique({
+      where: { id: 1 },
+      include: { logoLight: IMAGEN, logoDark: IMAGEN, favicon: IMAGEN },
+    }),
+    getBackers(db),
+  ]);
   if (!s) return null;
   const fuentes = s.fonts as Fonts;
   return {
@@ -57,7 +68,11 @@ export async function getSite(db: Db) {
       redes: s.socials,
     },
     accesibilidad: s.accessibilityStatement,
-    pie: parseFooter(s.footer),
+    // Logo e imagen del pie como en las secciones: URL, tamaño y alt, sin ids internos.
+    pie: publicSectionImages(parseFooter(s.footer)) as PiePublico,
+    voz: parseVoice(s.voice),
+    // Van en el pie de todas las páginas: llegan con los datos del sitio.
+    respaldos,
   };
 }
 
@@ -69,7 +84,12 @@ export async function getPage(db: Db, page: Page) {
     orderBy: { order: "asc" },
     select: { key: true, content: true },
   });
-  return { secciones: secciones.map((s) => ({ key: s.key, content: soloHtml(s.content) })) };
+  return {
+    secciones: secciones.map((s) => ({
+      key: s.key,
+      content: publicSectionImages(soloHtml(conAudiodescripcionInicial(s.key, s.content))),
+    })),
+  };
 }
 
 export async function getNewsList(
@@ -116,10 +136,30 @@ export async function getTeam(db: Db) {
       name: m.name,
       position: m.position,
       bio: m.bio,
+      area: m.area,
+      education: m.education,
+      email: m.email,
       links: m.links,
       photo: m.photo ? { ...m.photo, alt: m.photoAlt ?? "" } : null,
+      photoFrame: m.photoFrame,
     })),
   };
+}
+
+// Instituciones que respaldan el proyecto, sin ids internos.
+async function getBackers(db: Db) {
+  const filas = await db.backer.findMany({
+    where: { visible: true },
+    orderBy: { order: "asc" },
+    include: { logo: IMAGEN },
+  });
+  return filas.map((r) => ({
+    name: r.name,
+    kind: r.kind,
+    description: r.description,
+    url: r.url,
+    logo: r.logo ? { ...r.logo, alt: r.logoAlt ?? r.name } : null,
+  }));
 }
 
 export async function getCollaborators(db: Db) {

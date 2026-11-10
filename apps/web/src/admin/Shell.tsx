@@ -38,8 +38,10 @@ export const MENU: GrupoMenu[] = [
       { to: "/secciones", texto: "Secciones", roles: CONTENIDO },
       { to: "/noticias", texto: "Noticias", roles: CONTENIDO },
       { to: "/equipo", texto: "Equipo y colaboradores", roles: CONTENIDO },
+      { to: "/respaldos", texto: "Respaldos", roles: CONTENIDO },
       { to: "/identidad", texto: "Identidad visual", roles: CONTENIDO },
       { to: "/pie", texto: "Pie de página", roles: CONTENIDO },
+      { to: "/audiodescriptor", texto: "Audiodescriptor", roles: CONTENIDO },
     ],
   },
   {

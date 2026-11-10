@@ -4,7 +4,7 @@ import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, expect, it } from "vitest";
 import { contrastRatio, DEFAULT_PALETTE } from "@server-theme";
-import { TextSizeControl, ThemeSwitcher } from "@shared/theme/Controls";
+import { TextSizeControl, ThemeSwitcher, ZoomControl } from "@shared/theme/Controls";
 import { expectNoAxeViolations } from "./axe";
 
 describe("selector de tema", () => {
@@ -46,6 +46,35 @@ describe("tamaño de texto", () => {
     for (let i = 0; i < 6; i++) await usuario.click(menos);
     expect(document.documentElement.style.fontSize).toBe("87.5%");
     expect(menos).toHaveAttribute("aria-disabled", "true");
+    await expectNoAxeViolations(container);
+  });
+});
+
+describe("zoom de la página", () => {
+  it("Zoom+ y Zoom− muestran el porcentaje, lo anuncian, lo guardan y respetan los límites", async () => {
+    const usuario = userEvent.setup();
+    const { container } = render(<ZoomControl />);
+    expect(screen.getByRole("group", { name: "Zoom de la página" })).toHaveTextContent("100 %");
+    const mas = screen.getByRole("button", { name: /^Zoom\+/ });
+    const menos = screen.getByRole("button", { name: /^Zoom−/ });
+
+    await usuario.click(mas);
+    expect(document.documentElement.style.getPropertyValue("--zoom-pagina")).toBe("1.1");
+    expect(screen.getByRole("status")).toHaveTextContent("Zoom al 110 %");
+    expect(localStorage.getItem("signal-zoom")).toBe("1.1");
+
+    for (let i = 0; i < 8; i++) await usuario.click(mas);
+    expect(screen.getByRole("status")).toHaveTextContent("Zoom al 200 %");
+    expect(mas).toHaveAttribute("aria-disabled", "true");
+    expect(mas).toHaveFocus();
+
+    for (let i = 0; i < 8; i++) await usuario.click(menos);
+    expect(screen.getByRole("status")).toHaveTextContent("Zoom al 80 %");
+    expect(menos).toHaveAttribute("aria-disabled", "true");
+    await usuario.click(mas);
+    await usuario.click(mas);
+    // En 100 % no queda nada aplicado.
+    expect(document.documentElement.style.getPropertyValue("--zoom-pagina")).toBe("");
     await expectNoAxeViolations(container);
   });
 });

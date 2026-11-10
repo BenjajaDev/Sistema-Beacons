@@ -9,6 +9,7 @@ import { Cargando, EmptyState, ErrorState, Skeleton } from "@shared/ui/States";
 import { useToast } from "@shared/ui/Toast";
 import { adminFetch, type Ajustes, type Enlace, type Mensaje } from "../api";
 import { useAuth } from "../auth";
+import { ResponderCorreo } from "../ResponderCorreo";
 import { AvisoCambiosSinGuardar, Cabecera, formatoFecha, usePanelPage } from "../ui";
 
 interface FormContacto {
@@ -181,22 +182,6 @@ export function DatosContacto({ ajustes }: { ajustes: Ajustes }) {
   );
 }
 
-// Cuenta desde la que se responden los mensajes. Gmail abre la redacción en ella si
-// está iniciada en el navegador; si no, pide entrar con esa cuenta.
-const CORREO_RESPUESTAS = "proyectosignal.ua@gmail.com";
-
-// La respuesta se redacta en Gmail (en el navegador), con destinatario y asunto listos.
-function respuestaEnGmail(m: Mensaje) {
-  const params = new URLSearchParams({
-    authuser: CORREO_RESPUESTAS,
-    view: "cm",
-    fs: "1",
-    to: m.email,
-    su: `Re: ${m.subject || "Tu mensaje a SIGNAL"}`,
-  });
-  return `https://mail.google.com/mail/?${params}`;
-}
-
 function Mensajes() {
   const toast = useToast();
   const queryClient = useQueryClient();
@@ -274,18 +259,11 @@ function Mensajes() {
                 </p>
                 <p className="mensaje__texto">{m.message}</p>
                 <div className="fila-botones">
-                  <a
-                    className="btn btn--secundario"
-                    href={respuestaEnGmail(m)}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                  >
-                    Responder por correo
-                    <span className="visually-hidden">
-                      {" "}
-                      a {m.name} (se abre Gmail en otra pestaña)
-                    </span>
-                  </a>
+                  <ResponderCorreo
+                    correo={m.email}
+                    nombre={m.name}
+                    asunto={`Re: ${m.subject ?? "Tu mensaje a SIGNAL"}`}
+                  />
                   <Button
                     variante="fantasma"
                     onClick={() => leido.mutate({ id: m.id, valor: !m.readAt })}

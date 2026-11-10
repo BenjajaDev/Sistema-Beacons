@@ -10,7 +10,13 @@ import android.util.Log
 import android.view.accessibility.AccessibilityManager
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
-import com.example.proyectobeacons.data.BeaconRepository
+import com.example.proyectobeacons.data.AlmacenEnArchivo
+import com.example.proyectobeacons.data.CatalogoBeacons
+import com.example.proyectobeacons.data.FuenteCatalogoRetrofit
+import com.example.proyectobeacons.data.ResultadoSincronizacion
+import com.example.proyectobeacons.data.RetrofitClient
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -20,6 +26,8 @@ import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
+import kotlinx.coroutines.withTimeoutOrNull
+import java.io.File
 import kotlin.math.roundToInt
 
 data class BeaconLocation(
@@ -84,8 +92,17 @@ class BeaconViewModel(application: Application) : AndroidViewModel(application) 
         /** Periodo de reevaluación de qué beacon está enganchado. */
         const val REFRESH_INTERVAL_MS = 250L
 
-        /** Espera entre reintentos al servidor cuando la consulta falló. */
+        /** Cada cuánto se vuelve a buscar en el catálogo un beacon que no estaba. */
         const val RESOLVE_RETRY_MS = 10_000L
+
+        /** Con el catálogo al día, se vuelve a preguntar al servidor cada hora. */
+        const val SINCRONIZAR_CADA_MS = 60 * 60_000L
+
+        /** Sin conexión, se reintenta con espera creciente: 1, 2, 4… hasta 15 min. */
+        const val REINTENTO_INICIAL_MS = 60_000L
+        const val REINTENTO_MAXIMO_MS = 15 * 60_000L
+
+        const val ARCHIVO_CATALOGO = "catalogo-beacons.json"
 
         /** Periodo del volcado de diagnóstico a logcat. */
         const val DIAGNOSTICO_MS = 2_000L
@@ -95,7 +112,26 @@ class BeaconViewModel(application: Application) : AndroidViewModel(application) 
     private val tracker = BeaconDistanceTracker()
     private val ttsManager = TextToSpeechManager(application)
     private val settingsRepository = SettingsRepository(application)
-    private val beaconRepository = BeaconRepository()
+    /** Fichas de los beacons guardadas en el teléfono: detectar no espera a la red. */
+    private val catalogo = CatalogoBeacons(
+        almacen = AlmacenEnArchivo(File(application.filesDir, ARCHIVO_CATALOGO)),
+        incluido = {
+            runCatching {
+                application.assets.open(ARCHIVO_CATALOGO).bufferedReader().use { it.readText() }
+            }.getOrNull()
+        },
+        fuente = FuenteCatalogoRetrofit(RetrofitClient.api),
+    )
+
+    /** Pedidos de sincronización inmediata (un beacon que no está en el catálogo). */
+    private val pedidosDeSincronizacion = Channel<Unit>(Channel.CONFLATED)
+
+    /**
+     * Aviso para la persona si la información guardada puede estar desactualizada
+     * (más de 7 días sin confirmarse con el servidor); null si está al día.
+     */
+    private val _avisoCatalogo = MutableStateFlow<String?>(null)
+    val avisoCatalogo: StateFlow<String?> = _avisoCatalogo.asStateFlow()
 
     private val _uiState = MutableStateFlow<BeaconUiState>(BeaconUiState.Scanning)
     val uiState: StateFlow<BeaconUiState> = _uiState.asStateFlow()
@@ -127,11 +163,13 @@ class BeaconViewModel(application: Application) : AndroidViewModel(application) 
     private var candidatoCambio: String? = null
     private var votosSalida = 0
 
-    /** Datos ya resueltos en el servidor, para no consultarlo en cada emisión. */
-    private val locationCache = mutableMapOf<String, BeaconLocation>()
+    /** Si el beacon enganchado tiene ficha en el catálogo (si no, se reintenta). */
+    private var activeRegistrado = false
+    private var ultimoPedidoDeSincronizacion = 0L
     private val selectionMutex = Mutex()
 
     init {
+        viewModelScope.launch(Dispatchers.IO) { mantenerCatalogo() }
         viewModelScope.launch {
             settingsRepository.settings.collect { settings ->
                 activationDistance = settings.activationDistance
@@ -283,7 +321,9 @@ class BeaconViewModel(application: Application) : AndroidViewModel(application) 
         votosSalida = 0
 
         lastResolveAttempt = now
-        val location = resolveLocation(chosen.id, chosen.major, chosen.minor)
+        val registrada = resolveLocation(chosen.major, chosen.minor)
+        activeRegistrado = registrada != null
+        val location = registrada ?: puntoNoRegistrado(chosen.major, chosen.minor)
         Log.i(
             "SIGNAL_VM",
             "ENGANCHADO ${chosen.id} · aprox ${fmt(chosen.closestDistance)}m · " +
@@ -313,9 +353,8 @@ class BeaconViewModel(application: Application) : AndroidViewModel(application) 
 
     /**
      * El beacon enganchado sigue siendo el mismo: se conserva el mensaje y solo
-     * se actualiza la distancia. Si el servidor falló al engancharlo, se
-     * reintenta de vez en cuando para sustituir el texto de respaldo, sin
-     * volver a anunciar nada.
+     * se actualiza la distancia. Si no estaba en el catálogo, se vuelve a buscar
+     * de vez en cuando: cuando la sincronización lo trae, se anuncia su ficha.
      */
     private suspend fun refrescarDistancia(active: TrackedBeacon, now: Long) {
         val current = _uiState.value
@@ -326,18 +365,22 @@ class BeaconViewModel(application: Application) : AndroidViewModel(application) 
         }
         _uiState.value = current.copy(distance = active.distance)
 
-        if (active.id in locationCache || now - lastResolveAttempt <= RESOLVE_RETRY_MS) return
+        if (activeRegistrado || now - lastResolveAttempt <= RESOLVE_RETRY_MS) return
         lastResolveAttempt = now
-        val info = resolveLocation(active.id, active.major, active.minor)
-        if (active.id !in locationCache) return
-        (_uiState.value as? BeaconUiState.Detected)?.let {
-            _uiState.value = it.copy(
-                locationName = info.locationName,
-                ttsMessage = info.ttsMessage,
-                zone = info.zone,
-            )
-        }
+        val info = resolveLocation(active.major, active.minor) ?: return
+        activeRegistrado = true
+        _uiState.value = current.copy(
+            distance = active.distance,
+            locationName = info.locationName,
+            ttsMessage = info.ttsMessage,
+            zone = info.zone,
+        )
         _lastKnownLocation.value = info
+        lastSpokenId = active.id
+        lastSpokenAt = now
+        speakInternal(info.ttsMessage)
+        vibrate()
+        addToHistory(info)
     }
 
     /**
@@ -382,26 +425,49 @@ class BeaconViewModel(application: Application) : AndroidViewModel(application) 
 
     private fun fmt(meters: Double) = "%.2f".format(meters)
 
-    private suspend fun resolveLocation(id: String, major: Int, minor: Int): BeaconLocation {
-        locationCache[id]?.let { return it }
-        Log.d("SIGNAL_VM", "Consultando servidor para M:$major m:$minor")
-        return beaconRepository.fetchBeaconInfo(major, minor).fold(
-            onSuccess = { info ->
-                Log.i("SIGNAL_VM", "Servidor respondió: ${info.titulo}")
-                BeaconLocation(info.titulo, info.ubicacion ?: "Desconocido", info.descripcion)
-                    .also { locationCache[id] = it }
-            },
-            onFailure = { error ->
-                // No se cachea el respaldo: se reintenta el servidor la próxima vez.
-                Log.e("SIGNAL_VM", "Error de red/servidor: ${error.message}")
-                resolveFallback(major, minor)
+    /** Ficha del beacon desde el catálogo del teléfono, o null si no está. No usa la red. */
+    private fun resolveLocation(major: Int, minor: Int): BeaconLocation? {
+        val ficha = catalogo.buscar(major, minor)
+        if (ficha == null) {
+            // Puede ser un punto recién agregado en el panel: se pide sincronizar, como
+            // mucho una vez por minuto (sin conexión, cada intento espera la red).
+            val now = System.currentTimeMillis()
+            if (now - ultimoPedidoDeSincronizacion >= REINTENTO_INICIAL_MS) {
+                ultimoPedidoDeSincronizacion = now
+                Log.i("SIGNAL_VM", "M:$major m:$minor no está en el catálogo; se pide sincronizar")
+                pedidosDeSincronizacion.trySend(Unit)
             }
-        )
+            return null
+        }
+        return BeaconLocation(ficha.titulo, ficha.ubicacion ?: "Sin ubicación", ficha.descripcion)
     }
-    private fun resolveFallback(major: Int, minor: Int): BeaconLocation = when {
-        major == 1 && minor == 1 -> BeaconLocation("Entrada Principal", "Planta baja", "Estás en la entrada principal.")
-        major == 1 && minor == 2 -> BeaconLocation("Frente a Ascensores", "Planta baja", "Los ascensores están frente a ti.")
-        else -> BeaconLocation("Punto M:$major m:$minor", "Desconocido", "Ubicación no registrada en el servidor.")
+
+    private fun puntoNoRegistrado(major: Int, minor: Int) = BeaconLocation(
+        locationName = "Punto sin información ($major-$minor)",
+        zone = "Sin ubicación",
+        ttsMessage = "Este punto aún no está en la información guardada en el teléfono. " +
+            "Conéctate a internet para actualizarla.",
+    )
+
+    /**
+     * Carga el catálogo guardado (o el incluido en la app) y lo mantiene al día:
+     * sincroniza al abrir la app, cada hora y cuando aparece un beacon que no
+     * está. Sin conexión, reintenta con espera creciente.
+     */
+    private suspend fun mantenerCatalogo() {
+        catalogo.cargar()
+        _avisoCatalogo.value = catalogo.aviso()
+        var espera = REINTENTO_INICIAL_MS
+        while (true) {
+            val resultado = catalogo.sincronizar()
+            _avisoCatalogo.value = catalogo.aviso()
+            Log.i("SIGNAL_VM", "Sincronización del catálogo: $resultado (${catalogo.estado.value?.total ?: 0} fichas)")
+            val alDia = resultado == ResultadoSincronizacion.ACTUALIZADO ||
+                resultado == ResultadoSincronizacion.SIN_CAMBIOS
+            val pausa = if (alDia) SINCRONIZAR_CADA_MS else espera
+            espera = if (alDia) REINTENTO_INICIAL_MS else (espera * 2).coerceAtMost(REINTENTO_MAXIMO_MS)
+            withTimeoutOrNull(pausa) { pedidosDeSincronizacion.receive() }
+        }
     }
 
     private fun addToHistory(location: BeaconLocation) {
