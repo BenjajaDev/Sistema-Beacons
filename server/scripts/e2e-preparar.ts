@@ -21,6 +21,11 @@ try {
     password: "Clave-E2E-Editor-2026",
     role: "EDITOR",
   });
+  await createUser(db, {
+    email: "social@e2e.test",
+    password: "Clave-E2E-Social-2026",
+    role: "SOCIAL",
+  });
   // Cinco personas para probar la fila del equipo y su card desplegable.
   const equipo = ["Ana Rojas", "Luis Pérez", "Sofía Díaz", "Pedro Soto", "Valentina Muñoz"];
   await db.teamMember.createMany({

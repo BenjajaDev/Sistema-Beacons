@@ -1,4 +1,4 @@
-import { useInfiniteQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useMemo, useState } from "react";
 import { ApiError, mensajeDeError } from "@shared/api";
 import { Button } from "@shared/ui/Button";
@@ -8,6 +8,7 @@ import { TextArea, TextField } from "@shared/ui/Field";
 import { Cargando, EmptyState, ErrorState, Skeleton } from "@shared/ui/States";
 import { useToast } from "@shared/ui/Toast";
 import { adminFetch, type Ajustes, type Enlace, type Mensaje } from "../api";
+import { useAuth } from "../auth";
 import { ResponderCorreo } from "../ResponderCorreo";
 import { AvisoCambiosSinGuardar, Cabecera, formatoFecha, usePanelPage } from "../ui";
 
@@ -307,17 +308,47 @@ function Mensajes() {
   );
 }
 
-// Los datos de contacto se editan en «Pie de página» (DatosContacto se usa allí).
+// Los datos de contacto se editan en «Pie de página» (edición y administración) o en
+// «Contacto y redes» (comunicación). Las dos vistas usan DatosContacto.
 export default function Contacto() {
   const h1 = usePanelPage("Mensajes");
+  const { tiene } = useAuth();
+  const dondeSeEditan = tiene("ADMIN", "EDITOR") ? "«Pie de página»" : "«Contacto y redes»";
   return (
     <div className="vista-contenido">
       <Cabecera
         refH1={h1}
         titulo="Mensajes"
-        descripcion="Lo que llega por el formulario de la página Contacto. Teléfono, correo y redes se editan en «Pie de página»."
+        descripcion={`Lo que llega por el formulario de la página Contacto. Teléfono, correo y redes se editan en ${dondeSeEditan}.`}
       />
       <Mensajes />
+    </div>
+  );
+}
+
+// Vista del rol de comunicación: solo los datos de contacto y las redes, sin el resto del pie.
+export function ContactoYRedes() {
+  const h1 = usePanelPage("Contacto y redes");
+  const { data, isPending, error, refetch } = useQuery({
+    queryKey: ["admin", "ajustes"],
+    queryFn: () => adminFetch<{ settings: Ajustes }>("/settings"),
+  });
+  return (
+    <div className="vista-contenido">
+      <Cabecera
+        refH1={h1}
+        titulo="Contacto y redes"
+        descripcion="El teléfono, el correo, la dirección, las redes sociales y la declaración de accesibilidad que muestra el sitio."
+      />
+      {isPending ? (
+        <Cargando>
+          <Skeleton alto="12rem" />
+        </Cargando>
+      ) : error ? (
+        <ErrorState mensaje={mensajeDeError(error)} onReintentar={() => refetch()} />
+      ) : (
+        <DatosContacto ajustes={data.settings} />
+      )}
     </div>
   );
 }

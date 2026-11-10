@@ -12,7 +12,7 @@ import type { Page } from "../../generated/prisma/enums.js";
 import { ApiError, forbidden, notFound, parseOrThrow } from "../../http/errors.js";
 import { asJson } from "../../lib/json.js";
 import type { AdminDeps } from "./deps.js";
-import { ADMIN_ONLY, ANY_ROLE, type AdminRoute } from "./registry.js";
+import { ADMIN_ONLY, CONTENT_ROLES, type AdminRoute } from "./registry.js";
 
 // Las secciones tienen contenido publicado (`content`) y un borrador aparte.
 // Editores y administradores escriben el borrador; un editor lo envía a revisión
@@ -69,7 +69,7 @@ export function sectionRoutes({ db, audit }: AdminDeps): AdminRoute[] {
 
   return [
     {
-      roles: ANY_ROLE,
+      roles: CONTENT_ROLES,
       method: "get",
       path: "/sections",
       handler: async (_req, res) => {
@@ -107,7 +107,7 @@ export function sectionRoutes({ db, audit }: AdminDeps): AdminRoute[] {
       },
     },
     {
-      roles: ANY_ROLE,
+      roles: CONTENT_ROLES,
       method: "get",
       path: "/sections/:key",
       handler: async (req, res) => {
@@ -116,7 +116,7 @@ export function sectionRoutes({ db, audit }: AdminDeps): AdminRoute[] {
       },
     },
     {
-      roles: ANY_ROLE,
+      roles: CONTENT_ROLES,
       method: "put",
       path: "/sections/:key/draft",
       handler: async (req, res) => {
@@ -147,7 +147,7 @@ export function sectionRoutes({ db, audit }: AdminDeps): AdminRoute[] {
       },
     },
     {
-      roles: ANY_ROLE,
+      roles: CONTENT_ROLES,
       method: "delete",
       path: "/sections/:key/draft",
       handler: async (req, res) => {
@@ -176,7 +176,7 @@ export function sectionRoutes({ db, audit }: AdminDeps): AdminRoute[] {
       },
     },
     {
-      roles: ANY_ROLE,
+      roles: CONTENT_ROLES,
       method: "post",
       path: "/sections/:key/submit",
       handler: async (req, res) => {

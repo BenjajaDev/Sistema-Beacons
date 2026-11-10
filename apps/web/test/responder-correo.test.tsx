@@ -20,7 +20,7 @@ describe("responder un mensaje", () => {
   it("arma los enlaces de Gmail, Outlook y la app con la dirección y el asunto escapados", () => {
     const e = enlacesDeRespuesta(CORREO, "Re: Visita & recorrido");
     expect(e.gmail).toBe(
-      "https://mail.google.com/mail/?view=cm&fs=1&to=ana%2Bsignal%40ejemplo.cl&su=Re%3A%20Visita%20%26%20recorrido",
+      "https://mail.google.com/mail/?authuser=proyectosignal.ua%40gmail.com&view=cm&fs=1&to=ana%2Bsignal%40ejemplo.cl&su=Re%3A%20Visita%20%26%20recorrido",
     );
     expect(e.outlook).toBe(
       "https://outlook.office.com/mail/deeplink/compose?to=ana%2Bsignal%40ejemplo.cl&subject=Re%3A%20Visita%20%26%20recorrido",

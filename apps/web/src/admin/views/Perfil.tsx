@@ -5,6 +5,7 @@ import { Button } from "@shared/ui/Button";
 import { ErrorSummary } from "@shared/ui/ErrorSummary";
 import { TextField } from "@shared/ui/Field";
 import { useToast } from "@shared/ui/Toast";
+import { NOMBRE_ROL } from "../api";
 import { useAuth } from "../auth";
 import { Cabecera, usePanelPage } from "../ui";
 
@@ -91,7 +92,7 @@ export default function Perfil() {
               <div>
                 <dt>Rol</dt>
                 <dd>
-                  <span className="insignia">{esAdmin ? "Administración" : "Edición"}</span>
+                  <span className="insignia">{NOMBRE_ROL[usuario.role]}</span>
                 </dd>
               </div>
             </dl>

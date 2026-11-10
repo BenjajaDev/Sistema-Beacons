@@ -21,7 +21,16 @@ export interface ProcessedImage {
   height: number;
 }
 
-export async function processImage(original: Buffer): Promise<ProcessedImage> {
+export interface ProcessOptions {
+  // Quita el borde de color uniforme (transparente, blanco o de fondo) que rodea el
+  // dibujo. Para logos: un margen grande los hace verse diminutos en el encabezado.
+  recortarBordes?: boolean;
+}
+
+export async function processImage(
+  original: Buffer,
+  { recortarBordes = false }: ProcessOptions = {},
+): Promise<ProcessedImage> {
   const tipo = await fileTypeFromBuffer(original);
   if (!tipo || !PERMITIDOS.has(tipo.mime)) {
     throw new ApiError(
@@ -31,17 +40,24 @@ export async function processImage(original: Buffer): Promise<ProcessedImage> {
     );
   }
 
-  let imagen = sharp(original, { limitInputPixels: PIXELES_MAXIMOS, failOn: "error" })
-    .rotate() // aplica la orientación EXIF antes de descartarla
-    .resize({ width: ANCHO_MAXIMO, withoutEnlargement: true });
-
   // PNG se mantiene (logos con transparencia, íconos); el resto pasa a WebP.
   const esPng = tipo.mime === "image/png";
-  imagen = esPng ? imagen.png({ compressionLevel: 9 }) : imagen.webp({ quality: 82 });
+  const codificar = (recortar: boolean) => {
+    let imagen = sharp(original, { limitInputPixels: PIXELES_MAXIMOS, failOn: "error" }).rotate(); // aplica la orientación EXIF antes de descartarla
+    if (recortar) imagen = imagen.trim({ threshold: 12 });
+    imagen = imagen.resize({ width: ANCHO_MAXIMO, withoutEnlargement: true });
+    imagen = esPng ? imagen.png({ compressionLevel: 9 }) : imagen.webp({ quality: 82 });
+    return imagen.toBuffer({ resolveWithObject: true });
+  };
 
   let resultado: { data: Buffer; info: OutputInfo };
   try {
-    resultado = await imagen.toBuffer({ resolveWithObject: true });
+    // Si la imagen es de un solo color no hay borde que quitar y sharp falla: se
+    // guarda tal cual.
+    resultado = await codificar(recortarBordes).catch((err: unknown) => {
+      if (recortarBordes) return codificar(false);
+      throw err;
+    });
   } catch {
     throw new ApiError(
       422,

@@ -76,6 +76,7 @@ const respaldos: Config<Respaldo, FormRespaldo> = {
   ruta: "/backers",
   titulo: "Instituciones",
   elemento: "Respaldo",
+  avisoAgregado: "Respaldo agregado.",
   vacio: "Aún no hay instituciones que respalden el proyecto",
   descripcion: (r) => [r.kind, r.description].filter(Boolean).join(" · "),
   miniatura: (r) => r.logo?.url ?? null,

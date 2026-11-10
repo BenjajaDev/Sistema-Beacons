@@ -3,7 +3,7 @@ import { z } from "zod";
 import { hashPassword, PASSWORD_MIN_LENGTH, verifyPassword } from "../../auth/password.js";
 import { ApiError, parseOrThrow, unauthenticated } from "../../http/errors.js";
 import type { AdminDeps } from "./deps.js";
-import { ANY_ROLE, type AdminRoute } from "./registry.js";
+import { ALL_ROLES, type AdminRoute } from "./registry.js";
 
 const PASSWORD_MAX_LENGTH = 256;
 
@@ -159,7 +159,7 @@ export function loginHandler(deps: AdminDeps): RequestHandler {
 
 export function authRoutes(deps: AdminDeps): AdminRoute[] {
   const { db, audit, sessions } = deps;
-  const pendiente = { roles: ANY_ROLE, allowPendingPasswordChange: true } as const;
+  const pendiente = { roles: ALL_ROLES, allowPendingPasswordChange: true } as const;
 
   return [
     {
@@ -171,7 +171,7 @@ export function authRoutes(deps: AdminDeps): AdminRoute[] {
       },
     },
     {
-      roles: ANY_ROLE,
+      roles: ALL_ROLES,
       method: "patch",
       path: "/auth/me",
       handler: async (req, res) => {

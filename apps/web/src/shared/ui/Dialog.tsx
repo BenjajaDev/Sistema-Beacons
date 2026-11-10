@@ -50,9 +50,9 @@ export function Dialog({
       aria-labelledby={`${id}-titulo`}
       aria-describedby={descripcion ? `${id}-desc` : undefined}
       onClose={(e) => {
-        // React propaga «close» por el árbol de componentes: sin esto, cerrar un
-        // diálogo anidado (el encuadre dentro de «Editar persona») cierra también el
-        // de afuera y se pierde lo que no se había guardado.
+        // En React el evento close se propaga por el árbol de componentes: el cierre
+        // de un diálogo interno (encuadre, biblioteca de imágenes) llegaría aquí y
+        // cerraría también este. Solo cuenta el cierre de este mismo diálogo.
         if (e.target !== e.currentTarget) return;
         onCerrar();
         anterior.current?.focus();

@@ -70,6 +70,34 @@ describe.skipIf(!hasTestDb)("administración de contenido", () => {
       expect((await sharp(guardado).metadata()).exif).toBeUndefined();
     });
 
+    it("a pedido (logos), quita el margen de color uniforme que rodea el dibujo", async () => {
+      // Lienzo blanco de 200 × 200 con un dibujo de 80 × 40 al centro.
+      const dibujo = await sharp({
+        create: { width: 80, height: 40, channels: 3, background: "#004aad" },
+      })
+        .png()
+        .toBuffer();
+      const logo = await sharp({
+        create: { width: 200, height: 200, channels: 3, background: "#fff" },
+      })
+        .composite([{ input: dibujo, left: 60, top: 80 }])
+        .png()
+        .toBuffer();
+
+      const recortado = await as(app, editor, "post", "/api/admin/media")
+        .field("recortarBordes", "true")
+        .attach("archivo", logo, "logo.png");
+      expect(recortado.status).toBe(201);
+      expect(recortado.body.media).toMatchObject({ width: 80, height: 40 });
+
+      // Sin pedirlo, la imagen queda igual; y una de un solo color no falla.
+      expect((await subir(editor, logo)).body.media).toMatchObject({ width: 200, height: 200 });
+      const lisa = await as(app, editor, "post", "/api/admin/media")
+        .field("recortarBordes", "true")
+        .attach("archivo", await png(), "lisa.png");
+      expect(lisa.status).toBe(201);
+    });
+
     it("rechaza un archivo que no es imagen aunque se llame .png", async () => {
       const res = await subir(editor, Buffer.from("<script>alert(1)</script>"), "falso.png");
       expect(res.status).toBe(415);
@@ -238,11 +266,20 @@ describe.skipIf(!hasTestDb)("administración de contenido", () => {
       expect(mala.status).toBe(400);
       expect(Object.keys(mala.body.campos)).toEqual(["columnas.0.enlaces.0.href"]);
 
-      // El pie es contenido: también lo edita un editor.
+      // El pie, incluidos sus datos de contacto, lo gestiona también el rol de edición.
       expect((await as(app, editor, "put", "/api/admin/settings/footer").send(pie)).status).toBe(
         200,
       );
       expect((await request(app).get("/api/public/site")).body.pie).toEqual(pie);
+      const contacto = await as(app, editor, "put", "/api/admin/settings/contact").send({
+        contactEmail: "editor@signal.cl",
+        socials: [],
+        accessibilityStatement: "Declaración.",
+      });
+      expect(contacto.status).toBe(200);
+      expect((await request(app).get("/api/public/site")).body.contacto.correo).toBe(
+        "editor@signal.cl",
+      );
     });
   });
 

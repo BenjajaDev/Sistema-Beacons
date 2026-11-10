@@ -8,6 +8,7 @@ export const PANEL = `${BASE}/${ADMIN_PATH}`;
 export const CUENTAS = {
   admin: { email: "admin@e2e.test", clave: "Clave-E2E-Admin-2026" },
   editor: { email: "editor@e2e.test", clave: "Clave-E2E-Editor-2026" },
+  social: { email: "social@e2e.test", clave: "Clave-E2E-Social-2026" },
 };
 
 // Entorno del servidor de pruebas: base signal_test, ruta y secretos de prueba.
@@ -25,6 +26,9 @@ export function entornoServidor(databaseUrl) {
     LOGIN_RATE_LIMIT: "1000",
     API_RATE_LIMIT: "10000",
     BACKUP_INTERVAL_HOURS: "0",
+    // Siempre en disco: nunca subir imágenes de prueba al bucket real de Supabase,
+    // aunque server/.env tenga STORAGE_DRIVER=supabase.
+    STORAGE_DRIVER: "local",
     UPLOAD_DIR: ".e2e-uploads",
     BEACON_SNAPSHOT_PATH: ".e2e-snapshot.json",
     SITE_URL: "",

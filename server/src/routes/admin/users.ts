@@ -10,7 +10,7 @@ import { ADMIN_ONLY, type AdminRoute } from "./registry.js";
 // Gestión de cuentas. No hay registro público: las cuentas las crea un admin con
 // una contraseña temporal que la persona debe cambiar al entrar.
 
-const role = z.enum(["ADMIN", "EDITOR"], "Elige un rol.");
+const role = z.enum(["ADMIN", "EDITOR", "SOCIAL"], "Elige un rol.");
 
 const createSchema = z.object({
   email: z.email("Escribe un correo válido.").transform((e) => e.trim().toLowerCase()),
@@ -108,7 +108,9 @@ export function userRoutes({ db, audit }: AdminDeps): AdminRoute[] {
           );
         }
         const dejaDeSerAdmin =
-          antes.role === "ADMIN" && antes.active && (d.active === false || d.role === "EDITOR");
+          antes.role === "ADMIN" &&
+          antes.active &&
+          (d.active === false || (d.role !== undefined && d.role !== "ADMIN"));
 
         const user = await db.$transaction(async (tx) => {
           if (dejaDeSerAdmin) {

@@ -5,7 +5,7 @@ import { Prisma } from "../../generated/prisma/client.js";
 import { asJson } from "../../lib/json.js";
 import type { AdminDeps } from "./deps.js";
 import { assertImage, changedFields, idParam, textoOpcional, urlHttps } from "./helpers.js";
-import { ANY_ROLE, type AdminRoute } from "./registry.js";
+import { CONTENT_ROLES, type AdminRoute } from "./registry.js";
 
 // Equipo, Colaboradores y Respaldos: listas ordenables. Son contenido: las editan
 // ADMIN y EDITOR.
@@ -132,7 +132,7 @@ function orderedCollection({ db, audit }: AdminDeps, c: Config): AdminRoute[] {
 
   return [
     {
-      roles: ANY_ROLE,
+      roles: CONTENT_ROLES,
       method: "get",
       path: c.ruta,
       handler: async (_req, res) => {
@@ -142,7 +142,7 @@ function orderedCollection({ db, audit }: AdminDeps, c: Config): AdminRoute[] {
       },
     },
     {
-      roles: ANY_ROLE,
+      roles: CONTENT_ROLES,
       method: "put",
       path: `${c.ruta}/order`,
       handler: async (req, res) => {
@@ -171,7 +171,7 @@ function orderedCollection({ db, audit }: AdminDeps, c: Config): AdminRoute[] {
       },
     },
     {
-      roles: ANY_ROLE,
+      roles: CONTENT_ROLES,
       method: "post",
       path: c.ruta,
       handler: async (req, res) => {
@@ -190,7 +190,7 @@ function orderedCollection({ db, audit }: AdminDeps, c: Config): AdminRoute[] {
       },
     },
     {
-      roles: ANY_ROLE,
+      roles: CONTENT_ROLES,
       method: "patch",
       path: `${c.ruta}/:id`,
       handler: async (req, res) => {
@@ -210,7 +210,7 @@ function orderedCollection({ db, audit }: AdminDeps, c: Config): AdminRoute[] {
       },
     },
     {
-      roles: ANY_ROLE,
+      roles: CONTENT_ROLES,
       method: "delete",
       path: `${c.ruta}/:id`,
       handler: async (req, res) => {

@@ -2,7 +2,7 @@ import { z } from "zod";
 import { notFound, parseOrThrow } from "../../http/errors.js";
 import type { AdminDeps } from "./deps.js";
 import { idParam, page, paginationSchema } from "./helpers.js";
-import { ADMIN_ONLY, type AdminRoute } from "./registry.js";
+import { ALL_ROLES, type AdminRoute } from "./registry.js";
 
 // Mensajes recibidos por el formulario de contacto de la landing.
 
@@ -18,7 +18,7 @@ export function messageRoutes({ db, audit }: AdminDeps): AdminRoute[] {
 
   return [
     {
-      roles: ADMIN_ONLY,
+      roles: ALL_ROLES,
       method: "get",
       path: "/messages",
       handler: async (req, res) => {
@@ -34,7 +34,7 @@ export function messageRoutes({ db, audit }: AdminDeps): AdminRoute[] {
       },
     },
     {
-      roles: ADMIN_ONLY,
+      roles: ALL_ROLES,
       method: "patch",
       path: "/messages/:id",
       handler: async (req, res) => {
@@ -49,7 +49,7 @@ export function messageRoutes({ db, audit }: AdminDeps): AdminRoute[] {
       },
     },
     {
-      roles: ADMIN_ONLY,
+      roles: ALL_ROLES,
       method: "delete",
       path: "/messages/:id",
       handler: async (req, res) => {

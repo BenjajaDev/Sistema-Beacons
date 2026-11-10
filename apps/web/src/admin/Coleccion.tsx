@@ -21,6 +21,8 @@ export interface Config<T extends Base, F> {
   ruta: string;
   titulo: string;
   elemento: string;
+  // Aviso al crear, con el género correcto: «Persona agregada», «Colaborador agregado».
+  avisoAgregado: string;
   vacio: string;
   descripcion: (item: T) => ReactNode;
   miniatura: (item: T) => string | null;
@@ -53,7 +55,7 @@ export function Coleccion<T extends Base, F>({ c }: { c: Config<T, F> }) {
         : adminFetch(`${c.ruta}/${(editando as T).id}`, { method: "PATCH", body: cuerpo });
     },
     onSuccess: () => {
-      toast.exito(editando === "nuevo" ? `${c.elemento} agregado.` : "Cambios guardados.");
+      toast.exito(editando === "nuevo" ? c.avisoAgregado : "Cambios guardados.");
       setEditando(null);
       invalidar();
     },

@@ -30,16 +30,16 @@ test("sin sesión, el panel muestra el login y explica los errores", async ({ pa
 test("el editor solo ve lo suyo y escribe una nota que envía a revisión", async ({ page }) => {
   await iniciarSesion(page, "editor");
   const menu = page.getByRole("navigation", { name: "Panel" }).getByRole("link");
-  // Todo el Contenido, como la administradora; ni CMS ni Administración.
   await expect(menu).toHaveText([
     "Resumen",
     "Secciones",
+    "Noticias",
     "Equipo y colaboradores",
     "Respaldos",
-    "Noticias",
     "Identidad visual",
     "Pie de página",
     "Audiodescriptor",
+    /^Mensajes/, // con el contador de no leídos, si hay mensajes
   ]);
   await sinViolaciones(page, "resumen (editor)");
   await page.getByRole("link", { name: "Equipo y colaboradores" }).click();
@@ -49,7 +49,7 @@ test("el editor solo ve lo suyo y escribe una nota que envía a revisión", asyn
   await expect(page.getByText("Ana Rojas").first()).toBeVisible();
 
   // Por URL tampoco: la vista dice «sin acceso» (y la API respondería 403).
-  for (const ruta of ["/beacons", "/contacto", "/usuarios", "/bitacora"]) {
+  for (const ruta of ["/beacons", "/usuarios", "/bitacora"]) {
     await page.goto(`${PANEL}${ruta}`);
     await expect(
       page.getByRole("heading", { level: 1, name: "No tienes acceso a esta sección" }),
@@ -77,6 +77,34 @@ test("el editor solo ve lo suyo y escribe una nota que envía a revisión", asyn
   await page.getByRole("button", { name: "Enviar a revisión" }).click();
   await expect(page.getByText("Enviada a revisión")).toBeVisible();
   await expect(page.getByLabel("Título", { exact: true })).toBeDisabled();
+});
+
+test("comunicación solo ve los mensajes y el contacto, y edita las redes", async ({ page }) => {
+  await iniciarSesion(page, "social");
+  const menu = page.getByRole("navigation", { name: "Panel" }).getByRole("link");
+  // «Mensajes» puede llevar el contador de no leídos (la landing envía uno antes).
+  await expect(menu).toHaveText(["Resumen", /^Mensajes/, "Contacto y redes"]);
+  await expect(page.getByRole("link", { name: "Nueva noticia" })).toHaveCount(0);
+  await expect(page.getByRole("heading", { name: "Mensajes de contacto" })).toBeVisible();
+  await sinViolaciones(page, "resumen (comunicación)");
+
+  // El contenido del sitio no es suyo, ni por URL ni por la API.
+  await page.goto(`${PANEL}/noticias`);
+  await expect(
+    page.getByRole("heading", { level: 1, name: "No tienes acceso a esta sección" }),
+  ).toBeVisible();
+  expect((await page.request.get("/api/admin/news")).status()).toBe(403);
+
+  await page.goto(`${PANEL}/contacto`);
+  await expect(page.getByRole("heading", { level: 1, name: "Mensajes" })).toBeVisible();
+  await sinViolaciones(page, "mensajes (comunicación)");
+
+  await page.goto(`${PANEL}/redes`);
+  await expect(page.getByRole("heading", { level: 1, name: "Contacto y redes" })).toBeVisible();
+  await sinViolaciones(page, "contacto y redes");
+  await page.getByRole("textbox", { name: "Correo (opcional)" }).fill("comunicacion@signal.test");
+  await page.getByRole("button", { name: "Guardar datos de contacto" }).click();
+  await expect(page.getByText("Datos de contacto guardados.")).toBeVisible();
 });
 
 test("la administradora publica la nota y aparece en el sitio", async ({ page }) => {
@@ -112,6 +140,29 @@ test("un beacon creado en el panel llega a la app Android", async ({ page }) => 
   await page.getByRole("alertdialog").getByRole("button", { name: "Borrar beacon 9-9" }).click();
   await expect(page.getByText("Beacon 9-9 borrado")).toBeVisible();
   expect((await page.request.get("/beacons/9/9")).status()).toBe(404);
+});
+
+test("agregar una persona con foto encuadrada no cierra el formulario", async ({ page }) => {
+  // Regresión: al pulsar «Usar este encuadre», el cierre del diálogo de encuadre
+  // cerraba también el de «Agregar persona» y no se podía guardar.
+  await iniciarSesion(page, "admin");
+  await page.goto(`${PANEL}/equipo`);
+  await page.getByRole("button", { name: "Agregar persona" }).first().click();
+  const formulario = page.getByRole("dialog", { name: "Agregar persona" });
+  await formulario.getByLabel("Nombre").fill("Ana Prueba");
+  await formulario.getByLabel("Cargo o rol").fill("Coordinación");
+  // Imagen apaisada (346 × 223): el marco de las fotos es cuadrado y se ofrece encuadrarla.
+  await formulario.locator("input[type=file]").setInputFiles("apps/web/scripts/isotipo.png");
+  const encuadre = page.getByRole("dialog", { name: "Encuadrar la imagen" });
+  await expect(encuadre).toBeVisible();
+  await encuadre.getByRole("button", { name: "Usar este encuadre" }).click();
+  await expect(encuadre).toBeHidden();
+
+  await expect(formulario).toBeVisible();
+  await formulario.getByLabel("Texto alternativo").fill("Ana sonriendo frente a un pizarrón");
+  await formulario.getByRole("button", { name: "Guardar" }).click();
+  await expect(page.getByText("Persona agregada.")).toBeVisible();
+  await expect(page.getByText("Ana Prueba", { exact: true }).first()).toBeVisible();
 });
 
 test("el editor agrega un respaldo y aparece en el pie, aparte de los colaboradores", async ({
@@ -174,6 +225,8 @@ test("un mensaje se responde por Gmail, Outlook, la app de correo o copiando la 
 });
 
 test("todas las vistas del panel pasan axe en claro y oscuro", async ({ page }) => {
+  // 10 vistas × 2 temas, con un análisis de axe en cada una.
+  test.setTimeout(180_000);
   await iniciarSesion(page, "admin");
   const vistas: [string, string][] = [
     ["", "Resumen"],
@@ -186,6 +239,7 @@ test("todas las vistas del panel pasan axe en claro y oscuro", async ({ page }) 
     ["/pie", "Pie de página"],
     ["/audiodescriptor", "Audiodescriptor"],
     ["/contacto", "Mensajes"],
+    ["/redes", "Contacto y redes"],
     ["/perfil", "Mi perfil"],
     ["/beacons", "Beacons"],
     ["/usuarios", "Usuarios"],

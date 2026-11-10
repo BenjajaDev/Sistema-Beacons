@@ -5,6 +5,10 @@ import { useToast } from "@shared/ui/Toast";
 // tenga una app de correo configurada (si no, el clic no hace nada), así que se
 // ofrecen también Gmail y Outlook en la web y copiar la dirección.
 
+// Cuenta desde la que se responden los mensajes. Gmail abre la redacción en ella si
+// está iniciada en el navegador (parámetro authuser); si no, pide entrar con esa cuenta.
+export const CORREO_RESPUESTAS = "proyectosignal.ua@gmail.com";
+
 export interface EnlacesRespuesta {
   gmail: string;
   outlook: string;
@@ -14,8 +18,9 @@ export interface EnlacesRespuesta {
 export function enlacesDeRespuesta(correo: string, asunto: string): EnlacesRespuesta {
   const para = encodeURIComponent(correo);
   const tema = encodeURIComponent(asunto);
+  const cuenta = encodeURIComponent(CORREO_RESPUESTAS);
   return {
-    gmail: `https://mail.google.com/mail/?view=cm&fs=1&to=${para}&su=${tema}`,
+    gmail: `https://mail.google.com/mail/?authuser=${cuenta}&view=cm&fs=1&to=${para}&su=${tema}`,
     outlook: `https://outlook.office.com/mail/deeplink/compose?to=${para}&subject=${tema}`,
     app: `mailto:${para}?subject=${tema}`,
   };
