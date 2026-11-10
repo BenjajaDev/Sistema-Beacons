@@ -908,9 +908,6 @@ main:focus {
   .compartir__enlace:hover {
     transform: translateY(-2px);
   }
-  .compartir__enlace:active {
-    transform: scale(0.97);
-  }
 }
 .noticia__portada {
   margin: var(--space-5) 0;

@@ -142,3 +142,15 @@ Registro cronológico de lo que se hizo para llevar el sitio hacia la [propuesta
 
 - Una prueba detectó que el lector de pantalla diría «Cómo llegara Av. …»: el espacio entre el texto visible y el oculto se perdía. Ahora el espacio va en el texto visible.
 - Las pruebas de servidor y la nota de ejemplo usaban la categoría «Proyecto», que ya no es válida para notas nuevas: se actualizaron al nuevo conjunto.
+
+## Cierre de la etapa 1
+
+**Verificación final** (sobre el último commit de `develop`):
+
+- Batería de la regla 5: lint, tipos, formato, 526 pruebas del servidor, 97 de la web, 43 del paquete compartido y build con la comprobación de que el bundle público no menciona el panel.
+- e2e completo: 43 pruebas (landing, panel y PWA), con axe en claro, oscuro y alto contraste, a 320 px y con el texto al 200 %.
+- Lighthouse móvil, mediana de tres corridas: rendimiento 95 a 97 y accesibilidad 100 en las cuatro páginas (umbrales 90 y 95, sin tocarlos).
+- El contrato `GET /beacons/:major/:minor` de la app Android no cambió (`legacy-beacons.test.ts` y el e2e correspondiente pasan).
+- Movimiento: lo único nuevo es el apuntado de los enlaces de «Compartir» (`transform`, `--dur-rapida`, solo con puntero fino y sin reducción de movimiento). La skill `review-animations` no estaba disponible en esta sesión, así que se revisó a mano contra las reglas de CLAUDE.md.
+
+**Lo que queda.** Ver el [estado de la etapa 1](plan.md#7-estado-de-la-etapa-1).

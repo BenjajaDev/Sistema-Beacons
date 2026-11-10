@@ -77,3 +77,16 @@ Textos definitivos y cifras reales, dominio institucional, revisión manual con 
 - Lighthouse móvil: accesibilidad ≥ 95 y rendimiento ≥ 90.
 - Todo lo nuevo se edita desde el panel y respeta los permisos (la edición no publica).
 - La app Android y el contrato `GET /beacons/:major/:minor` no cambian.
+
+## 7. Estado de la etapa 1
+
+**Terminada.** Los cuatro bloques están en `develop` y documentados en la [bitácora](bitacora.md): accesibilidad (paso 1), cifras, línea de tiempo e íconos (paso 2), Nosotros (paso 3) y prensa y contacto (paso 4).
+
+Antes de publicar contenido real, falta que el equipo, desde el panel:
+
+- cargue las **cifras** y los **hitos** reales y los publique (nacen ocultos);
+- asigne a cada persona su **grupo** e **institución**, y a cada colaborador su **tipo**;
+- agregue la red **WhatsApp** (enlace `wa.me/569…`) en _Contacto y redes_ y la **dirección**;
+- vuelva a elegir la **categoría** de las notas antiguas, si quiere que aparezcan en los filtros.
+
+Siguen abiertas las cuatro decisiones del apartado 4 (tipografías, azul claro, repositorio de recursos y boletín); la etapa 2 no se empezó.
