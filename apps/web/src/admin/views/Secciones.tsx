@@ -14,6 +14,7 @@ const PAGINAS: { valor: Seccion["page"]; texto: string }[] = [
   { valor: "NOSOTROS", texto: "Nosotros" },
   { valor: "NOTICIAS", texto: "Noticias" },
   { valor: "RECURSOS", texto: "Recursos" },
+  { valor: "GALERIA", texto: "Galería" },
   { valor: "CONTACTO", texto: "Contacto" },
 ];
 

@@ -7,6 +7,7 @@ const PAGINAS = [
   { ruta: "/nosotros", nombre: "Nosotros" },
   { ruta: "/noticias", nombre: "Noticias" },
   { ruta: "/recursos", nombre: "Recursos" },
+  { ruta: "/galeria", nombre: "Galería" },
   { ruta: "/contacto", nombre: "Contacto" },
 ];
 

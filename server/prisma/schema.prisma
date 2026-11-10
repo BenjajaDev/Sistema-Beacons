@@ -69,6 +69,7 @@ enum Page {
   NOTICIAS
   CONTACTO
   RECURSOS
+  GALERIA
 }
 
 // Tipo de recurso del repositorio abierto.
@@ -269,6 +270,26 @@ model Backer {
   @@map("backers")
 }
 
+// Foto de la galería. `name` es el pie de foto; el texto alternativo (`alt`) es siempre
+// obligatorio: la galería es contenido, no decoración.
+model GalleryItem {
+  id        String   @id @default(uuid())
+  name      String
+  // Crédito de la foto: «Foto: Ana Rojas».
+  credit    String?
+  mediaId   String
+  alt       String
+  order     Int
+  visible   Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  media Media @relation(fields: [mediaId], references: [id], onDelete: Restrict)
+
+  @@index([order])
+  @@map("gallery_items")
+}
+
 // Recurso del repositorio abierto: un documento que se descarga (PDF subido al sitio)
 // y/o se consulta en otro lugar (DOI o repositorio institucional). Debe tener al menos
 // uno de los tres; lo exige la API y también la base (CHECK en la migración).
@@ -325,15 +346,16 @@ model Media {
   uploadedById String?
   createdAt    DateTime @default(now())
 
-  uploadedBy  User?          @relation(fields: [uploadedById], references: [id])
-  newsCovers  News[]
-  teamPhotos  TeamMember[]
-  collabLogos Collaborator[]
-  backerLogos Backer[]
-  resources   Resource[]
-  logoLightOf SiteSettings[] @relation("LogoLight")
-  logoDarkOf  SiteSettings[] @relation("LogoDark")
-  faviconOf   SiteSettings[] @relation("Favicon")
+  uploadedBy   User?          @relation(fields: [uploadedById], references: [id])
+  newsCovers   News[]
+  teamPhotos   TeamMember[]
+  collabLogos  Collaborator[]
+  backerLogos  Backer[]
+  resources    Resource[]
+  galleryItems GalleryItem[]
+  logoLightOf  SiteSettings[] @relation("LogoLight")
+  logoDarkOf   SiteSettings[] @relation("LogoDark")
+  faviconOf    SiteSettings[] @relation("Favicon")
 
   @@map("media")
 }

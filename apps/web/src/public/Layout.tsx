@@ -10,13 +10,14 @@ import { consultas, PIE_POR_DEFECTO, type Respaldo } from "./data";
 import { GuiaLectura } from "./GuiaLectura";
 import { PanelAccesibilidad } from "./PanelAccesibilidad";
 
-// «Recursos» se enlaza solo cuando hay recursos publicados.
-function navegacion(modulos: { recursos: boolean } | undefined) {
+// «Recursos» y «Galería» se enlazan solo cuando tienen contenido publicado.
+function navegacion(modulos: { recursos: boolean; galeria: boolean } | undefined) {
   return [
     { to: "/", texto: "Inicio", end: true },
     { to: "/nosotros", texto: "Nosotros" },
     { to: "/noticias", texto: "Noticias" },
     ...(modulos?.recursos ? [{ to: "/recursos", texto: "Recursos" }] : []),
+    ...(modulos?.galeria ? [{ to: "/galeria", texto: "Galería" }] : []),
     { to: "/contacto", texto: "Contacto" },
   ];
 }

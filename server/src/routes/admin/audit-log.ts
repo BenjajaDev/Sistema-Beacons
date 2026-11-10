@@ -13,6 +13,7 @@ export const AUDIT_AREAS = {
     "TEAM_MEMBER_",
     "COLLABORATOR_",
     "BACKER_",
+    "GALLERY_ITEM_",
     "MEDIA_",
     "DOCUMENT_",
     "RESOURCE_",

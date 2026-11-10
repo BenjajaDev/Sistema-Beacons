@@ -334,6 +334,7 @@ const CAMPOS: Record<string, Campo[]> = {
   colaboradores: [titulo, intro, imagenEncabezado],
   noticias: [titulo, intro, imagenEncabezado],
   recursos: [titulo, intro, imagenEncabezado],
+  galeria: [titulo, intro, imagenEncabezado],
   contacto: [
     titulo,
     intro,

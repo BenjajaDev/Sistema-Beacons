@@ -554,6 +554,7 @@ export const RENDERIZADORES: Record<string, ComponentType<PropsSeccion<never>>> 
   colaboradores: Colaboradores as ComponentType<PropsSeccion<never>>,
   noticias: Cabecera as ComponentType<PropsSeccion<never>>,
   recursos: Cabecera as ComponentType<PropsSeccion<never>>,
+  galeria: Cabecera as ComponentType<PropsSeccion<never>>,
   contacto: Cabecera as ComponentType<PropsSeccion<never>>,
   "imagen-texto-inicio": ImagenTexto as ComponentType<PropsSeccion<never>>,
   "imagen-texto-nosotros": ImagenTexto as ComponentType<PropsSeccion<never>>,

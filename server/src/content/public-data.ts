@@ -19,6 +19,7 @@ export const PAGINAS: Record<string, Page> = {
   noticias: "NOTICIAS",
   contacto: "CONTACTO",
   recursos: "RECURSOS",
+  galeria: "GALERIA",
 };
 
 const IMAGEN = { select: { url: true, width: true, height: true } } as const;
@@ -81,10 +82,13 @@ export async function getSite(db: Db) {
   };
 }
 
-// Un módulo (Recursos) aparece en la navegación solo cuando tiene algo que mostrar.
+// Un módulo (Recursos, Galería) aparece en la navegación solo cuando tiene algo que mostrar.
 async function getModulos(db: Db) {
-  const recursos = await db.resource.count({ where: { visible: true } });
-  return { recursos: recursos > 0 };
+  const [recursos, galeria] = await Promise.all([
+    db.resource.count({ where: { visible: true } }),
+    db.galleryItem.count({ where: { visible: true } }),
+  ]);
+  return { recursos: recursos > 0, galeria: galeria > 0 };
 }
 
 export type PublicSite = NonNullable<Awaited<ReturnType<typeof getSite>>>;
@@ -247,5 +251,20 @@ export async function getResources(db: Db, q: ConsultaRecursos) {
     porPagina: q.porPagina,
     total,
     totalPaginas: Math.max(1, Math.ceil(total / q.porPagina)),
+  };
+}
+
+export async function getGallery(db: Db) {
+  const filas = await db.galleryItem.findMany({
+    where: { visible: true },
+    orderBy: { order: "asc" },
+    include: { media: { select: { url: true, width: true, height: true } } },
+  });
+  return {
+    items: filas.map((g) => ({
+      name: g.name,
+      credit: g.credit,
+      image: { ...g.media, alt: g.alt },
+    })),
   };
 }

@@ -167,7 +167,10 @@ describe.skipIf(!hasTestDb)("repositorio de recursos", () => {
   });
 
   it("el encabezado del sitio solo enlaza Recursos cuando hay alguno visible", async () => {
-    expect((await request(app).get("/api/public/site")).body.modulos).toEqual({ recursos: false });
+    expect((await request(app).get("/api/public/site")).body.modulos).toEqual({
+      recursos: false,
+      galeria: false,
+    });
     await crear(editor, { title: "Oculto", doi: "10.1234/o", visible: false });
     expect((await request(app).get("/api/public/site")).body.modulos.recursos).toBe(false);
     await crear(editor, { title: "Visible", doi: "10.1234/v" });

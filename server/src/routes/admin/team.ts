@@ -7,7 +7,7 @@ import type { AdminDeps } from "./deps.js";
 import { assertImage, changedFields, idParam, textoOpcional, urlHttps } from "./helpers.js";
 import { CONTENT_ROLES, type AdminRoute } from "./registry.js";
 
-// Equipo, Colaboradores y Respaldos: listas ordenables. Son contenido: las editan
+// Equipo, Colaboradores, Respaldos y Galería: listas ordenables. Son contenido: las editan
 // ADMIN y EDITOR.
 
 const nombre = z.string("Escribe el nombre.").trim().min(1, "Escribe el nombre.").max(120);
@@ -98,6 +98,24 @@ const backerCreate = backerBase.extend({ visible: z.boolean().default(true) });
 
 const orderSchema = z.object({ ids: z.array(z.uuid()).min(1) });
 
+// Foto de la galería: la imagen y su texto alternativo son obligatorios.
+const galleryBase = z.object({
+  name: z
+    .string("Escribe el pie de foto.")
+    .trim()
+    .min(1, "Escribe el pie de foto.")
+    .max(120, "El pie de foto admite hasta 120 caracteres."),
+  credit: textoOpcional(120),
+  mediaId: z.uuid("Elige la foto."),
+  alt: z
+    .string("Describe la foto (texto alternativo): es obligatorio.")
+    .trim()
+    .min(1, "Describe la foto (texto alternativo): es obligatorio.")
+    .max(300, "El texto alternativo admite hasta 300 caracteres."),
+  visible: z.boolean(),
+});
+const galleryCreate = galleryBase.extend({ visible: z.boolean().default(true) });
+
 // Operaciones de Prisma que usan ambas colecciones.
 interface Coleccion {
   findMany(args: object): Promise<Record<string, unknown>[]>;
@@ -112,7 +130,7 @@ interface Config {
   ruta: string;
   entidad: string;
   // Nombre del modelo en el cliente de Prisma (para usarlo dentro de una transacción).
-  delegado: "teamMember" | "collaborator" | "backer";
+  delegado: "teamMember" | "collaborator" | "backer" | "galleryItem";
   accion: string;
   que: string;
   createSchema: z.ZodObject;
@@ -281,6 +299,18 @@ export function teamRoutes(deps: AdminDeps): AdminRoute[] {
       coleccion: deps.db.backer as unknown as Coleccion,
       imagen: { id: "logoId", alt: "logoAlt" },
       include: { logo: IMAGEN },
+    }),
+    ...orderedCollection(deps, {
+      ruta: "/gallery",
+      entidad: "GalleryItem",
+      delegado: "galleryItem",
+      accion: "GALLERY_ITEM",
+      que: "La foto",
+      createSchema: galleryCreate,
+      updateSchema: galleryBase.partial(),
+      coleccion: deps.db.galleryItem as unknown as Coleccion,
+      imagen: { id: "mediaId", alt: "alt" },
+      include: { media: IMAGEN },
     }),
   ];
 }

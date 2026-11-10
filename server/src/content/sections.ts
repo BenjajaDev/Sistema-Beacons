@@ -143,6 +143,7 @@ export const sectionSchemas = {
   colaboradores: z.object(encabezado),
   noticias: z.object(encabezado),
   recursos: z.object(encabezado),
+  galeria: z.object(encabezado),
   contacto: z.object({
     ...encabezado,
     formularioTitulo: texto(80),
@@ -357,6 +358,15 @@ export const SECTION_DEFINITIONS: { [K in SectionKey]: SectionDefinition<K> } = 
     contenidoInicial: {
       titulo: "Recursos",
       intro: "Informes, artículos y guías del proyecto, abiertos para descargar y reutilizar.",
+    },
+  },
+  galeria: {
+    page: "GALERIA",
+    order: 1,
+    nombre: "Encabezado de la galería",
+    contenidoInicial: {
+      titulo: "Galería",
+      intro: "Momentos del proyecto: talleres, instalaciones y pruebas con personas usuarias.",
     },
   },
   contacto: {

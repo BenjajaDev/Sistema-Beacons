@@ -10,6 +10,7 @@ import { CambiarContrasena, Login } from "./views/Acceso";
 import Bitacora from "./views/Bitacora";
 import Contacto, { ContactoYRedes } from "./views/Contacto";
 import Equipo from "./views/Equipo";
+import Galeria from "./views/Galeria";
 import Noticias from "./views/Noticias";
 import Perfil from "./views/Perfil";
 import Recursos from "./views/Recursos";
@@ -97,6 +98,7 @@ export function crearRouter() {
                     children: [
                       { path: "noticias", Component: Noticias },
                       { path: "recursos", Component: Recursos },
+                      { path: "galeria", Component: Galeria },
                       {
                         path: "noticias/nueva",
                         lazy: diferida(() => import("./views/NoticiaEditor")),

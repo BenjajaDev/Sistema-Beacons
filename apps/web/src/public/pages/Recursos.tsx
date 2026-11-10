@@ -57,7 +57,7 @@ function TarjetaRecurso({ recurso: r }: { recurso: Recurso }) {
             target="_blank"
             rel="noopener noreferrer"
           >
-            {`Ver por DOI: ${r.doi}`}
+            {`Ver por DOI: ${r.doi} `}
             <span className="visually-hidden">
               {` de «${r.title}» (se abre en una pestaña nueva)`}
             </span>
@@ -70,7 +70,7 @@ function TarjetaRecurso({ recurso: r }: { recurso: Recurso }) {
             target="_blank"
             rel="noopener noreferrer"
           >
-            {"Ver en el repositorio"}
+            {"Ver en el repositorio "}
             <span className="visually-hidden">
               {` de «${r.title}» (se abre en una pestaña nueva)`}
             </span>

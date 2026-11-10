@@ -1,6 +1,7 @@
 import { createBrowserRouter } from "react-router";
 import { Layout } from "./Layout";
 import Contacto from "./pages/Contacto";
+import Galeria from "./pages/Galeria";
 import Inicio from "./pages/Inicio";
 import NoEncontrada from "./pages/NoEncontrada";
 import Noticia from "./pages/Noticia";
@@ -20,6 +21,7 @@ export function crearRouter() {
         { path: "noticias", Component: Noticias },
         { path: "noticias/:slug", Component: Noticia },
         { path: "recursos", Component: Recursos },
+        { path: "galeria", Component: Galeria },
         { path: "contacto", Component: Contacto },
         { path: "*", Component: NoEncontrada },
       ],

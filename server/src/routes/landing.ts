@@ -3,6 +3,7 @@ import path from "node:path";
 import express, { Router, type Request, type Response } from "express";
 import {
   getCollaborators,
+  getGallery,
   getNewsBySlug,
   getNewsList,
   getPage,
@@ -38,7 +39,7 @@ interface Pagina {
   consultas: Consulta[];
 }
 
-const RUTAS_FIJAS = new Set(["/", "/nosotros", "/noticias", "/recursos", "/contacto"]);
+const RUTAS_FIJAS = new Set(["/", "/nosotros", "/noticias", "/recursos", "/galeria", "/contacto"]);
 const RUTA_NOTICIA = /^\/noticias\/[a-z0-9]+(?:-[a-z0-9]+)*$/;
 
 // Si la ruta es de la landing. No depende de la base de datos: una ruta
@@ -141,6 +142,17 @@ export function landing(deps: {
           ...base,
           [["pagina", "recursos"], await getPage(db, "RECURSOS")],
           [["recursos", q], await getResources(db, q)],
+        ],
+      };
+    }
+    if (ruta === "/galeria") {
+      return {
+        status: 200,
+        titulo: "Galería",
+        consultas: [
+          ...base,
+          [["pagina", "galeria"], await getPage(db, "GALERIA")],
+          [["galeria"], await getGallery(db)],
         ],
       };
     }
@@ -247,7 +259,7 @@ export function landing(deps: {
       select: { slug: true, updatedAt: true },
     });
     const urls = [
-      ...["/", "/nosotros", "/noticias", "/recursos", "/contacto"].map(
+      ...["/", "/nosotros", "/noticias", "/recursos", "/galeria", "/contacto"].map(
         (p) => `<url><loc>${base}${p}</loc></url>`,
       ),
       ...noticias.map(
@@ -287,7 +299,10 @@ export function landing(deps: {
 
   // --- Páginas ---
 
-  router.get(["/", "/nosotros", "/noticias", "/noticias/:slug", "/recursos", "/contacto"], servir);
+  router.get(
+    ["/", "/nosotros", "/noticias", "/noticias/:slug", "/recursos", "/galeria", "/contacto"],
+    servir,
+  );
 
   // Cualquier otra página: 404 con la vista «no encontrada». Las rutas de API,
   // de la app y las de archivos (con extensión) siguen con su 404 en JSON.

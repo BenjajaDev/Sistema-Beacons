@@ -124,7 +124,7 @@ export interface Seccion {
   id: string;
   key: string;
   nombre: string;
-  page: "INICIO" | "NOSOTROS" | "NOTICIAS" | "RECURSOS" | "CONTACTO";
+  page: "INICIO" | "NOSOTROS" | "NOTICIAS" | "RECURSOS" | "GALERIA" | "CONTACTO";
   order: number;
   visible: boolean;
   content: Record<string, unknown>;
@@ -200,6 +200,16 @@ export interface Recurso {
   license: string | null;
   visible: boolean;
   file: { id: string; url: string; sizeBytes: number; originalName: string } | null;
+}
+
+// Foto de la galería.
+export interface FotoAdmin {
+  id: string;
+  name: string;
+  credit: string | null;
+  alt: string;
+  visible: boolean;
+  media: { id: string; url: string };
 }
 
 export interface Ajustes {

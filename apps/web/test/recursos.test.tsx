@@ -95,12 +95,13 @@ describe("Recursos", () => {
     expect(pdf).toHaveAttribute("href", "https://cdn.example.cl/informe.pdf");
     expect(pdf).toHaveAttribute("rel", "noopener noreferrer");
 
-    const doi = screen.getByRole("link", { name: /Ver por DOI: 10\.1234\/abcd.*pestaña nueva/ });
+    const doi = screen.getByRole("link", {
+      name: /^Ver por DOI: 10\.1234\/abcd de «Artículo en revista» \(se abre en una pestaña nueva\)$/,
+    });
     expect(doi).toHaveAttribute("href", "https://doi.org/10.1234/abcd");
-    expect(screen.getByRole("link", { name: /Ver en el repositorio/ })).toHaveAttribute(
-      "href",
-      "https://repositorio.uchile.cl/x",
-    );
+    expect(
+      screen.getByRole("link", { name: /^Ver en el repositorio de «Artículo en revista»/ }),
+    ).toHaveAttribute("href", "https://repositorio.uchile.cl/x");
     // La fecha de un día se lee igual en cualquier zona horaria.
     expect(screen.getByText("1 de junio de 2026")).toHaveAttribute("datetime", "2026-06-01");
     expect(screen.getAllByText("Licencia: CC BY 4.0")).toHaveLength(2);

@@ -38,7 +38,7 @@ export interface Sitio {
   respaldos?: Respaldo[];
   // Qué módulos tienen contenido publicado (el encabezado solo enlaza a esos); puede
   // faltar en datos guardados antes de existir.
-  modulos?: { recursos: boolean };
+  modulos?: { recursos: boolean; galeria: boolean };
 }
 
 export interface EnlacePie {
@@ -211,7 +211,13 @@ export interface ListaRecursos {
   totalPaginas: number;
 }
 
-export type SlugPagina = "inicio" | "nosotros" | "noticias" | "recursos" | "contacto";
+export interface FotoGaleria {
+  name: string;
+  credit: string | null;
+  image: Imagen;
+}
+
+export type SlugPagina = "inicio" | "nosotros" | "noticias" | "recursos" | "galeria" | "contacto";
 
 const MINUTO = 60_000;
 
@@ -241,6 +247,11 @@ export const consultas = {
             (q.tipo ? `&tipo=${q.tipo}` : "") +
             (q.q ? `&q=${encodeURIComponent(q.q)}` : ""),
         ),
+    }),
+  galeria: () =>
+    queryOptions({
+      queryKey: ["galeria"],
+      queryFn: () => apiFetch<{ items: FotoGaleria[] }>("/api/public/gallery"),
     }),
   noticia: (slug: string) =>
     queryOptions({

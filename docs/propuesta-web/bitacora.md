@@ -196,3 +196,32 @@ El equipo no respondió las decisiones abiertas de la etapa 2 y pidió empezar. 
 
 - Al ejecutar Prettier desde un subdirectorio se reformatearon documentos ajenos; se revirtieron y desde entonces se formatea solo desde la raíz.
 - Las pruebas buscaban `role="status"` y encontraban también el del panel de accesibilidad; ahora consultan la región por su clase.
+
+## Paso 6: galería de fotos
+
+**Qué pedía el documento.** Una galería multimedia con fotos y videos del proyecto.
+
+**Decisión: solo fotos, por ahora.** Un video exige subtítulos (WCAG 1.2.2), audiodescripción o transcripción (1.2.3 y 1.2.5), y hoy el sitio no puede cargar reproductores de terceros (la política de seguridad no lo permite). Si el equipo tiene videos, lo más seguro es publicarlos en su plataforma con subtítulos y enlazarlos desde una noticia o un recurso. Queda como tarea de la etapa 3.
+
+**Qué se construyó.**
+
+- **Modelo `GalleryItem`** (tabla `gallery_items`, migración `20261111130000_galeria`): foto, pie de foto, crédito opcional, orden y visibilidad. El **texto alternativo es siempre obligatorio** (no existe la opción «decorativa»: la galería es contenido) y la base lo exige con un `CHECK`.
+- **Panel «Galería»** (editores y administradores): usa la misma lista ordenable que el equipo y los respaldos, con ↑ ↓, interruptor de visibilidad y borrado con confirmación. Sin el texto alternativo no se guarda y el error queda junto al campo.
+- **Página pública `/galeria`** con encabezado editable desde _Secciones_ (página nueva «Galería»). Cada foto es una `figure` con su pie, el crédito, el botón para **escuchar la descripción** (el mismo de las demás imágenes del sitio) y un enlace «Ver en tamaño completo» que abre la imagen en una pestaña nueva.
+- **El menú enlaza a la Galería solo si hay fotos visibles** (`modulos.galeria` en los datos del sitio), igual que Recursos.
+- Una imagen usada en la galería no se puede borrar de la biblioteca: el aviso dice «la foto «…» de la galería».
+
+**Decisiones y por qué.**
+
+- **Sin visor ampliado (lightbox).** Un visor modal añade una trampa de foco, flechas y cierre con Escape que hay que mantener en cada tema y tamaño. Con las fotos a buen tamaño y el enlace al tamaño completo se cubre la necesidad con menos riesgo; si el equipo lo pide, se agrega después.
+- **Recorte 4:3 en la cuadrícula** para que las filas queden parejas; la foto completa está en el enlace.
+
+**Cómo se comprobó.**
+
+- Servidor (7 pruebas nuevas): exige foto, pie y texto alternativo; publica solo lo visible y en el orden del panel, sin ids; se reordena; no se puede quitar el texto alternativo al editar; no se borra una imagen en uso; bitácora y roles; HTML y sitemap.
+- Web (3 pruebas): fotos con alt, pie, crédito y enlace; estado vacío; menú condicionado; todo con axe.
+- e2e: axe en claro y oscuro, 320 px y texto al 200 %; el editor agrega una foto (se rechaza sin descripción) y la ve en la página pública.
+
+**Problemas y cómo se resolvieron.**
+
+- Una prueba con nombre accesible exacto mostró «Ver en tamaño **completola** foto…»: el espacio inicial de un texto oculto se pierde. Es la misma trampa de «Cómo llegara…» del paso 4; el espacio va ahora en el texto visible. La prueba reveló que **Recursos tenía el mismo descuido** («DOI: 10.1234/abcdde…»): se corrigió y las pruebas de ambos usan ahora el nombre completo.

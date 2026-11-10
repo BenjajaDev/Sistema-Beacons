@@ -35,6 +35,7 @@ test("el editor solo ve lo suyo y escribe una nota que envía a revisión", asyn
     "Secciones",
     "Noticias",
     "Recursos",
+    "Galería",
     "Equipo y colaboradores",
     "Respaldos",
     "Identidad visual",
@@ -341,6 +342,41 @@ test("el editor sube un PDF, agrega un recurso y se ve en la página pública", 
   await sinViolaciones(page, "/recursos con el PDF subido");
 });
 
+test("el editor agrega una foto con su descripción y aparece en la galería pública", async ({
+  page,
+}) => {
+  await iniciarSesion(page, "editor");
+  await page.getByRole("link", { name: "Galería" }).click();
+  await expect(page.getByRole("heading", { level: 1, name: "Galería" })).toBeVisible();
+  await page.getByRole("button", { name: "Agregar foto" }).first().click();
+  const formulario = page.getByRole("dialog", { name: "Agregar foto" });
+  await formulario.getByLabel("Pie de foto").fill("Prueba del recorrido en la biblioteca");
+  await formulario.getByLabel("Crédito").fill("Foto: Equipo SIGNAL");
+  await formulario.locator("input[type=file]").setInputFiles("apps/web/scripts/isotipo.png");
+  // Sin texto alternativo no se guarda.
+  await formulario.getByRole("button", { name: "Guardar" }).click();
+  await expect(formulario.getByText(/Describe la (foto|imagen)/).first()).toBeVisible();
+  await formulario
+    .getByLabel("Texto alternativo")
+    .fill("Una persona con bastón sigue las indicaciones de voz del teléfono");
+  await sinViolaciones(page, "formulario de foto");
+  await formulario.getByRole("button", { name: "Guardar" }).click();
+  await expect(page.getByText("Foto agregada.")).toBeVisible();
+
+  await page.goto("/");
+  await expect(
+    page.getByRole("navigation", { name: "Principal" }).getByRole("link", { name: "Galería" }),
+  ).toBeVisible();
+  await page.goto("/galeria");
+  await expect(
+    page.getByRole("img", {
+      name: "Una persona con bastón sigue las indicaciones de voz del teléfono",
+    }),
+  ).toBeVisible();
+  await expect(page.getByText("Foto: Equipo SIGNAL")).toBeVisible();
+  await sinViolaciones(page, "/galeria con una foto");
+});
+
 test("un mensaje se responde por Gmail, Outlook, la app de correo o copiando la dirección", async ({
   page,
 }) => {
@@ -378,6 +414,7 @@ test("todas las vistas del panel pasan axe en claro y oscuro", async ({ page }) 
     ["", "Resumen"],
     ["/noticias", "Noticias"],
     ["/recursos", "Recursos"],
+    ["/galeria", "Galería"],
     ["/secciones", "Secciones"],
     ["/secciones/hero", "Portada"],
     ["/secciones/cifras", "En cifras"],

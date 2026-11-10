@@ -5,6 +5,7 @@ import { CLAVES_MOTIVO } from "../content/contact-reasons.js";
 import { CLAVES_TIPO_RECURSO } from "../content/resource-kinds.js";
 import {
   getCollaborators,
+  getGallery,
   getNewsBySlug,
   getNewsList,
   getPage,
@@ -90,6 +91,10 @@ export function publicApi({ db, logger }: { db: Db; logger: Logger }) {
 
   router.get("/resources", cachePublico, async (req, res) => {
     res.json(await getResources(db, parseOrThrow(resourcesSchema, req.query)));
+  });
+
+  router.get("/gallery", cachePublico, async (_req, res) => {
+    res.json(await getGallery(db));
   });
 
   router.get("/team", cachePublico, async (_req, res) => {
