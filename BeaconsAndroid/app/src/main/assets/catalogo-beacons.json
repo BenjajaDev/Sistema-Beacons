@@ -1,27 +1,27 @@
 {
-  "version": "5e1450c8b68908cfcea3e2a07c96ccb5",
-  "generadoEn": "2026-10-29T22:48:16.602Z",
+  "version": "2707e7d24c48ebfd878eb744bfe503e3",
+  "generadoEn": "2026-11-10T00:01:06.757Z",
   "beacons": [
     {
       "major": 1,
       "minor": 1,
-      "titulo": "Oficina de reuniones",
-      "descripcion": "Estás en el cuarto piso, en la oficina del living lab del centro de innovación social y políticas públicas.",
-      "ubicacion": "Planta baja - Vestíbulo"
+      "titulo": "Árbol Facultad de Arquitectura",
+      "descripcion": "Te estás aproximando al árbol central del patio de la Facultad de Arquitectura.",
+      "ubicacion": "Universidad Autonoma"
     },
     {
       "major": 1,
       "minor": 16,
-      "titulo": "Entrada principal",
-      "descripcion": "Te estás acercando a la entrada de la sede Alameda.",
-      "ubicacion": "Planta baja - Vestíbulo"
+      "titulo": "RedComuna",
+      "descripcion": "Te estás aproximando al stand de Red Comuna.",
+      "ubicacion": "Feria de ciencias 2026"
     },
     {
       "major": 1,
       "minor": 21,
-      "titulo": "Recepción Facultad de trabajo social",
-      "descripcion": "Al frente tuyo se encuentra la secretaria de Trabajo Social, a tu izquierda comienza el pasillo y en 40 pasos llegas a la Oficina del LivingLab",
-      "ubicacion": "Planta baja - Vestíbulo"
+      "titulo": "SERCTCI",
+      "descripcion": "Te estás aproximando al stand del Seremi de Ciencia, Tecnología, Conocimiento e Innovación.",
+      "ubicacion": "Feria de ciencias 2026"
     }
   ]
 }
