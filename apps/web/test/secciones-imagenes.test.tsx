@@ -80,3 +80,64 @@ describe("imágenes en las secciones", () => {
     await expectNoAxeViolations(container);
   });
 });
+
+describe("íconos, cifras y línea de tiempo", () => {
+  it("una tarjeta con ícono lo dibuja como decorativo, antes del título", async () => {
+    const { container } = montar("objetivos", {
+      titulo: "Objetivos",
+      items: [
+        { titulo: "Autonomía", texto: "x", icono: "brujula" },
+        { titulo: "Sin ícono", texto: "y" },
+      ],
+    });
+    const iconos = container.querySelectorAll(".tarjeta .item__icono");
+    expect(iconos).toHaveLength(1);
+    expect(iconos[0]).toHaveAttribute("aria-hidden", "true");
+    expect(iconos[0]?.nextElementSibling?.tagName).toBe("H3");
+    await expectNoAxeViolations(container);
+  });
+
+  it("«En cifras» muestra cada número con su etiqueta y separa los miles", async () => {
+    const { container } = montar("cifras", {
+      titulo: "SIGNAL en cifras",
+      items: [
+        { valor: 1250, sufijo: "+", etiqueta: "Personas beneficiadas", detalle: "Directas" },
+        { valor: 12, etiqueta: "Talleres" },
+      ],
+    });
+    const cifras = container.querySelectorAll(".cifra");
+    expect(cifras).toHaveLength(2);
+    expect(cifras[0]?.textContent).toContain("1.250+");
+    expect(cifras[0]?.textContent).toContain("Personas beneficiadas");
+    expect(cifras[0]?.textContent).toContain("Directas");
+    expect(cifras[1]?.querySelector(".cifra__sufijo")).toBeNull();
+    expect(screen.getByRole("list")).toBeInTheDocument();
+    await expectNoAxeViolations(container);
+  });
+
+  it("la línea de tiempo dice el estado con palabras, no solo con el marcador", async () => {
+    const { container } = montar("hitos", {
+      titulo: "Ruta del proyecto",
+      items: [
+        { titulo: "Piloto", texto: "Probado en terreno.", estado: "hecho", fecha: "2025" },
+        { titulo: "Ajustes", texto: "Mejoras.", estado: "en-curso" },
+        { titulo: "Ampliación", texto: "Más espacios.", estado: "futuro" },
+      ],
+    });
+    const hitos = [...container.querySelectorAll(".hito")];
+    expect(hitos.map((h) => h.getAttribute("data-estado"))).toEqual([
+      "hecho",
+      "en-curso",
+      "futuro",
+    ]);
+    expect(
+      hitos.map((h) => h.querySelector(".hito__estado")?.textContent?.replace(/\s+/g, " ")),
+    ).toEqual(["Completado, · 2025", "En curso", "Próximamente"]);
+    // El marcador es solo forma: no se anuncia.
+    for (const marca of container.querySelectorAll(".hito__marca")) {
+      expect(marca).toHaveAttribute("aria-hidden", "true");
+    }
+    expect(screen.getAllByRole("listitem")).toHaveLength(3);
+    await expectNoAxeViolations(container);
+  });
+});

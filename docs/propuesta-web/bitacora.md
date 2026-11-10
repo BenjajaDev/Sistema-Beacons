@@ -47,3 +47,34 @@ Registro cronológico de lo que se hizo para llevar el sitio hacia la [propuesta
 - El contenedor de trabajo era nuevo y le faltaban dependencias (`zod`, `prisma`, `eslint`…): se reinstaló con `npm ci` y se recrearon `server/.env` y la base local.
 - Las fuentes de dislexia (235 KB) entraron al precache del service worker y lo subieron de 614 a 896 KiB. Se excluyeron del precache y se guardan en caché solo la primera vez que alguien las usa.
 - Las cuatro opciones de tema quedaban en filas desparejas en móvil: ahora van en cuadrícula.
+
+## Paso 2: «En cifras», línea de tiempo e íconos en las tarjetas
+
+**Qué pedía el documento.** Una sección de indicadores («En cifras»), una línea de tiempo con hitos y proyecciones, e íconos en los objetivos.
+
+**Qué se construyó.**
+
+- **Sección «En cifras»** (`cifras`): de 1 a 6 indicadores con número entero, un sufijo opcional («+», «%», «mil»), qué mide y un detalle opcional. Los miles se separan con punto (`1.250`).
+- **Sección «Línea de tiempo»** (`hitos`): de 1 a 8 hitos con título, texto, fecha libre opcional y un estado: _Completado_, _En curso_ o _Próximamente_. Es una lista ordenada.
+- **Íconos en tarjetas:** los objetivos, las proyecciones y los pasos de «Qué es» aceptan un ícono de una lista de 12 (brújula, voz, personas, mapa, libro, ojo, señal, escudo, idea, corazón, edificio, gráfico). Es una alternativa liviana a subir una imagen. Los dibujos son vectores propios (`IconosTarjeta.tsx`).
+- **Panel:** los editores de las dos secciones nuevas (campos propios por elemento: número, estado…) y un selector de ícono con el dibujo y su nombre en cada tarjeta.
+
+**Decisiones y por qué.**
+
+- **Las dos secciones nacen ocultas.** Las cifras y los hitos son datos reales del proyecto y no se inventan: el contenido inicial son marcadores en cero que el equipo reemplaza, y solo entonces se publica la sección.
+- **El número no se anima.** El plan hablaba de contadores que suben al entrar en pantalla, pero CLAUDE.md limita lo que se mueve solo en el sitio. El número aparece completo desde el primer pintado, que además es lo correcto para lector de pantalla, impresión y `prefers-reduced-motion`.
+- **El estado de un hito se dice con tres cosas a la vez:** la palabra («Completado»), la forma del marcador (marca, anillo con punto, círculo punteado) y el color. Nada depende solo del color (WCAG 1.4.1).
+- **Orden en bases existentes.** Una sección nueva del catálogo, en una base que ya tiene contenido, se agrega al final de su página en lugar de usar el número del catálogo, que podía coincidir con el de otra sección ya existente y dejar el orden ambiguo. Un test lo cubre (`section-images.test.ts`) y en una base vacía se respeta el orden del catálogo.
+- **Los íconos se validan en el servidor** (lista cerrada) y un test verifica que la lista del servidor y los dibujos de la web coincidan.
+
+**Cómo se comprobó.**
+
+- Servidor: esquemas (enteros, rangos, estado válido, ícono de la lista), ocultas por defecto, orden en base existente y en base vacía; 522 pruebas en total.
+- Web: renderizado de íconos, cifras (con separador de miles) e hitos (estado dicho en palabras, marcadores ocultos al lector), con axe; sincronía de la lista de íconos.
+- e2e: el inicio con las dos secciones publicadas pasa axe en claro, oscuro, alto contraste, 320 px y texto al 200 %; en el panel, la administradora edita una cifra, ve el error de una cifra incompleta junto al campo, elige un ícono, publica y lo ve en el inicio. Las dos vistas nuevas entran al recorrido de axe del panel.
+- Este paso no agrega movimiento (las cifras y la línea de tiempo son estáticas; las tarjetas conservan sus efectos al apuntar), así que no hubo cambio que revisar con `review-animations`.
+
+**Problemas y cómo se resolvieron.**
+
+- El test de sincronía no podía importar el código del servidor sin acoplar el typecheck de la web: lee la lista como texto.
+- El e2e sirve el build compilado: con el build anterior las secciones nuevas no aparecían (la web ignora claves de sección que no conoce). Hay que ejecutar `npm run build -w apps/web` antes de `npm run e2e`.

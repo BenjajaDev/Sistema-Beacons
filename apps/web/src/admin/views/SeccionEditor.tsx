@@ -8,6 +8,7 @@ import { Button, IconButton } from "@shared/ui/Button";
 import { ConfirmDialog, Dialog } from "@shared/ui/Dialog";
 import { ErrorSummary } from "@shared/ui/ErrorSummary";
 import { TextArea, TextField } from "@shared/ui/Field";
+import { ICONOS_DE_TARJETA, IconoTarjeta, type ClaveIcono } from "@shared/ui/IconosTarjeta";
 import { Cargando, ErrorState, Skeleton } from "@shared/ui/States";
 import { useToast } from "@shared/ui/Toast";
 import { RENDERIZADORES } from "../../public/sections";
@@ -49,9 +50,34 @@ type Campo =
       max: number;
       // Cada elemento acepta una imagen opcional.
       conImagen?: boolean;
+      // Cada elemento acepta un ícono vectorial opcional (alternativa a la imagen).
+      conIcono?: boolean;
+      // Campos propios de cada elemento, en lugar de título y texto (cifras, hitos).
+      filas?: CampoFila[];
+      // Elemento nuevo al presionar «Agregar» (con filas).
+      nueva?: Record<string, unknown>;
     }
   | { tipo: "rico"; clave: string; etiqueta: string }
   | { tipo: "imagen"; clave: string; etiqueta: string; marco: Marco }
+  | {
+      tipo: "opciones";
+      clave: string;
+      etiqueta: string;
+      opciones: { valor: string; texto: string }[];
+    };
+
+// Campo de un elemento de lista con forma propia.
+type CampoFila =
+  | {
+      tipo: "texto";
+      clave: string;
+      etiqueta: string;
+      max: number;
+      opcional?: boolean;
+      multilinea?: boolean;
+      ayuda?: string;
+    }
+  | { tipo: "numero"; clave: string; etiqueta: string; max: number; ayuda?: string }
   | {
       tipo: "opciones";
       clave: string;
@@ -160,6 +186,7 @@ const CAMPOS: Record<string, Campo[]> = {
       min: 1,
       max: 6,
       conImagen: true,
+      conIcono: true,
     },
     audiodescripcion,
   ],
@@ -175,6 +202,7 @@ const CAMPOS: Record<string, Campo[]> = {
       min: 1,
       max: 8,
       conImagen: true,
+      conIcono: true,
     },
   ],
   proyecciones: [
@@ -189,7 +217,86 @@ const CAMPOS: Record<string, Campo[]> = {
       min: 1,
       max: 8,
       conImagen: true,
+      conIcono: true,
     },
+  ],
+  cifras: [
+    titulo,
+    intro,
+    imagenEncabezado,
+    {
+      tipo: "lista",
+      clave: "items",
+      etiqueta: "Cifras",
+      elemento: "Cifra",
+      min: 1,
+      max: 6,
+      filas: [
+        {
+          tipo: "numero",
+          clave: "valor",
+          etiqueta: "Número",
+          max: 1_000_000_000,
+          ayuda: "Solo cifras reales y verificables. Un número entero, sin puntos.",
+        },
+        {
+          tipo: "texto",
+          clave: "sufijo",
+          etiqueta: "Después del número",
+          max: 6,
+          opcional: true,
+          ayuda: "Por ejemplo «+», «%» o «mil».",
+        },
+        { tipo: "texto", clave: "etiqueta", etiqueta: "Qué mide", max: 60 },
+        {
+          tipo: "texto",
+          clave: "detalle",
+          etiqueta: "Detalle",
+          max: 140,
+          opcional: true,
+          ayuda: "Aclaración corta, por ejemplo cómo se cuenta.",
+        },
+      ],
+      nueva: { valor: 0, etiqueta: "" },
+    },
+    audiodescripcion,
+  ],
+  hitos: [
+    titulo,
+    intro,
+    imagenEncabezado,
+    {
+      tipo: "lista",
+      clave: "items",
+      etiqueta: "Hitos",
+      elemento: "Hito",
+      min: 1,
+      max: 8,
+      filas: [
+        { tipo: "texto", clave: "titulo", etiqueta: "Título", max: 80 },
+        { tipo: "texto", clave: "texto", etiqueta: "Texto", max: 300, multilinea: true },
+        {
+          tipo: "opciones",
+          clave: "estado",
+          etiqueta: "Estado",
+          opciones: [
+            { valor: "hecho", texto: "Completado" },
+            { valor: "en-curso", texto: "En curso" },
+            { valor: "futuro", texto: "Próximamente" },
+          ],
+        },
+        {
+          tipo: "texto",
+          clave: "fecha",
+          etiqueta: "Fecha",
+          max: 40,
+          opcional: true,
+          ayuda: "Texto libre: «2025», «Segundo semestre 2026».",
+        },
+      ],
+      nueva: { titulo: "", texto: "", estado: "futuro" },
+    },
+    audiodescripcion,
   ],
   "nosotros-inicio": [
     titulo,
@@ -247,7 +354,10 @@ const CAMPOS: Record<string, Campo[]> = {
 
 type Contenido = Record<string, unknown>;
 // Imagen tal como la guarda el servidor (server/src/content/section-images.ts).
-type Item = { titulo: string; texto: string; imagen?: ImagenValor };
+type Item = { titulo: string; texto: string; imagen?: ImagenValor; icono?: ClaveIcono } & Record<
+  string,
+  unknown
+>;
 
 // En la vista previa, una imagen decorativa se muestra con alt vacío, como en el sitio.
 function paraVista(valor: unknown): unknown {
@@ -686,23 +796,46 @@ function CampoSeccion({
                 <legend>
                   {campo.elemento} {i + 1}
                 </legend>
-                <TextField
-                  id={`${id}-${i}-titulo`}
-                  label="Título"
-                  maxLength={80}
-                  value={it.titulo}
-                  error={errores[`${id}-${i}-titulo`]}
-                  onChange={(e) => cambiarItem(i, { titulo: e.target.value })}
-                />
-                <TextArea
-                  id={`${id}-${i}-texto`}
-                  label="Texto"
-                  rows={2}
-                  maxLength={400}
-                  value={it.texto}
-                  error={errores[`${id}-${i}-texto`]}
-                  onChange={(e) => cambiarItem(i, { texto: e.target.value })}
-                />
+                {campo.filas ? (
+                  campo.filas.map((fila) => (
+                    <CampoDeFila
+                      key={fila.clave}
+                      fila={fila}
+                      id={`${id}-${i}-${fila.clave}`}
+                      valor={it[fila.clave]}
+                      error={errores[`${id}-${i}-${fila.clave}`]}
+                      onCambiar={(v) => cambiarItem(i, { [fila.clave]: v })}
+                    />
+                  ))
+                ) : (
+                  <>
+                    <TextField
+                      id={`${id}-${i}-titulo`}
+                      label="Título"
+                      maxLength={80}
+                      value={it.titulo}
+                      error={errores[`${id}-${i}-titulo`]}
+                      onChange={(e) => cambiarItem(i, { titulo: e.target.value })}
+                    />
+                    <TextArea
+                      id={`${id}-${i}-texto`}
+                      label="Texto"
+                      rows={2}
+                      maxLength={400}
+                      value={it.texto}
+                      error={errores[`${id}-${i}-texto`]}
+                      onChange={(e) => cambiarItem(i, { texto: e.target.value })}
+                    />
+                  </>
+                )}
+                {campo.conIcono && (
+                  <SelectorIcono
+                    nombre={`${id}-${i}-icono`}
+                    etiqueta={`Ícono del ${campo.elemento.toLowerCase()} ${i + 1} (opcional)`}
+                    valor={it.icono}
+                    onCambiar={(icono) => cambiarItem(i, { icono })}
+                  />
+                )}
                 {campo.conImagen && (
                   <CampoImagenSeccion
                     ruta={`${campo.clave}.${i}.imagen`}
@@ -748,7 +881,9 @@ function CampoSeccion({
         {!fija && !soloLectura && items.length < campo.max && (
           <Button
             variante="secundario"
-            onClick={() => onCambiar([...items, { titulo: "", texto: "" }])}
+            onClick={() =>
+              onCambiar([...items, (campo.nueva ?? { titulo: "", texto: "" }) as Item])
+            }
           >
             Agregar {campo.elemento.toLowerCase()}
           </Button>
@@ -766,6 +901,114 @@ function CampoSeccion({
       error={errores[idDe(`${campo.clave}.json`)] ?? errores[id]}
       soloLectura={soloLectura}
     />
+  );
+}
+
+// Un campo de un elemento de lista con forma propia (cifras, hitos).
+function CampoDeFila({
+  fila,
+  id,
+  valor,
+  error,
+  onCambiar,
+}: {
+  fila: CampoFila;
+  id: string;
+  valor: unknown;
+  error?: string;
+  onCambiar: (v: unknown) => void;
+}) {
+  if (fila.tipo === "opciones") {
+    const actual = (valor as string | undefined) ?? fila.opciones[0]?.valor;
+    return (
+      <fieldset className="grupo-campos">
+        <legend>{fila.etiqueta}</legend>
+        {fila.opciones.map((o) => (
+          <label key={o.valor} className="casilla">
+            <input
+              type="radio"
+              name={id}
+              value={o.valor}
+              checked={actual === o.valor}
+              onChange={() => onCambiar(o.valor)}
+            />
+            {o.texto}
+          </label>
+        ))}
+      </fieldset>
+    );
+  }
+  if (fila.tipo === "numero") {
+    return (
+      <TextField
+        id={id}
+        label={fila.etiqueta}
+        type="number"
+        inputMode="numeric"
+        min={0}
+        max={fila.max}
+        step={1}
+        ayuda={fila.ayuda}
+        value={typeof valor === "number" ? String(valor) : ""}
+        error={error}
+        onChange={(e) => onCambiar(e.target.value === "" ? undefined : Number(e.target.value))}
+      />
+    );
+  }
+  const v = (valor as string | undefined) ?? "";
+  const props = {
+    id,
+    label: fila.etiqueta,
+    opcional: fila.opcional,
+    maxLength: fila.max,
+    ayuda: [fila.ayuda, `${v.length} de ${fila.max} caracteres.`].filter(Boolean).join(" "),
+    value: v,
+    error,
+    onChange: (e: { target: { value: string } }) =>
+      onCambiar(fila.opcional && !e.target.value ? undefined : e.target.value),
+  };
+  return fila.multilinea ? <TextArea {...props} rows={2} /> : <TextField {...props} />;
+}
+
+// Ícono opcional de una tarjeta: botones de opción con el dibujo y su nombre.
+function SelectorIcono({
+  nombre,
+  etiqueta,
+  valor,
+  onCambiar,
+}: {
+  nombre: string;
+  etiqueta: string;
+  valor: ClaveIcono | undefined;
+  onCambiar: (v: ClaveIcono | undefined) => void;
+}) {
+  return (
+    <fieldset className="grupo-campos">
+      <legend>{etiqueta}</legend>
+      <div className="selector-iconos">
+        <label className="casilla selector-iconos__opcion">
+          <input
+            type="radio"
+            name={nombre}
+            checked={!valor}
+            onChange={() => onCambiar(undefined)}
+          />
+          Sin ícono
+        </label>
+        {(Object.keys(ICONOS_DE_TARJETA) as ClaveIcono[]).map((clave) => (
+          <label key={clave} className="casilla selector-iconos__opcion">
+            <input
+              type="radio"
+              name={nombre}
+              checked={valor === clave}
+              onChange={() => onCambiar(clave)}
+            />
+            <IconoTarjeta clave={clave} className="selector-iconos__dibujo" />
+            {ICONOS_DE_TARJETA[clave].nombre}
+          </label>
+        ))}
+      </div>
+    </fieldset>
   );
 }
 

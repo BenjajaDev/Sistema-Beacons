@@ -118,6 +118,40 @@ test("la administradora publica la nota y aparece en el sitio", async ({ page })
   await expect(page.getByRole("link", { name: TITULO })).toBeVisible();
 });
 
+test("la administradora edita las cifras y la línea de tiempo y se ven en el inicio", async ({
+  page,
+}) => {
+  await iniciarSesion(page, "admin");
+
+  await page.goto(`${PANEL}/secciones/cifras`);
+  await expect(page.getByRole("heading", { level: 1, name: "En cifras" })).toBeVisible();
+  const numero = page.getByLabel("Número").first();
+  await numero.fill("77");
+  // Una cifra nueva sin «Qué mide» no se guarda: el error queda junto al campo.
+  await page.getByRole("button", { name: "Agregar cifra" }).click();
+  await sinViolaciones(page, "editor de En cifras");
+  await page.getByRole("button", { name: "Guardar borrador" }).click();
+  await expect(page.getByRole("alert").first()).toBeVisible();
+  await page.getByLabel("Qué mide").last().fill("Personas capacitadas");
+  await page.getByRole("button", { name: "Guardar borrador" }).click();
+  await page.getByRole("button", { name: "Publicar cambios" }).click();
+  await expect(page.getByText("Sección publicada: ya se ve en el sitio.")).toBeVisible();
+
+  await page.goto(`${PANEL}/secciones/objetivos`);
+  await page.getByRole("radio", { name: "Voz", exact: true }).first().check();
+  await page.getByRole("button", { name: "Guardar borrador" }).click();
+  await page.getByRole("button", { name: "Publicar cambios" }).click();
+  await expect(page.getByText("Sección publicada: ya se ve en el sitio.")).toBeVisible();
+
+  await page.goto(`${PANEL}/secciones/hitos`);
+  await expect(page.getByRole("heading", { level: 1, name: "Línea de tiempo" })).toBeVisible();
+  await page.getByRole("radio", { name: "En curso", exact: true }).first().check();
+  await sinViolaciones(page, "editor de la línea de tiempo");
+
+  await page.goto("/");
+  await expect(page.getByRole("region", { name: "SIGNAL en cifras" })).toContainText("77");
+});
+
 test("un beacon creado en el panel llega a la app Android", async ({ page }) => {
   await iniciarSesion(page, "admin");
   await page.goto(`${PANEL}/beacons`);
@@ -233,6 +267,8 @@ test("todas las vistas del panel pasan axe en claro y oscuro", async ({ page }) 
     ["/noticias", "Noticias"],
     ["/secciones", "Secciones"],
     ["/secciones/hero", "Portada"],
+    ["/secciones/cifras", "En cifras"],
+    ["/secciones/hitos", "Línea de tiempo"],
     ["/equipo", "Equipo y colaboradores"],
     ["/respaldos", "Respaldos"],
     ["/identidad", "Identidad visual"],

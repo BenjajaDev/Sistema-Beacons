@@ -165,6 +165,52 @@ describe.skipIf(!hasTestDb)("imágenes en las secciones", () => {
   });
 });
 
+describe.skipIf(!hasTestDb)("secciones nuevas en una base existente", () => {
+  let db: Db;
+  beforeAll(() => {
+    db = testDb();
+  });
+  afterAll(() => db?.$disconnect());
+  beforeEach(async () => {
+    await resetDb(db);
+    await seedContent(db);
+  });
+
+  it("van al final de su página, sin repetir el orden de otra, y no mueven las existentes", async () => {
+    await db.section.deleteMany({ where: { key: { in: ["cifras", "hitos"] } } });
+    await db.section.update({ where: { key: "hero" }, data: { order: 99 } });
+    expect(await createMissingSections(db)).toEqual(["cifras", "hitos"]);
+    const orden = async (key: string) =>
+      (await db.section.findUniqueOrThrow({ where: { key } })).order;
+    expect(await orden("cifras")).toBe(100);
+    expect(await orden("hitos")).toBe(101);
+    expect(await orden("hero")).toBe(99);
+    const inicio = await db.section.findMany({
+      where: { page: "INICIO" },
+      select: { order: true },
+    });
+    expect(new Set(inicio.map((s) => s.order)).size).toBe(inicio.length);
+  });
+
+  it("en una base vacía respetan el orden del catálogo", async () => {
+    await db.section.deleteMany();
+    await createMissingSections(db);
+    const inicio = await db.section.findMany({
+      where: { page: "INICIO" },
+      orderBy: { order: "asc" },
+      select: { key: true },
+    });
+    expect(inicio.map((s) => s.key).slice(0, 6)).toEqual([
+      "hero",
+      "que-es",
+      "objetivos",
+      "cifras",
+      "proyecciones",
+      "hitos",
+    ]);
+  });
+});
+
 describe.skipIf(!hasTestDb)("datos de la card del equipo", () => {
   let db: Db;
   let app: ReturnType<typeof buildTestApp>;

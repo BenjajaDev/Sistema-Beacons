@@ -7,7 +7,12 @@ import {
   fontsSchema,
   paletteSchema,
 } from "../src/content/theme.js";
-import { SECTION_DEFINITIONS, sectionSchemas, type SectionKey } from "../src/content/sections.js";
+import {
+  ICONOS_TARJETA,
+  SECTION_DEFINITIONS,
+  sectionSchemas,
+  type SectionKey,
+} from "../src/content/sections.js";
 import { parseLegacyBeacons } from "../src/beacons/legacy-format.js";
 
 describe("contraste", () => {
@@ -78,6 +83,47 @@ describe("secciones", () => {
   it("las secciones agregadas después nacen ocultas", () => {
     expect(SECTION_DEFINITIONS["imagen-texto-inicio"].visibleInicial).toBe(false);
     expect(SECTION_DEFINITIONS["imagen-texto-nosotros"].visibleInicial).toBe(false);
+    // Las cifras y los hitos son datos reales del proyecto: no se muestran hasta que el equipo los cargue.
+    expect(SECTION_DEFINITIONS.cifras.visibleInicial).toBe(false);
+    expect(SECTION_DEFINITIONS.hitos.visibleInicial).toBe(false);
+  });
+
+  it("«En cifras» pide números enteros, de 1 a 6 indicadores", () => {
+    const base = SECTION_DEFINITIONS.cifras.contenidoInicial;
+    const conItems = (items: unknown[]) => sectionSchemas.cifras.safeParse({ ...base, items });
+    const cifra = { valor: 120, sufijo: "+", etiqueta: "Talleres realizados" };
+    expect(conItems([cifra]).success).toBe(true);
+    expect(conItems([]).success).toBe(false);
+    expect(conItems(Array(7).fill(cifra)).success).toBe(false);
+    // Un número con decimales, negativo o escrito como texto no es una cifra.
+    for (const valor of [1.5, -3, "120", 2_000_000_000]) {
+      expect(conItems([{ ...cifra, valor }]).success, String(valor)).toBe(false);
+    }
+    const sinEtiqueta = conItems([{ valor: 5, etiqueta: "  " }]);
+    expect(sinEtiqueta.error?.issues[0]?.path).toEqual(["items", 0, "etiqueta"]);
+  });
+
+  it("la línea de tiempo exige un estado válido en cada hito", () => {
+    const base = SECTION_DEFINITIONS.hitos.contenidoInicial;
+    const hito = { titulo: "Piloto", texto: "Se probó en terreno.", estado: "hecho" };
+    const conItems = (items: unknown[]) => sectionSchemas.hitos.safeParse({ ...base, items });
+    expect(
+      conItems([hito, { ...hito, estado: "en-curso", fecha: "Segundo semestre 2026" }]).success,
+    ).toBe(true);
+    expect(conItems([{ ...hito, estado: "terminado" }]).success).toBe(false);
+    expect(conItems([]).success).toBe(false);
+    expect(conItems(Array(9).fill(hito)).success).toBe(false);
+  });
+
+  it("las tarjetas aceptan un ícono de la lista y rechazan otro", () => {
+    const objetivos = SECTION_DEFINITIONS.objetivos.contenidoInicial;
+    const con = (icono: string) =>
+      sectionSchemas.objetivos.safeParse({
+        ...objetivos,
+        items: [{ titulo: "Autonomía", texto: "Texto", icono }],
+      });
+    for (const icono of ICONOS_TARJETA) expect(con(icono).success, icono).toBe(true);
+    expect(con("calavera").success).toBe(false);
   });
 
   it("rechaza enlaces javascript: en los botones", () => {

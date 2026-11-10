@@ -1336,3 +1336,20 @@
 .vista-persona__encuadre .btn {
   justify-self: start;
 }
+
+/* --- Selector de ícono de una tarjeta --- */
+
+.selector-iconos {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 9.5rem), 1fr));
+  gap: var(--space-2);
+}
+.selector-iconos__opcion {
+  margin: 0;
+}
+.selector-iconos__dibujo {
+  flex: none;
+  width: 1.25rem;
+  height: 1.25rem;
+  color: var(--color-primary);
+}

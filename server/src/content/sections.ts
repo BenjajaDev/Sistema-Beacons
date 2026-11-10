@@ -27,7 +27,30 @@ const audiodescripcion = textoOpcional(1200);
 
 export { imagenSchema };
 
-const item = z.object({ titulo: texto(80), texto: texto(400), imagen: imagenSchema.optional() });
+// Íconos vectoriales que se pueden poner a una tarjeta (apps/web/src/shared/ui/IconosTarjeta.tsx
+// los dibuja; un test verifica que ambas listas coincidan).
+export const ICONOS_TARJETA = [
+  "brujula",
+  "voz",
+  "personas",
+  "mapa",
+  "libro",
+  "ojo",
+  "senal",
+  "escudo",
+  "idea",
+  "corazon",
+  "edificio",
+  "grafico",
+] as const;
+
+const item = z.object({
+  titulo: texto(80),
+  texto: texto(400),
+  imagen: imagenSchema.optional(),
+  // Un ícono es una alternativa liviana a la imagen: se muestra sobre el título.
+  icono: z.enum(ICONOS_TARJETA).optional(),
+});
 const encabezado = {
   titulo: texto(120),
   intro: textoOpcional(400),
@@ -67,6 +90,46 @@ export const sectionSchemas = {
     texto: texto(600),
     imagen: imagenSchema.optional(),
     accion: enlace.optional(),
+    audiodescripcion,
+  }),
+  // Indicadores del proyecto («En cifras»). El valor es un número entero; el sufijo
+  // acompaña la cifra («+», «%», «mil»).
+  cifras: z.object({
+    titulo: texto(120),
+    intro: textoOpcional(400),
+    items: z
+      .array(
+        z.object({
+          valor: z
+            .number("Escribe un número.")
+            .int("Escribe un número entero.")
+            .min(0, "El número no puede ser negativo.")
+            .max(1_000_000_000, "Ese número es demasiado grande."),
+          sufijo: textoOpcional(6),
+          etiqueta: texto(60),
+          detalle: textoOpcional(140),
+        }),
+      )
+      .min(1, "Agrega al menos una cifra.")
+      .max(6, "Hasta 6 cifras."),
+    audiodescripcion,
+  }),
+  // Línea de tiempo de hitos: lo hecho, lo que está en curso y las metas.
+  hitos: z.object({
+    titulo: texto(120),
+    intro: textoOpcional(400),
+    items: z
+      .array(
+        z.object({
+          titulo: texto(80),
+          texto: texto(300),
+          estado: z.enum(["hecho", "en-curso", "futuro"]),
+          // Texto libre: «2025», «Segundo semestre 2026».
+          fecha: textoOpcional(40),
+        }),
+      )
+      .min(1, "Agrega al menos un hito.")
+      .max(8, "Hasta 8 hitos."),
     audiodescripcion,
   }),
   "noticias-recientes": z.object({ ...encabezado, textoVerTodas: texto(40) }),
@@ -169,9 +232,28 @@ export const SECTION_DEFINITIONS: { [K in SectionKey]: SectionDefinition<K> } = 
       ],
     },
   },
-  proyecciones: {
+  cifras: {
     page: "INICIO",
     order: 4,
+    nombre: "En cifras",
+    // Las cifras reales las carga el equipo: hasta entonces la sección no se muestra.
+    visibleInicial: false,
+    contenidoInicial: {
+      titulo: "SIGNAL en cifras",
+      intro: "Lo que hemos logrado hasta ahora.",
+      items: [
+        { valor: 0, etiqueta: "Talleres realizados" },
+        { valor: 0, etiqueta: "Personas beneficiadas", detalle: "Directas e indirectas" },
+        { valor: 0, etiqueta: "Recursos descargables" },
+        { valor: 0, etiqueta: "Redes y organizaciones asociadas" },
+      ],
+      audiodescripcion:
+        "Indicadores del proyecto en cifras. Cada indicador muestra un número grande y, debajo, qué mide.",
+    },
+  },
+  proyecciones: {
+    page: "INICIO",
+    order: 5,
     nombre: "Proyecciones",
     contenidoInicial: {
       titulo: "Proyecciones",
@@ -187,9 +269,38 @@ export const SECTION_DEFINITIONS: { [K in SectionKey]: SectionDefinition<K> } = 
       ],
     },
   },
+  hitos: {
+    page: "INICIO",
+    order: 6,
+    nombre: "Línea de tiempo",
+    visibleInicial: false,
+    contenidoInicial: {
+      titulo: "Ruta del proyecto",
+      intro: "Dónde estamos y hacia dónde vamos.",
+      items: [
+        {
+          titulo: "Fase completada",
+          texto: "Cuenta aquí lo que ya se logró, con su fecha.",
+          estado: "hecho",
+        },
+        {
+          titulo: "Etapa actual",
+          texto: "Cuenta aquí en qué está trabajando hoy el equipo.",
+          estado: "en-curso",
+        },
+        {
+          titulo: "Metas a mediano y largo plazo",
+          texto: "Cuenta aquí lo que viene.",
+          estado: "futuro",
+        },
+      ],
+      audiodescripcion:
+        "Línea de tiempo del proyecto. Cada hito indica si ya está completado, si está en curso o si viene más adelante.",
+    },
+  },
   "nosotros-inicio": {
     page: "INICIO",
-    order: 5,
+    order: 7,
     nombre: "Nosotros (en el inicio)",
     contenidoInicial: {
       titulo: "Quiénes hacen SIGNAL",
@@ -202,7 +313,7 @@ export const SECTION_DEFINITIONS: { [K in SectionKey]: SectionDefinition<K> } = 
   },
   "noticias-recientes": {
     page: "INICIO",
-    order: 6,
+    order: 8,
     nombre: "Últimas noticias",
     contenidoInicial: { titulo: "Últimas noticias", textoVerTodas: "Ver todas las noticias" },
   },
@@ -253,7 +364,7 @@ export const SECTION_DEFINITIONS: { [K in SectionKey]: SectionDefinition<K> } = 
   },
   "imagen-texto-inicio": {
     page: "INICIO",
-    order: 7,
+    order: 9,
     nombre: "Imagen y texto (inicio)",
     visibleInicial: false,
     contenidoInicial: {

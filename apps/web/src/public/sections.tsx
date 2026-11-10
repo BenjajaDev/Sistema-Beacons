@@ -2,6 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useId, type ComponentType, type ReactNode, type Ref } from "react";
 import { Link } from "react-router";
 import { mensajeDeError } from "@shared/api";
+import { IconoTarjeta, type ClaveIcono } from "@shared/ui/IconosTarjeta";
 import { Cargando, EmptyState, ErrorState, Reveal, Skeleton } from "@shared/ui/States";
 import { BotonVoz } from "@shared/voz/BotonVoz";
 import { EnlaceEditable, Img, TarjetaNoticia, Titulo, VozDeImagen, type Nivel } from "./components";
@@ -26,6 +27,7 @@ interface Item {
   titulo: string;
   texto: string;
   imagen?: Imagen;
+  icono?: ClaveIcono;
 }
 interface Encabezado {
   titulo: string;
@@ -181,6 +183,7 @@ function Pasos(p: PropsSeccion<Encabezado & { pasos: Item[] }>) {
         {p.contenido.pasos.map((paso, i) => (
           <li key={i} className="pasos__item">
             {paso.imagen && <ImagenDeItem imagen={paso.imagen} />}
+            {paso.icono && <IconoTarjeta clave={paso.icono} className="item__icono" />}
             <span className="pasos__numero" aria-hidden="true">
               {i + 1}
             </span>
@@ -201,11 +204,88 @@ function Tarjetas(p: PropsSeccion<Encabezado & { items: Item[] }>) {
         {p.contenido.items.map((item, i) => (
           <li key={i} className="tarjeta">
             {item.imagen && <ImagenDeItem imagen={item.imagen} />}
+            {item.icono && <IconoTarjeta clave={item.icono} className="item__icono" />}
             <h3>{item.titulo}</h3>
             <p>{item.texto}</p>
           </li>
         ))}
       </ul>
+    </>
+  );
+}
+
+// «En cifras»: números grandes con qué miden. La lista es una <ul>: el lector de
+// pantalla dice «lista, 4 elementos» y lee cada cifra junto a su etiqueta. El
+// número no se anima: lo único que se mueve solo en el sitio está acotado.
+function Cifras(
+  p: PropsSeccion<
+    Encabezado & {
+      items: { valor: number; sufijo?: string; etiqueta: string; detalle?: string }[];
+    }
+  >,
+) {
+  return (
+    <>
+      <Cabecera {...p} />
+      <ul className="cifras">
+        {p.contenido.items.map((cifra, i) => (
+          <li key={i} className="cifra">
+            <p className="cifra__valor">
+              {cifra.valor.toLocaleString("es-CL")}
+              {cifra.sufijo && <span className="cifra__sufijo">{cifra.sufijo}</span>}
+            </p>
+            <p className="cifra__etiqueta">{cifra.etiqueta}</p>
+            {cifra.detalle && <p className="cifra__detalle">{cifra.detalle}</p>}
+          </li>
+        ))}
+      </ul>
+    </>
+  );
+}
+
+const ESTADOS_HITO = {
+  hecho: "Completado",
+  "en-curso": "En curso",
+  futuro: "Próximamente",
+} as const;
+
+// Línea de tiempo: lista ordenada. El estado se dice con palabras y con la forma del
+// marcador (marca, anillo, círculo vacío), no solo con el color.
+function Hitos(
+  p: PropsSeccion<
+    Encabezado & {
+      items: {
+        titulo: string;
+        texto: string;
+        estado: keyof typeof ESTADOS_HITO;
+        fecha?: string;
+      }[];
+    }
+  >,
+) {
+  return (
+    <>
+      <Cabecera {...p} />
+      <ol className="hitos">
+        {p.contenido.items.map((hito, i) => (
+          <li key={i} className="hito" data-estado={hito.estado}>
+            <span className="hito__marca" aria-hidden="true" />
+            <div className="hito__cuerpo">
+              <p className="hito__estado">
+                {ESTADOS_HITO[hito.estado]}
+                {hito.fecha && (
+                  <>
+                    <span className="visually-hidden">, </span>
+                    <span className="hito__fecha"> · {hito.fecha}</span>
+                  </>
+                )}
+              </p>
+              <h3>{hito.titulo}</h3>
+              <p>{hito.texto}</p>
+            </div>
+          </li>
+        ))}
+      </ol>
     </>
   );
 }
@@ -409,6 +489,8 @@ export const RENDERIZADORES: Record<string, ComponentType<PropsSeccion<never>>> 
   "que-es": Pasos as ComponentType<PropsSeccion<never>>,
   objetivos: Tarjetas as ComponentType<PropsSeccion<never>>,
   proyecciones: Tarjetas as ComponentType<PropsSeccion<never>>,
+  cifras: Cifras as ComponentType<PropsSeccion<never>>,
+  hitos: Hitos as ComponentType<PropsSeccion<never>>,
   "nosotros-inicio": NosotrosInicio as ComponentType<PropsSeccion<never>>,
   "noticias-recientes": NoticiasRecientes as ComponentType<PropsSeccion<never>>,
   "quienes-somos": QuienesSomos as ComponentType<PropsSeccion<never>>,

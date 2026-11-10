@@ -40,6 +40,47 @@ try {
       order: i + 1,
     })),
   });
+  // «En cifras» y la línea de tiempo nacen ocultas: se publican con datos de prueba
+  // (los números no son reales) para que axe y las capturas las recorran.
+  await db.section.update({
+    where: { key: "cifras" },
+    data: {
+      visible: true,
+      content: {
+        titulo: "SIGNAL en cifras",
+        intro: "Datos de prueba.",
+        items: [
+          { valor: 12, etiqueta: "Talleres realizados" },
+          {
+            valor: 1250,
+            sufijo: "+",
+            etiqueta: "Personas beneficiadas",
+            detalle: "Dato de prueba",
+          },
+          { valor: 80, sufijo: "%", etiqueta: "Satisfacción" },
+        ],
+      },
+    },
+  });
+  await db.section.update({
+    where: { key: "hitos" },
+    data: {
+      visible: true,
+      content: {
+        titulo: "Ruta del proyecto",
+        items: [
+          { titulo: "Piloto", texto: "Probado en terreno.", estado: "hecho", fecha: "2025" },
+          { titulo: "Ajustes", texto: "Mejoras con las personas usuarias.", estado: "en-curso" },
+          { titulo: "Ampliación", texto: "Más espacios.", estado: "futuro", fecha: "2027" },
+        ],
+      },
+    },
+  });
+  // Un ícono en la primera tarjeta de objetivos, para comprobar su contraste.
+  const objetivos = await db.section.findUniqueOrThrow({ where: { key: "objetivos" } });
+  const contenido = objetivos.content as { items: Record<string, unknown>[] };
+  contenido.items[0] = { ...contenido.items[0], icono: "brujula" };
+  await db.section.update({ where: { key: "objetivos" }, data: { content: contenido as object } });
   console.log("Base de pruebas lista.");
 } finally {
   await db.$disconnect();

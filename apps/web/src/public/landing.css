@@ -546,6 +546,146 @@ main:focus {
   }
 }
 
+/* Ícono vectorial de una tarjeta o un paso: alternativa liviana a la imagen. */
+.item__icono {
+  display: block;
+  box-sizing: content-box;
+  width: 1.5rem;
+  height: 1.5rem;
+  margin-bottom: var(--space-3);
+  padding: 0.6rem;
+  border: 1px solid var(--color-border);
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--color-primary) 10%, var(--color-surface));
+  color: var(--color-primary);
+}
+.pasos__item .item__icono {
+  margin-bottom: var(--space-2);
+}
+
+/* --- En cifras: números grandes, sin animación --- */
+
+.cifras {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 12rem), 1fr));
+  gap: var(--space-5);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.cifra {
+  padding: var(--space-5);
+  border: 1px solid var(--color-border);
+  border-inline-start: 4px solid var(--color-primary);
+  border-radius: var(--radius-lg);
+  background: var(--color-surface);
+}
+.cifra p {
+  margin: 0;
+}
+.cifra__valor {
+  font-family: var(--font-heading);
+  font-size: var(--text-3xl);
+  font-weight: 800;
+  line-height: 1.1;
+  color: var(--color-primary);
+  font-variant-numeric: tabular-nums;
+  overflow-wrap: anywhere;
+}
+.cifra__sufijo {
+  margin-inline-start: 0.15em;
+  font-size: 0.6em;
+}
+.cifra__etiqueta {
+  margin-top: var(--space-2);
+  font-weight: 700;
+}
+.cifra__detalle {
+  margin-top: var(--space-1);
+  color: var(--color-text-muted);
+  font-size: var(--text-sm);
+}
+
+/* --- Línea de tiempo: una vertical con un marcador por hito --- */
+
+.hitos {
+  position: relative;
+  display: grid;
+  gap: var(--space-5);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.hito {
+  position: relative;
+  display: grid;
+  grid-template-columns: 2rem 1fr;
+  gap: var(--space-4);
+}
+/* El tramo de línea que une un marcador con el siguiente. */
+.hito:not(:last-child)::before {
+  content: "";
+  position: absolute;
+  top: 2rem;
+  bottom: calc(-1 * var(--space-5));
+  left: calc(1rem - 1.5px);
+  border-inline-start: 3px solid var(--color-border);
+}
+.hito__marca {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  place-items: center;
+  width: 2rem;
+  height: 2rem;
+  border: 3px solid var(--color-primary);
+  border-radius: 50%;
+  background: var(--color-bg);
+}
+/* Tres formas distintas, además del texto: marca, anillo con punto y círculo punteado. */
+.hito[data-estado="hecho"] .hito__marca {
+  background: var(--color-primary);
+}
+.hito[data-estado="hecho"] .hito__marca::after {
+  content: "";
+  width: 0.45rem;
+  height: 0.8rem;
+  margin-top: -0.15rem;
+  border: solid var(--color-on-primary);
+  border-width: 0 3px 3px 0;
+  transform: rotate(45deg);
+}
+.hito[data-estado="en-curso"] .hito__marca::after {
+  content: "";
+  width: 0.7rem;
+  height: 0.7rem;
+  border-radius: 50%;
+  background: var(--color-primary);
+}
+.hito[data-estado="futuro"] .hito__marca {
+  border-style: dashed;
+  border-color: var(--color-text-muted);
+}
+.hito__cuerpo {
+  padding-bottom: var(--space-2);
+}
+.hito__cuerpo p {
+  margin: 0;
+}
+.hito__estado {
+  color: var(--color-text-muted);
+  font-size: var(--text-sm);
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+.hito[data-estado="en-curso"] .hito__estado {
+  color: var(--color-primary);
+}
+.hito h3 {
+  margin: var(--space-1) 0;
+}
+
 /* --- Nosotros en el inicio: texto (e imagen opcional) y debajo la fila del equipo --- */
 
 .nosotros-inicio__texto {

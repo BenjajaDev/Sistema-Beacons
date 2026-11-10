@@ -155,6 +155,23 @@ test.describe("landing pública", () => {
     await sinViolaciones(page, "/ con zoom al 150 %");
   });
 
+  test("el inicio muestra «En cifras» y la línea de tiempo, con el estado dicho en palabras", async ({
+    page,
+  }) => {
+    await page.goto("/");
+    const cifras = page.getByRole("region", { name: "SIGNAL en cifras" });
+    await expect(cifras.getByRole("listitem")).toHaveCount(3);
+    await expect(cifras).toContainText("1.250+");
+    const hitos = page.getByRole("region", { name: "Ruta del proyecto" });
+    await expect(hitos.getByRole("listitem")).toHaveCount(3);
+    for (const estado of ["Completado", "En curso", "Próximamente"]) {
+      await expect(hitos.getByText(estado, { exact: false }).first()).toBeVisible();
+    }
+    // Un solo h1 en la página y las secciones nuevas usan h2.
+    await expect(page.getByRole("heading", { level: 1 })).toHaveCount(1);
+    await expect(cifras.getByRole("heading", { level: 2 })).toHaveCount(1);
+  });
+
   test("las secciones principales se pueden escuchar", async ({ page }) => {
     await page.goto("/");
     const escuchar = page.locator("#hero").getByRole("button", { name: "Escuchar esta sección" });
