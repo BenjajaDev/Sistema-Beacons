@@ -1,4 +1,5 @@
 import request from "supertest";
+import { CATEGORIAS_NOTICIA } from "../../src/content/news-categories.js";
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
 import type { Db } from "../../src/lib/prisma.js";
 import { buildTestApp } from "../helpers/app.js";
@@ -15,7 +16,7 @@ const cuerpo = (texto = "Contenido de la nota con información útil.") => ({
 const notaCompleta = {
   title: "Inauguración de la sede",
   excerpt: "SIGNAL llega a un nuevo edificio.",
-  category: "Proyecto",
+  category: "Novedades",
   bodyJson: cuerpo(),
 };
 
@@ -207,6 +208,38 @@ describe.skipIf(!hasTestDb)("noticias: flujo editorial", () => {
     ]);
   });
 
+  it("solo acepta las cinco categorías, pero respeta la que ya traía una nota antigua", async () => {
+    const rechazada = await crear(editor, { ...notaCompleta, category: "Varios" });
+    expect(rechazada.status).toBe(400);
+    expect(rechazada.body.campos.category).toContain("Novedades");
+    // Un borrador puede no tener categoría todavía.
+    expect((await crear(editor, { title: "Sin categoría" })).status).toBe(201);
+
+    // Una nota antigua conserva su categoría mientras no la cambie...
+    const antigua = await crear(editor);
+    await db.news.update({ where: { id: antigua.body.news.id }, data: { category: "Proyecto" } });
+    const url = `/api/admin/news/${antigua.body.news.id}`;
+    expect(
+      (await as(app, editor, "patch", url).send({ category: "Proyecto", title: "Nuevo título" }))
+        .status,
+    ).toBe(200);
+    // ...pero no se puede dar esa misma categoría a otra nota, y se puede pasar a una fija.
+    const otra = await crear(editor);
+    expect(
+      (
+        await as(app, editor, "patch", `/api/admin/news/${otra.body.news.id}`).send({
+          category: "Proyecto",
+        })
+      ).status,
+    ).toBe(400);
+    expect((await as(app, editor, "patch", url).send({ category: "Investigación" })).status).toBe(
+      200,
+    );
+    await db.news.update({ where: { id: antigua.body.news.id }, data: { category: "Proyecto" } });
+    const cats = await as(app, editor, "get", "/api/admin/news/categories");
+    expect(cats.body.heredadas).toEqual(["Proyecto"]);
+  });
+
   it("lista con filtros y conteo por estado", async () => {
     await crear(editor);
     await crear(otroEditor);
@@ -215,6 +248,7 @@ describe.skipIf(!hasTestDb)("noticias: flujo editorial", () => {
     expect(mias.body.items[0].bodyJson).toBeUndefined();
     expect(mias.body.porEstado).toEqual({ DRAFT: 2 });
     const cats = await as(app, editor, "get", "/api/admin/news/categories");
-    expect(cats.body.categorias).toEqual(["Proyecto"]);
+    expect(cats.body.categorias).toEqual([...CATEGORIAS_NOTICIA]);
+    expect(cats.body.heredadas).toEqual([]);
   });
 });

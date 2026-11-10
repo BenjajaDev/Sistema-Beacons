@@ -40,6 +40,13 @@ try {
       order: i + 1,
     })),
   });
+  // Dirección y WhatsApp para recorrer el botón destacado y «Cómo llegar» de Contacto.
+  await db.siteSettings.updateMany({
+    data: {
+      contactAddress: "Av. Libertador 1234, Santiago",
+      socials: [{ red: "WhatsApp", url: "https://wa.me/56912345678" }],
+    },
+  });
   // «En cifras» y la línea de tiempo nacen ocultas: se publican con datos de prueba
   // (los números no son reales) para que axe y las capturas las recorran.
   await db.section.update({

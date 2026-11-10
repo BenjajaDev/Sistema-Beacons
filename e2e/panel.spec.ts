@@ -60,7 +60,7 @@ test("el editor solo ve lo suyo y escribe una nota que envía a revisión", asyn
   await page.goto(`${PANEL}/noticias/nueva`);
   await page.getByLabel("Título", { exact: true }).fill(TITULO);
   await page.getByLabel("Bajada").fill("Escrita por el editor durante la prueba.");
-  await page.getByLabel("Categoría").fill("Pruebas");
+  await page.getByLabel("Categoría").selectOption({ label: "Eventos y talleres" });
   const cuerpo = page.getByRole("textbox", { name: "Cuerpo de la nota" });
   await cuerpo.click();
   await page.keyboard.type("Primer párrafo de la nota.");
@@ -116,6 +116,27 @@ test("la administradora publica la nota y aparece en el sitio", async ({ page })
   expect(publicas.items.map((n: { title: string }) => n.title)).toContain(TITULO);
   await page.goto("/noticias");
   await expect(page.getByRole("link", { name: TITULO })).toBeVisible();
+
+  // El filtro por categoría muestra la nota solo en su categoría.
+  await page.getByRole("link", { name: "Eventos y talleres" }).click();
+  await expect(page).toHaveURL(/categoria=Eventos/);
+  await expect(page.getByRole("link", { name: TITULO })).toBeVisible();
+  await sinViolaciones(page, "/noticias filtradas por categoría");
+  await page.getByRole("link", { name: "Investigación" }).click();
+  await expect(page.getByRole("link", { name: TITULO })).toHaveCount(0);
+  await expect(page.getByText("Todavía no hay noticias en «Investigación»")).toBeVisible();
+
+  // La nota lleva la firma y los enlaces para compartir (sin scripts de terceros).
+  await page.goto("/noticias");
+  await page.getByRole("link", { name: TITULO }).click();
+  await expect(page.getByText(/Por /)).toBeVisible();
+  const compartir = page.getByRole("complementary", { name: "Compartir esta noticia" });
+  await expect(compartir.getByRole("link")).toHaveCount(3);
+  await expect(compartir.getByRole("link", { name: /WhatsApp/ })).toHaveAttribute(
+    "href",
+    /wa\.me\/\?text=.*noticias%2F/,
+  );
+  await sinViolaciones(page, "noticia con compartir");
 });
 
 test("la administradora edita las cifras y la línea de tiempo y se ven en el inicio", async ({

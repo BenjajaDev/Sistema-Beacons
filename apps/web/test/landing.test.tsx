@@ -290,6 +290,78 @@ describe("Noticias", () => {
     await expectNoAxeViolations(container);
   });
 
+  it("filtra por categoría con enlaces, marca la elegida e ignora una que no existe", async () => {
+    const datos = (clave: object): [unknown[], unknown][] => [
+      [["site"], sitio],
+      [
+        ["pagina", "noticias"],
+        { secciones: [{ key: "noticias", content: { titulo: "Noticias" } }] },
+      ],
+      [
+        ["noticias", clave],
+        { items: [noticia(1)], pagina: 1, porPagina: 9, total: 1, totalPaginas: 1 },
+      ],
+    ];
+    const { container, unmount } = montar(
+      "/noticias?categoria=Investigaci%C3%B3n",
+      datos({ pagina: 1, porPagina: 9, categoria: "Investigación" }),
+    );
+    const filtro = screen.getByRole("navigation", { name: "Categorías de noticias" });
+    expect(within(filtro).getAllByRole("link")).toHaveLength(6);
+    expect(within(filtro).getByRole("link", { name: "Investigación" })).toHaveAttribute(
+      "aria-current",
+      "page",
+    );
+    expect(within(filtro).getByRole("link", { name: "Todas" })).not.toHaveAttribute("aria-current");
+    expect(within(filtro).getByRole("link", { name: "En los medios" })).toHaveAttribute(
+      "href",
+      "/noticias?categoria=En%20los%20medios",
+    );
+    await expectNoAxeViolations(container);
+    unmount();
+
+    // Una categoría inventada en la dirección se ignora: se muestran todas.
+    montar("/noticias?categoria=Inventada", datos({ pagina: 1, porPagina: 9 }));
+    expect(
+      within(screen.getByRole("navigation", { name: "Categorías de noticias" })).getByRole("link", {
+        name: "Todas",
+      }),
+    ).toHaveAttribute("aria-current", "page");
+  });
+
+  it("la noticia lleva la firma de autoría y enlaces para compartir sin scripts de terceros", async () => {
+    const { container } = montar("/noticias/nota-1", [
+      [["site"], sitio],
+      [
+        ["noticia", "nota-1"],
+        {
+          news: {
+            ...noticia(1),
+            author: "Ana Rojas",
+            updatedAt: "2026-10-02T12:00:00.000Z",
+            bodyHtml: "<p>Texto de la nota.</p>",
+            lectura: { palabras: 4, minutosLectura: 1 },
+          },
+        },
+      ],
+    ]);
+    expect(await screen.findByText(/Por Ana Rojas/)).toBeInTheDocument();
+    const compartir = screen.getByRole("complementary", { name: "Compartir esta noticia" });
+    const enlaces = within(compartir).getAllByRole("link");
+    expect(enlaces.map((a) => a.textContent)).toEqual([
+      "WhatsApp (se abre en una pestaña nueva)",
+      "LinkedIn (se abre en una pestaña nueva)",
+      "X (se abre en una pestaña nueva)",
+    ]);
+    for (const a of enlaces) {
+      expect(a).toHaveAttribute("target", "_blank");
+      expect(a).toHaveAttribute("rel", "noopener noreferrer");
+      expect(a.getAttribute("href")).toContain(encodeURIComponent("/noticias/nota-1"));
+    }
+    expect(container.querySelector("script")).toBeNull();
+    await expectNoAxeViolations(container);
+  });
+
   it("una noticia inexistente muestra la página «no encontrada»", async () => {
     vi.spyOn(globalThis, "fetch").mockResolvedValue(
       new Response(JSON.stringify({ error: "La noticia no existe.", code: "NOT_FOUND" }), {
@@ -332,11 +404,43 @@ describe("formulario de contacto", () => {
     // Hay dos role="alert": el resumen y la región de avisos, que existe siempre vacía.
     const resumen = screen.getByText(/Revisa estos campos/).closest("[role=alert]") as HTMLElement;
     expect(resumen).toHaveFocus();
-    expect(within(resumen).getAllByRole("link")).toHaveLength(3);
+    // Nombre, correo, motivo y mensaje.
+    expect(within(resumen).getAllByRole("link")).toHaveLength(4);
+    expect(screen.getByLabelText("Motivo de la consulta")).toHaveAttribute("aria-invalid", "true");
     expect(screen.getByLabelText("Nombre")).toHaveAttribute("aria-invalid", "true");
     expect(screen.getByLabelText("Teléfono (opcional)")).not.toHaveAttribute("aria-invalid");
     expect(espia).not.toHaveBeenCalled();
     await expectNoAxeViolations(container);
+  });
+
+  it("muestra el botón de WhatsApp y «Cómo llegar» a partir de los datos del panel", async () => {
+    const conDatos = {
+      ...sitio,
+      contacto: {
+        ...sitio.contacto,
+        direccion: "Av. Libertador 1234, Santiago",
+        redes: [
+          { red: "Instagram", url: "https://instagram.com/signal" },
+          { red: "WhatsApp", url: "https://wa.me/56912345678" },
+        ],
+      },
+    };
+    const { container } = montar("/contacto", [[["site"], conDatos], ...datos.slice(1)]);
+    const whatsapp = screen.getByRole("link", { name: /Escríbenos por WhatsApp/ });
+    expect(whatsapp).toHaveAttribute("href", "https://wa.me/56912345678");
+    expect(whatsapp).toHaveAttribute("rel", "noopener noreferrer");
+    const llegar = screen.getByRole("link", { name: /Cómo llegar a Av\. Libertador 1234/ });
+    expect(llegar.getAttribute("href")).toContain("google.com/maps/search");
+    expect(llegar.getAttribute("href")).toContain(encodeURIComponent("Av. Libertador 1234"));
+    // Un enlace, no un mapa embebido.
+    expect(container.querySelector("iframe")).toBeNull();
+    await expectNoAxeViolations(container);
+  });
+
+  it("sin red de WhatsApp ni dirección no muestra ninguno de los dos", () => {
+    montar("/contacto", datos);
+    expect(screen.queryByRole("link", { name: /WhatsApp/ })).toBeNull();
+    expect(screen.queryByRole("link", { name: /Cómo llegar/ })).toBeNull();
   });
 
   it("valida al salir del campo y quita el error al corregirlo", async () => {
@@ -366,6 +470,7 @@ describe("formulario de contacto", () => {
     montar("/contacto", datos);
     await usuario.type(screen.getByLabelText("Nombre"), "Ana");
     await usuario.type(screen.getByLabelText("Correo electrónico"), "ana@x.cl");
+    await usuario.selectOptions(screen.getByLabelText("Motivo de la consulta"), "PRESS");
     await usuario.type(screen.getByLabelText("Mensaje"), "Quiero conocer el proyecto.");
     await usuario.click(screen.getByRole("button", { name: "Enviar mensaje" }));
 
@@ -386,16 +491,17 @@ describe("formulario de contacto", () => {
     montar("/contacto", datos);
     await usuario.type(screen.getByLabelText("Nombre"), "Ana");
     await usuario.type(screen.getByLabelText("Correo electrónico"), "ana@correo.cl");
+    await usuario.selectOptions(screen.getByLabelText("Motivo de la consulta"), "SPACE");
     await usuario.type(screen.getByLabelText("Mensaje"), "Quiero conocer el proyecto.");
     await usuario.click(screen.getByRole("button", { name: "Enviar mensaje" }));
 
     const confirmacion = await screen.findByText("¡Recibido!");
     expect(confirmacion.closest("[tabindex='-1']")).toHaveFocus();
     const cuerpo = JSON.parse(String(espia.mock.calls[0]![1]!.body));
-    expect(cuerpo).toMatchObject({ nombre: "Ana", correo: "ana@correo.cl" });
+    expect(cuerpo).toMatchObject({ nombre: "Ana", correo: "ana@correo.cl", motivo: "SPACE" });
     expect(cuerpo.sitioWeb).toBeUndefined();
     expect(sessionStorage.getItem("signal-contacto-borrador")).toBe(
-      JSON.stringify({ nombre: "", correo: "", telefono: "", asunto: "", mensaje: "" }),
+      JSON.stringify({ nombre: "", correo: "", telefono: "", motivo: "", asunto: "", mensaje: "" }),
     );
   });
 });

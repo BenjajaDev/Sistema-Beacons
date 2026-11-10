@@ -1,6 +1,7 @@
 import { Router, type RequestHandler } from "express";
 import { rateLimit } from "express-rate-limit";
 import { z } from "zod";
+import { CLAVES_MOTIVO } from "../content/contact-reasons.js";
 import {
   getCollaborators,
   getNewsBySlug,
@@ -42,6 +43,8 @@ const contactSchema = z.object({
     .regex(/^[+\d\s()-]*$/, "Escribe solo números, espacios y los signos + ( ) -.")
     .optional(),
   asunto: z.string().trim().max(150).optional(),
+  // Sin motivo (clientes anteriores) queda como «otro».
+  motivo: z.enum(CLAVES_MOTIVO, "Elige el motivo de tu consulta.").default("OTHER"),
   mensaje: z
     .string("Escribe tu mensaje.")
     .trim()
@@ -120,6 +123,7 @@ export function publicApi({ db, logger }: { db: Db; logger: Logger }) {
           email: d.correo,
           phone: d.telefono || null,
           subject: d.asunto || null,
+          reason: d.motivo,
           message: d.mensaje,
         },
       });

@@ -52,6 +52,16 @@ enum CollaboratorType {
   OTHER
 }
 
+// Motivo que elige quien escribe por el formulario de contacto.
+enum ContactReason {
+  SPACE
+  COLLABORATION
+  PRESS
+  RESEARCH
+  SUPPORT
+  OTHER
+}
+
 // Página de la landing a la que pertenece una sección.
 enum Page {
   INICIO
@@ -312,14 +322,15 @@ model AuditLog {
 }
 
 model ContactMessage {
-  id        String    @id @default(uuid())
+  id        String        @id @default(uuid())
   name      String
   email     String
   phone     String?
   subject   String?
+  reason    ContactReason @default(OTHER)
   message   String
   readAt    DateTime?
-  createdAt DateTime  @default(now())
+  createdAt DateTime      @default(now())
 
   @@index([createdAt])
   @@map("contact_messages")

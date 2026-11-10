@@ -1,5 +1,7 @@
 import { apiFetch, ApiError, type ApiFetchOptions } from "@shared/api";
-import type { CategoriaEquipo, Encuadre, TipoColaborador } from "../public/data";
+import type { CategoriaEquipo, Encuadre, MOTIVOS_CONTACTO, TipoColaborador } from "../public/data";
+
+export type MotivoContacto = (typeof MOTIVOS_CONTACTO)[number]["clave"];
 
 // Cliente de /api/admin. Agrega el token CSRF en las peticiones que modifican,
 // lo renueva una vez si caducó, y avisa a la app cuando la sesión expiró o
@@ -239,6 +241,7 @@ export interface Mensaje {
   email: string;
   phone: string | null;
   subject: string | null;
+  reason: MotivoContacto;
   message: string;
   readAt: string | null;
   createdAt: string;

@@ -7,7 +7,7 @@ import { ApiError, mensajeDeError } from "@shared/api";
 import { Button } from "@shared/ui/Button";
 import { ConfirmDialog, Dialog } from "@shared/ui/Dialog";
 import { ErrorSummary } from "@shared/ui/ErrorSummary";
-import { TextArea, TextField } from "@shared/ui/Field";
+import { SelectField, TextArea, TextField } from "@shared/ui/Field";
 import { Cargando, ErrorState, Skeleton } from "@shared/ui/States";
 import { useToast } from "@shared/ui/Toast";
 import { adminFetch, type InformeAccesibilidad, type Noticia } from "../api";
@@ -157,7 +157,7 @@ function Editor({ noticia }: { noticia: Noticia | null }) {
 
   const { data: categorias } = useQuery({
     queryKey: ["admin", "categorias"],
-    queryFn: () => adminFetch<{ categorias: string[] }>("/news/categories"),
+    queryFn: () => adminFetch<{ categorias: string[]; heredadas: string[] }>("/news/categories"),
   });
 
   // Copia local mientras hay cambios sin guardar.
@@ -365,20 +365,25 @@ function Editor({ noticia }: { noticia: Noticia | null }) {
               onChange={(e) => set("excerpt", e.target.value)}
               error={errores.bajada}
             />
-            <TextField
+            <SelectField
               id="categoria"
               label="Categoría"
-              list="categorias-noticias"
+              ayuda="Son cinco categorías fijas: así los filtros de «Noticias» no se llenan de variantes."
               value={form.category}
-              maxLength={60}
               onChange={(e) => set("category", e.target.value)}
               error={errores.categoria}
-            />
-            <datalist id="categorias-noticias">
+            >
+              <option value="">Elige una categoría</option>
               {categorias?.categorias.map((c) => (
-                <option key={c} value={c} />
+                <option key={c} value={c}>
+                  {c}
+                </option>
               ))}
-            </datalist>
+              {/* Una nota antigua conserva su categoría de antes hasta que se cambie. */}
+              {form.category && !categorias?.categorias.includes(form.category) && (
+                <option value={form.category}>{form.category} (anterior)</option>
+              )}
+            </SelectField>
             {(!noticia || !noticia.publishedAt) && (
               <TextField
                 id="slug"

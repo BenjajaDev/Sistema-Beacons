@@ -855,6 +855,63 @@ main:focus {
 .noticia__meta {
   color: var(--color-text-muted);
 }
+
+/* Filtro de categorías de Noticias: mismas fichas que la paginación. */
+.filtro-categorias {
+  margin-bottom: var(--space-5);
+}
+
+/* Compartir una noticia: enlaces simples a WhatsApp, LinkedIn y X. */
+.compartir {
+  margin-top: var(--space-7);
+  padding-top: var(--space-5);
+  border-top: 1px solid var(--color-border);
+}
+.compartir__titulo {
+  margin-bottom: var(--space-3);
+  font-size: var(--text-lg);
+}
+.compartir__lista {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.compartir__enlace {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-height: var(--target);
+  padding-inline: var(--space-4);
+  border: 2px solid var(--color-border-control);
+  border-radius: var(--radius-pill);
+  color: var(--color-text);
+  font-weight: var(--peso-fuerte);
+  text-decoration: none;
+  transition:
+    border-color var(--dur-rapida) ease,
+    transform var(--dur-rapida) var(--curva);
+}
+.compartir__enlace .red__icono {
+  width: 1.25rem;
+  height: 1.25rem;
+}
+.compartir__enlace:hover {
+  border-color: var(--color-primary);
+}
+.compartir__enlace:active {
+  transform: scale(0.97);
+}
+@media (hover: hover) and (pointer: fine) and (prefers-reduced-motion: no-preference) {
+  .compartir__enlace:hover {
+    transform: translateY(-2px);
+  }
+  .compartir__enlace:active {
+    transform: scale(0.97);
+  }
+}
 .noticia__portada {
   margin: var(--space-5) 0;
 }
@@ -1555,6 +1612,21 @@ main:focus {
 }
 
 /* --- Contacto --- */
+
+.contacto__whatsapp {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+.contacto__whatsapp .red__icono {
+  width: 1.4rem;
+  height: 1.4rem;
+}
+.contacto__como-llegar {
+  display: block;
+  margin-top: var(--space-1);
+  font-weight: var(--peso-fuerte);
+}
 
 .contacto {
   display: grid;

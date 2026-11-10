@@ -4,9 +4,10 @@ import { ApiError, mensajeDeError } from "@shared/api";
 import { Button } from "@shared/ui/Button";
 import { ConfirmDialog } from "@shared/ui/Dialog";
 import { ErrorSummary } from "@shared/ui/ErrorSummary";
-import { TextArea, TextField } from "@shared/ui/Field";
+import { SelectField, TextArea, TextField } from "@shared/ui/Field";
 import { Cargando, EmptyState, ErrorState, Skeleton } from "@shared/ui/States";
 import { useToast } from "@shared/ui/Toast";
+import { MOTIVOS_CONTACTO } from "../../public/data";
 import { adminFetch, type Ajustes, type Enlace, type Mensaje } from "../api";
 import { useAuth } from "../auth";
 import { ResponderCorreo } from "../ResponderCorreo";
@@ -104,6 +105,7 @@ export function DatosContacto({ ajustes }: { ajustes: Ajustes }) {
           id={id("contactAddress")}
           label="Dirección"
           opcional
+          ayuda="En el sitio aparece con un enlace «Cómo llegar» que abre el mapa del teléfono o del navegador."
           value={form.contactAddress}
           maxLength={200}
           onChange={(e) => setForm({ ...form, contactAddress: e.target.value })}
@@ -119,6 +121,11 @@ export function DatosContacto({ ajustes }: { ajustes: Ajustes }) {
                 id={id(`socials.${i}.red`)}
                 label={`Red ${i + 1}`}
                 placeholder="Instagram"
+                ayuda={
+                  i === 0
+                    ? "Si agregas «WhatsApp» con un enlace wa.me/569XXXXXXXX, la página de Contacto muestra un botón destacado."
+                    : undefined
+                }
                 value={r.red}
                 onChange={(e) =>
                   setForm({
@@ -186,13 +193,14 @@ function Mensajes() {
   const toast = useToast();
   const queryClient = useQueryClient();
   const [soloNoLeidos, setSoloNoLeidos] = useState(false);
+  const [motivo, setMotivo] = useState("");
   const [borrando, setBorrando] = useState<Mensaje | null>(null);
   const consulta = useInfiniteQuery({
-    queryKey: ["admin", "mensajes", { soloNoLeidos }],
+    queryKey: ["admin", "mensajes", { soloNoLeidos, motivo }],
     initialPageParam: null as string | null,
     queryFn: ({ pageParam }) =>
       adminFetch<{ items: Mensaje[]; nextCursor: string | null; noLeidos: number }>(
-        `/messages?limit=20${soloNoLeidos ? "&noLeidos=true" : ""}${pageParam ? `&cursor=${pageParam}` : ""}`,
+        `/messages?limit=20${soloNoLeidos ? "&noLeidos=true" : ""}${motivo ? `&motivo=${motivo}` : ""}${pageParam ? `&cursor=${pageParam}` : ""}`,
       ),
     getNextPageParam: (u) => u.nextCursor,
   });
@@ -213,6 +221,19 @@ function Mensajes() {
         <h2 id="mensajes">
           Mensajes recibidos {noLeidos > 0 && <span className="contador">{noLeidos} sin leer</span>}
         </h2>
+        <SelectField
+          label="Motivo"
+          value={motivo}
+          onChange={(e) => setMotivo(e.target.value)}
+          className="filtro-motivo"
+        >
+          <option value="">Todos los motivos</option>
+          {MOTIVOS_CONTACTO.map((m) => (
+            <option key={m.clave} value={m.clave}>
+              {m.etiqueta}
+            </option>
+          ))}
+        </SelectField>
         <label className="casilla">
           <input
             type="checkbox"
@@ -233,7 +254,9 @@ function Mensajes() {
         />
       ) : items.length === 0 ? (
         <EmptyState
-          titulo={soloNoLeidos ? "No hay mensajes sin leer" : "Aún no llegan mensajes"}
+          titulo={
+            soloNoLeidos || motivo ? "No hay mensajes con esos filtros" : "Aún no llegan mensajes"
+          }
           texto="Los mensajes del formulario de contacto del sitio aparecerán aquí."
         />
       ) : (
@@ -249,7 +272,10 @@ function Mensajes() {
                   · {m.name}
                 </h3>
                 <p className="texto-suave">
-                  {formatoFecha(m.createdAt)} · <a href={`mailto:${m.email}`}>{m.email}</a>
+                  {formatoFecha(m.createdAt)} ·{" "}
+                  <strong>{MOTIVOS_CONTACTO.find((x) => x.clave === m.reason)?.etiqueta}</strong>
+                  {" · "}
+                  <a href={`mailto:${m.email}`}>{m.email}</a>
                   {m.phone && (
                     <>
                       {" "}

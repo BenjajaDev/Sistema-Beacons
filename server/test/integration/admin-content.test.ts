@@ -633,6 +633,28 @@ describe.skipIf(!hasTestDb)("administración de contenido", () => {
       expect((await as(app, admin, "get", "/api/admin/messages")).body.noLeidos).toBe(0);
     });
 
+    it("guarda el motivo de la consulta, lo filtra en el panel y rechaza uno inventado", async () => {
+      const enviar = (extra: object) =>
+        request(app)
+          .post("/api/public/contact")
+          .send({ ...mensaje, ...extra });
+      // Sin motivo (clientes anteriores) queda como «otro».
+      expect((await enviar({})).status).toBe(201);
+      expect((await enviar({ motivo: "PRESS" })).status).toBe(201);
+      const invalido = await enviar({ motivo: "SPAM" });
+      expect(invalido.status).toBe(400);
+      expect(invalido.body.campos.motivo).toMatch(/motivo/);
+
+      const todos = await as(app, admin, "get", "/api/admin/messages");
+      expect(todos.body.items.map((m: { reason: string }) => m.reason).sort()).toEqual([
+        "OTHER",
+        "PRESS",
+      ]);
+      const prensa = await as(app, admin, "get", "/api/admin/messages?motivo=PRESS");
+      expect(prensa.body.items).toHaveLength(1);
+      expect(prensa.body.items[0].reason).toBe("PRESS");
+    });
+
     it("descarta en silencio lo que llena el campo trampa", async () => {
       const res = await request(app)
         .post("/api/public/contact")

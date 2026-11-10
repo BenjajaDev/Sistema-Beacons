@@ -2,7 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import { Link, useParams } from "react-router";
 import { ApiError, mensajeDeError } from "@shared/api";
 import { Cargando, ErrorState, Skeleton } from "@shared/ui/States";
-import { Fecha, Img, VozDeImagen } from "../components";
+import { Compartir, Fecha, Img, VozDeImagen } from "../components";
 import { consultas, useTituloPagina } from "../data";
 import NoEncontrada from "./NoEncontrada";
 
@@ -46,7 +46,7 @@ export default function Noticia() {
             </h1>
             <p className="noticia__bajada">{data.news.excerpt}</p>
             <p className="noticia__meta">
-              <Fecha iso={data.news.publishedAt} /> · {data.news.author}
+              <Fecha iso={data.news.publishedAt} /> · Por {data.news.author}
               {data.news.lectura && <> · {data.news.lectura.minutosLectura} min de lectura</>}
             </p>
           </header>
@@ -58,6 +58,10 @@ export default function Noticia() {
           )}
           {/* HTML generado y saneado por el servidor (server/src/content/rich-text.ts). */}
           <div className="prosa" dangerouslySetInnerHTML={{ __html: data.news.bodyHtml }} />
+          <Compartir
+            titulo={data.news.title}
+            url={new URL(`/noticias/${data.news.slug}`, window.location.origin).href}
+          />
         </>
       )}
     </article>

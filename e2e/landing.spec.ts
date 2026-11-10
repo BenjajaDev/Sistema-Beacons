@@ -257,12 +257,33 @@ test.describe("landing pública", () => {
     await expect(guia).toHaveCount(0);
   });
 
+  test("Contacto muestra el botón de WhatsApp y «Cómo llegar», sin mapa embebido", async ({
+    page,
+  }) => {
+    await page.goto("/contacto");
+    const whatsapp = page.getByRole("link", { name: /Escríbenos por WhatsApp/ });
+    await expect(whatsapp).toHaveAttribute("href", "https://wa.me/56912345678");
+    const caja = (await whatsapp.boundingBox())!;
+    expect(caja.height).toBeGreaterThanOrEqual(44);
+    await expect(page.getByRole("link", { name: /Cómo llegar a Av\. Libertador/ })).toHaveAttribute(
+      "href",
+      /google\.com\/maps\/search/,
+    );
+    await expect(page.locator("iframe")).toHaveCount(0);
+    // El botón no es flotante: sigue su lugar en la página al desplazarse.
+    await page.mouse.wheel(0, 600);
+    expect(await whatsapp.evaluate((e) => getComputedStyle(e).position)).not.toBe("fixed");
+    await sinViolaciones(page, "/contacto con WhatsApp y dirección");
+  });
+
   test("el formulario de contacto valida, anuncia errores y envía", async ({ page }) => {
     await page.goto("/contacto");
     await page.getByRole("button", { name: "Enviar mensaje" }).click();
     await expect(page.locator(".resumen-errores")).toBeFocused();
     await expect(page.getByLabel("Nombre")).toHaveAttribute("aria-invalid", "true");
+    await expect(page.getByLabel("Motivo de la consulta")).toHaveAttribute("aria-invalid", "true");
     await page.getByLabel("Nombre").fill("Ana");
+    await page.getByLabel("Motivo de la consulta").selectOption({ label: "Prensa" });
     await page.getByLabel("Correo electrónico").fill("ana@correo.cl");
     await page.getByLabel("Mensaje", { exact: true }).fill("Quiero conocer el proyecto SIGNAL.");
     await page.getByRole("button", { name: "Enviar mensaje" }).click();

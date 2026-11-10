@@ -1,6 +1,7 @@
 import type { Request } from "express";
 import { z } from "zod";
 import type { SessionUser } from "../../auth/session.js";
+import { CATEGORIAS_NOTICIA } from "../../content/news-categories.js";
 import { PUBLIC_NEWS_INCLUDE, toNewsDetail } from "../../content/news-view.js";
 import {
   checkAccessibility,
@@ -105,6 +106,16 @@ function assertCanEdit(user: SessionUser, news: News) {
   }
 }
 
+// La categoría es una de las cinco fijas (o vacía, en un borrador). Una nota que ya
+// tenía otra puede conservarla, pero no se puede asignar a otra nota.
+function validarCategoria(categoria: string, actual?: string) {
+  if (categoria === "" || categoria === actual) return;
+  if ((CATEGORIAS_NOTICIA as readonly string[]).includes(categoria)) return;
+  throw new ApiError(400, "VALIDATION", "Revisa los campos marcados.", {
+    campos: { category: `Elige una de las categorías: ${CATEGORIAS_NOTICIA.join(", ")}.` },
+  });
+}
+
 // Lo que debe cumplir una nota para ir a revisión o publicarse.
 function assertReady(news: News) {
   const faltan: Record<string, string> = {};
@@ -185,13 +196,15 @@ export function newsRoutes({ db, audit }: AdminDeps): AdminRoute[] {
       method: "get",
       path: "/news/categories",
       handler: async (_req, res) => {
+        // Las cinco fijas y, aparte, las que traen las notas antiguas: se conservan
+        // mientras la nota las use, pero ya no se pueden elegir para una nota nueva.
         const filas = await db.news.findMany({
-          where: { category: { not: "" } },
+          where: { category: { notIn: ["", ...CATEGORIAS_NOTICIA] } },
           distinct: ["category"],
           select: { category: true },
           orderBy: { category: "asc" },
         });
-        res.json({ categorias: filas.map((f) => f.category) });
+        res.json({ categorias: CATEGORIAS_NOTICIA, heredadas: filas.map((f) => f.category) });
       },
     },
     {
@@ -248,6 +261,7 @@ export function newsRoutes({ db, audit }: AdminDeps): AdminRoute[] {
       path: "/news",
       handler: async (req, res) => {
         const d = parseOrThrow(createSchema, req.body);
+        validarCategoria(d.category);
         await validarPortada(d.coverId, d.coverAlt);
         let slug: string;
         if (d.slug) {
@@ -281,6 +295,8 @@ export function newsRoutes({ db, audit }: AdminDeps): AdminRoute[] {
         const news = await cargar(req);
         assertCanEdit(req.user!, news);
         const d = parseOrThrow(updateSchema, req.body);
+        // Una nota antigua puede conservar su categoría de antes mientras no la cambie.
+        if (d.category !== undefined) validarCategoria(d.category, news.category);
 
         const coverId = d.coverId !== undefined ? d.coverId : news.coverId;
         const coverAlt = d.coverAlt !== undefined ? d.coverAlt : news.coverAlt;

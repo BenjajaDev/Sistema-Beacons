@@ -143,9 +143,22 @@ export function TarjetaNoticia({ noticia, nivel = 3 }: { noticia: NoticiaResumen
   );
 }
 
-export function Paginacion({ pagina, totalPaginas }: { pagina: number; totalPaginas: number }) {
+export function Paginacion({
+  pagina,
+  totalPaginas,
+  categoria,
+}: {
+  pagina: number;
+  totalPaginas: number;
+  categoria?: string;
+}) {
   if (totalPaginas <= 1) return null;
-  const url = (n: number) => (n === 1 ? "/noticias" : `/noticias?pagina=${n}`);
+  const url = (n: number) => {
+    const q = new URLSearchParams();
+    if (categoria) q.set("categoria", categoria);
+    if (n > 1) q.set("pagina", String(n));
+    return q.size ? `/noticias?${q}` : "/noticias";
+  };
   return (
     <nav aria-label="Paginación de noticias" className="paginacion">
       <ul>
@@ -176,6 +189,51 @@ export function Paginacion({ pagina, totalPaginas }: { pagina: number; totalPagi
         )}
       </ul>
     </nav>
+  );
+}
+
+// --- Compartir una noticia -----------------------------------------------------
+
+// Enlaces para compartir en WhatsApp, LinkedIn y X. Son enlaces simples a la
+// página de cada red: no se carga ningún script ni se avisa a nadie hasta que la
+// persona decide compartir (la política de seguridad del sitio no permite scripts
+// de terceros y así se cuida la privacidad).
+export function Compartir({ titulo, url }: { titulo: string; url: string }) {
+  const u = encodeURIComponent(url);
+  const t = encodeURIComponent(titulo);
+  const destinos = [
+    { red: "whatsapp", nombre: "WhatsApp", href: `https://wa.me/?text=${t}%20${u}` },
+    {
+      red: "linkedin",
+      nombre: "LinkedIn",
+      href: `https://www.linkedin.com/sharing/share-offsite/?url=${u}`,
+    },
+    { red: "x", nombre: "X", href: `https://twitter.com/intent/tweet?text=${t}&url=${u}` },
+  ] as const;
+  return (
+    <aside aria-labelledby="compartir-titulo" className="compartir">
+      <h2 id="compartir-titulo" className="compartir__titulo">
+        Compartir esta noticia
+      </h2>
+      <ul className="compartir__lista">
+        {destinos.map((d) => (
+          <li key={d.red}>
+            <a
+              href={d.href}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="compartir__enlace"
+            >
+              <IconoRed red={d.red} className="red__icono" />
+              <span>
+                {d.nombre}
+                <span className="visually-hidden"> (se abre en una pestaña nueva)</span>
+              </span>
+            </a>
+          </li>
+        ))}
+      </ul>
+    </aside>
   );
 }
 

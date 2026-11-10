@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { CLAVES_MOTIVO } from "../../content/contact-reasons.js";
 import { notFound, parseOrThrow } from "../../http/errors.js";
 import type { AdminDeps } from "./deps.js";
 import { idParam, page, paginationSchema } from "./helpers.js";
@@ -6,7 +7,10 @@ import { ALL_ROLES, type AdminRoute } from "./registry.js";
 
 // Mensajes recibidos por el formulario de contacto de la landing.
 
-const listSchema = paginationSchema.extend({ noLeidos: z.enum(["true", "false"]).optional() });
+const listSchema = paginationSchema.extend({
+  noLeidos: z.enum(["true", "false"]).optional(),
+  motivo: z.enum(CLAVES_MOTIVO).optional(),
+});
 const readSchema = z.object({ leido: z.boolean("Indica si el mensaje está leído.") });
 
 export function messageRoutes({ db, audit }: AdminDeps): AdminRoute[] {
@@ -24,7 +28,10 @@ export function messageRoutes({ db, audit }: AdminDeps): AdminRoute[] {
       handler: async (req, res) => {
         const q = parseOrThrow(listSchema, req.query);
         const filas = await db.contactMessage.findMany({
-          where: q.noLeidos === "true" ? { readAt: null } : undefined,
+          where: {
+            ...(q.noLeidos === "true" && { readAt: null }),
+            ...(q.motivo && { reason: q.motivo }),
+          },
           orderBy: [{ createdAt: "desc" }, { id: "desc" }],
           take: q.limit + 1,
           ...(q.cursor && { cursor: { id: q.cursor }, skip: 1 }),

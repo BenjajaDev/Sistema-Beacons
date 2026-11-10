@@ -2,17 +2,25 @@ import { useEffect, useId, useRef, useState, type FormEvent } from "react";
 import { apiFetch, ApiError, mensajeDeError } from "@shared/api";
 import { Button } from "@shared/ui/Button";
 import { ErrorSummary } from "@shared/ui/ErrorSummary";
-import { TextArea, TextField } from "@shared/ui/Field";
+import { SelectField, TextArea, TextField } from "@shared/ui/Field";
 import { useToast } from "@shared/ui/Toast";
+import { MOTIVOS_CONTACTO } from "./data";
 
 // Formulario de contacto. Valida en línea (al salir de cada campo y al enviar),
 // guarda un borrador en esta pestaña para no perder lo escrito, y muestra los
 // errores del servidor junto a cada campo.
 
-type Campo = "nombre" | "correo" | "telefono" | "asunto" | "mensaje";
+type Campo = "nombre" | "correo" | "telefono" | "motivo" | "asunto" | "mensaje";
 type Valores = Record<Campo, string>;
 
-const VACIO: Valores = { nombre: "", correo: "", telefono: "", asunto: "", mensaje: "" };
+const VACIO: Valores = {
+  nombre: "",
+  correo: "",
+  telefono: "",
+  motivo: "",
+  asunto: "",
+  mensaje: "",
+};
 const CLAVE_BORRADOR = "signal-contacto-borrador";
 
 // Mismas reglas que el servidor (server/src/routes/public.ts).
@@ -26,6 +34,7 @@ function validar(v: Valores): Partial<Record<Campo, string>> {
   if (v.telefono && !/^[+\d\s()-]*$/.test(v.telefono)) {
     e.telefono = "Escribe solo números, espacios y los signos + ( ) -.";
   }
+  if (!v.motivo) e.motivo = "Elige el motivo de tu consulta.";
   if (v.mensaje.trim().length < 10) e.mensaje = "Cuéntanos un poco más: al menos 10 caracteres.";
   else if (v.mensaje.length > 3000) e.mensaje = "El mensaje admite hasta 3000 caracteres.";
   return e;
@@ -75,7 +84,14 @@ export function ContactForm({ titulo, mensajeExito }: { titulo: string; mensajeE
 
   async function enviar(e: FormEvent) {
     e.preventDefault();
-    setTocados({ nombre: true, correo: true, telefono: true, asunto: true, mensaje: true });
+    setTocados({
+      nombre: true,
+      correo: true,
+      telefono: true,
+      motivo: true,
+      asunto: true,
+      mensaje: true,
+    });
     const lista = (Object.keys(errores) as Campo[]).map((c) => ({
       campoId: id(c),
       mensaje: errores[c]!,
@@ -91,6 +107,7 @@ export function ContactForm({ titulo, mensajeExito }: { titulo: string; mensajeE
           nombre: valores.nombre,
           correo: valores.correo.trim(),
           telefono: valores.telefono || undefined,
+          motivo: valores.motivo,
           asunto: valores.asunto || undefined,
           mensaje: valores.mensaje,
           sitioWeb: trampa.current?.value || undefined,
@@ -164,6 +181,22 @@ export function ContactForm({ titulo, mensajeExito }: { titulo: string; mensajeE
         onBlur={salir("telefono")}
         error={errorDe("telefono")}
       />
+      <SelectField
+        id={id("motivo")}
+        label="Motivo de la consulta"
+        ayuda="Nos ayuda a dirigir tu mensaje a la persona indicada."
+        value={valores.motivo}
+        onChange={cambiar("motivo")}
+        onBlur={salir("motivo")}
+        error={errorDe("motivo")}
+      >
+        <option value="">Elige un motivo</option>
+        {MOTIVOS_CONTACTO.map((m) => (
+          <option key={m.clave} value={m.clave}>
+            {m.etiqueta}
+          </option>
+        ))}
+      </SelectField>
       <TextField
         id={id("asunto")}
         label="Asunto"

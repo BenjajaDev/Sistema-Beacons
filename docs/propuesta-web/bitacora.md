@@ -110,3 +110,35 @@ Registro cronológico de lo que se hizo para llevar el sitio hacia la [propuesta
 
 - `Respaldo` heredaba de `Colaborador` y ahora este tiene `type`: pasó a `Omit<Colaborador, "type">`, porque los respaldos no tienen tipo.
 - Los tests e2e de «Nosotros» cuentan cinco tarjetas del equipo y el carrusel con su nombre original, así que los datos de prueba no se tocaron y el caso de los grupos se prueba creándolos desde el panel.
+
+## Paso 4: sala de prensa y contacto segmentado
+
+**Qué pedía el documento.** Cinco categorías de noticias, firma de autoría, botones para compartir, un motivo de consulta en el formulario, un botón de WhatsApp en Contacto y un mapa con la dirección.
+
+**Qué se construyó.**
+
+- **Cinco categorías fijas de noticias:** _Novedades_, _Eventos y talleres_, _Investigación_, _En los medios_ y _Comunidad y alianzas_. En el panel se elige de una lista; en «Noticias» hay un filtro con enlaces (`/noticias?categoria=…`) que funciona con «Atrás» y se puede compartir. La paginación conserva la categoría.
+- **Firma de autoría:** la nota dice «Por Ana Rojas» junto a la fecha y el tiempo de lectura.
+- **Compartir** en WhatsApp, LinkedIn y X con enlaces simples: no se carga ningún script de terceros, nada se envía hasta que la persona hace clic y cada enlace avisa que se abre en una pestaña nueva.
+- **Motivo de la consulta** en el formulario (seis opciones, obligatorio). En la bandeja del panel cada mensaje muestra su motivo y se puede filtrar por él.
+- **WhatsApp en Contacto:** botón destacado (no flotante) que sale de la red «WhatsApp» cargada en _Contacto y redes_ con un enlace `wa.me/…`; no hay un número más que mantener. Sin esa red, no aparece.
+- **Dirección con «Cómo llegar»:** un enlace al mapa en una pestaña nueva, no un mapa embebido.
+- Migración `20261110130000_motivo_de_contacto` (columna con valor por defecto «otro»).
+
+**Decisiones y por qué.**
+
+- **Las notas antiguas no se tocan.** La categoría seguía siendo texto libre. En vez de reescribir lo ya publicado, una nota conserva su categoría anterior mientras no la cambie (el selector la muestra como «(anterior)»), pero esa categoría ya no se puede asignar a otra nota. El filtro público ofrece solo las cinco.
+- **El motivo es opcional para la API** (queda como «otro»), porque la app o un cliente anterior podrían enviar mensajes sin él; en el formulario del sitio sí es obligatorio.
+- **Un enlace a Google Maps y no un iframe:** el iframe atrapa el foco del teclado, es difícil para lectores de pantalla y carga scripts de terceros que la política de seguridad no permite.
+- **Las listas viven en dos lugares** (servidor que valida, web que muestra) y un test verifica que coincidan, el mismo patrón de los íconos.
+
+**Cómo se comprobó.**
+
+- Servidor: solo acepta las cinco categorías, respeta la antigua, el endpoint devuelve las fijas y las heredadas; el motivo se guarda, se filtra y rechaza uno inventado.
+- Web: filtro (marca la elegida, ignora una inventada), firma y enlaces de compartir, formulario con motivo, WhatsApp y «Cómo llegar», listas sincronizadas con el servidor; todo con axe.
+- e2e: el formulario exige el motivo; la nota publicada aparece solo en su categoría y muestra la firma y los tres enlaces; Contacto con WhatsApp y dirección (botón de al menos 44 px, sin `position: fixed`, sin iframe) pasa axe.
+
+**Problemas y cómo se resolvieron.**
+
+- Una prueba detectó que el lector de pantalla diría «Cómo llegara Av. …»: el espacio entre el texto visible y el oculto se perdía. Ahora el espacio va en el texto visible.
+- Las pruebas de servidor y la nota de ejemplo usaban la categoría «Proyecto», que ya no es válida para notas nuevas: se actualizaron al nuevo conjunto.

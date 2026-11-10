@@ -111,6 +111,27 @@ export interface Encuadre {
   zoom: number;
 }
 
+// Categorías de la sala de prensa (misma lista que server/src/content/news-categories.ts;
+// un test verifica que coincidan).
+export const CATEGORIAS_NOTICIA = [
+  "Novedades",
+  "Eventos y talleres",
+  "Investigación",
+  "En los medios",
+  "Comunidad y alianzas",
+] as const;
+
+// Motivos de consulta del formulario de contacto (misma lista que
+// server/src/content/contact-reasons.ts).
+export const MOTIVOS_CONTACTO = [
+  { clave: "SPACE", etiqueta: "Quiero SIGNAL en mi espacio" },
+  { clave: "COLLABORATION", etiqueta: "Colaboración o alianza" },
+  { clave: "PRESS", etiqueta: "Prensa" },
+  { clave: "RESEARCH", etiqueta: "Investigación" },
+  { clave: "SUPPORT", etiqueta: "Ayuda con la app" },
+  { clave: "OTHER", etiqueta: "Otro motivo" },
+] as const;
+
 // Grupos de personas en «Nosotros», en el orden en que se muestran.
 export const GRUPOS_EQUIPO = [
   { clave: "CORE", titulo: "Equipo" },
@@ -167,11 +188,14 @@ export const consultas = {
       queryKey: ["pagina", slug],
       queryFn: () => apiFetch<{ secciones: Seccion[] }>(`/api/public/pages/${slug}`),
     }),
-  noticias: (q: { pagina: number; porPagina: number }) =>
+  noticias: (q: { pagina: number; porPagina: number; categoria?: string }) =>
     queryOptions({
       queryKey: ["noticias", q],
       queryFn: () =>
-        apiFetch<ListaNoticias>(`/api/public/news?pagina=${q.pagina}&porPagina=${q.porPagina}`),
+        apiFetch<ListaNoticias>(
+          `/api/public/news?pagina=${q.pagina}&porPagina=${q.porPagina}` +
+            (q.categoria ? `&categoria=${encodeURIComponent(q.categoria)}` : ""),
+        ),
     }),
   noticia: (slug: string) =>
     queryOptions({

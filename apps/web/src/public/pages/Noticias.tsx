@@ -1,14 +1,14 @@
 import { useQuery } from "@tanstack/react-query";
-import { useSearchParams } from "react-router";
+import { Link, useSearchParams } from "react-router";
 import { mensajeDeError } from "@shared/api";
 import { Cargando, EmptyState, ErrorState, Skeleton } from "@shared/ui/States";
 import { Paginacion, TarjetaNoticia } from "../components";
-import { consultas, POR_PAGINA_NOTICIAS } from "../data";
+import { CATEGORIAS_NOTICIA, consultas, POR_PAGINA_NOTICIAS } from "../data";
 import { PaginaSecciones } from "../sections";
 
-function Listado({ pagina }: { pagina: number }) {
+function Listado({ pagina, categoria }: { pagina: number; categoria?: string }) {
   const { data, isPending, error, refetch } = useQuery(
-    consultas.noticias({ pagina, porPagina: POR_PAGINA_NOTICIAS }),
+    consultas.noticias({ pagina, porPagina: POR_PAGINA_NOTICIAS, categoria }),
   );
   if (isPending) {
     return (
@@ -26,7 +26,11 @@ function Listado({ pagina }: { pagina: number }) {
     return (
       <EmptyState
         titulo={
-          pagina > 1 ? "No hay noticias en esta página" : "Todavía no hay noticias publicadas"
+          categoria
+            ? `Todavía no hay noticias en «${categoria}»`
+            : pagina > 1
+              ? "No hay noticias en esta página"
+              : "Todavía no hay noticias publicadas"
         }
         texto="Vuelve pronto para conocer las novedades del proyecto."
       />
@@ -41,22 +45,58 @@ function Listado({ pagina }: { pagina: number }) {
           </li>
         ))}
       </ul>
-      <Paginacion pagina={data.pagina} totalPaginas={data.totalPaginas} />
+      <Paginacion pagina={data.pagina} totalPaginas={data.totalPaginas} categoria={categoria} />
     </>
+  );
+}
+
+// Filtro por categoría: enlaces (no botones) a /noticias?categoria=…, así cada filtro
+// tiene su dirección y funciona con «Atrás» y al compartir.
+function FiltroCategorias({ categoria }: { categoria?: string }) {
+  return (
+    <nav aria-label="Categorías de noticias" className="paginacion filtro-categorias">
+      <ul>
+        <li>
+          <Link to="/noticias" aria-current={categoria ? undefined : "page"}>
+            Todas
+          </Link>
+        </li>
+        {CATEGORIAS_NOTICIA.map((c) => (
+          <li key={c}>
+            <Link
+              to={`/noticias?categoria=${encodeURIComponent(c)}`}
+              aria-current={categoria === c ? "page" : undefined}
+            >
+              {c}
+            </Link>
+          </li>
+        ))}
+      </ul>
+    </nav>
   );
 }
 
 export default function Noticias() {
   const [params] = useSearchParams();
   const pagina = Math.max(1, Number(params.get("pagina")) || 1);
+  // Una categoría que no es de la lista se ignora.
+  const pedida = params.get("categoria") ?? "";
+  const categoria = (CATEGORIAS_NOTICIA as readonly string[]).includes(pedida) ? pedida : undefined;
   return (
     <PaginaSecciones
       slug="noticias"
       tituloRespaldo="Noticias"
-      tituloDocumento={pagina > 1 ? `Noticias, página ${pagina}` : "Noticias"}
+      tituloDocumento={
+        categoria
+          ? `Noticias: ${categoria}${pagina > 1 ? `, página ${pagina}` : ""}`
+          : pagina > 1
+            ? `Noticias, página ${pagina}`
+            : "Noticias"
+      }
     >
       <div className="container seccion">
-        <Listado pagina={pagina} />
+        <FiltroCategorias categoria={categoria} />
+        <Listado pagina={pagina} categoria={categoria} />
       </div>
     </PaginaSecciones>
   );
