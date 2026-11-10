@@ -15,6 +15,8 @@ export type Red =
   | "whatsapp"
   | "github"
   | "telegram"
+  | "orcid"
+  | "researchgate"
   | "web";
 
 // Se reconoce por el nombre que escribió quien edita o por el dominio del enlace.
@@ -28,6 +30,8 @@ const PATRONES: [Red, RegExp][] = [
   ["whatsapp", /whatsapp|wa\.me/],
   ["github", /github/],
   ["telegram", /telegram|(^|[/.])t\.me/],
+  ["orcid", /orcid/],
+  ["researchgate", /researchgate/],
 ];
 
 export function detectarRed(red: string, url: string): Red {
@@ -106,6 +110,18 @@ const DIBUJOS: Record<Red, ReactNode> = {
     <>
       <path d="M21 4L3 11.2l6.2 2.1L11.5 20l3.2-4.2 4.8 3.7z" />
       <path d="M9.2 13.3L21 4" />
+    </>
+  ),
+  orcid: (
+    <>
+      <circle cx="12" cy="12" r="9" />
+      <path d="M9 10v6.5M9 7.4v.01M12 10h1.8a3.25 3.25 0 0 1 0 6.5H12z" />
+    </>
+  ),
+  researchgate: (
+    <>
+      <rect x="3" y="3" width="18" height="18" rx="3" />
+      <path d="M7.5 17V8h3.4a2.4 2.4 0 0 1 0 4.8H7.5M10.6 12.8 12.8 17M17 10.4a2.2 2.2 0 1 0 0 3.2V12h-1.5" />
     </>
   ),
   web: (

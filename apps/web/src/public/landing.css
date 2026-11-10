@@ -1343,9 +1343,32 @@ main:focus {
   font-size: var(--text-sm);
   font-weight: var(--peso-fuerte);
 }
-.persona__detalle {
+.persona__detalle,
+.persona__filiacion {
   font-size: var(--text-sm);
   font-weight: var(--peso-medio);
+}
+.persona__filiacion {
+  margin-top: calc(-1 * var(--space-1));
+  margin-bottom: var(--space-2);
+  color: var(--color-text-muted);
+}
+
+/* --- Grupos de «Nosotros»: equipo, comité, estudiantes; colaboradores por tipo --- */
+
+.grupo-equipo,
+.grupo-colaboradores {
+  margin-top: var(--space-7);
+}
+.grupo-equipo:first-of-type,
+.grupo-colaboradores:first-of-type {
+  margin-top: var(--space-6);
+}
+.grupo-equipo__titulo {
+  margin-bottom: var(--space-4);
+  padding-bottom: var(--space-2);
+  border-bottom: 2px solid var(--color-border);
+  font-size: var(--text-xl);
 }
 .persona__bio {
   color: var(--color-text-muted);
@@ -1502,6 +1525,18 @@ main:focus {
   width: auto;
   object-fit: contain;
   transition: transform var(--dur) var(--curva);
+}
+/* Con puntero fino, los logos se ven en gris y recuperan el color al apuntarlos o
+   enfocarlos con el teclado. Con el dedo (sin hover) siempre van a color, y en alto
+   contraste también: ahí el color ayuda y no se atenúa nada. */
+@media (hover: hover) and (pointer: fine) {
+  :root:not([data-contraste]) .colaborador__logo {
+    filter: grayscale(1);
+  }
+  :root:not([data-contraste]) .colaborador:hover .colaborador__logo,
+  :root:not([data-contraste]) .colaborador:focus-within .colaborador__logo {
+    filter: none;
+  }
 }
 .colaborador__nombre {
   font-weight: var(--peso-fuerte);

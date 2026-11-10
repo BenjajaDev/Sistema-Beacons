@@ -12,6 +12,8 @@ const persona = (name: string, extra: Partial<Persona> = {}): Persona => ({
   bio: null,
   area: null,
   education: null,
+  affiliation: null,
+  category: "CORE",
   email: null,
   links: [],
   photo: null,

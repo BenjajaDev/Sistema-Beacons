@@ -10,6 +10,8 @@ const persona = (name: string): Persona => ({
   bio: null,
   area: null,
   education: null,
+  affiliation: null,
+  category: "CORE",
   email: null,
   links: [],
   photo: null,

@@ -320,6 +320,56 @@ describe.skipIf(!hasTestDb)("administración de contenido", () => {
       ).toEqual(["Beto", "Ana"]);
     });
 
+    it("agrupa a las personas (equipo, comité, estudiantes) y guarda su filiación", async () => {
+      const crear = (body: object) => as(app, admin, "post", "/api/admin/team").send(body);
+      // Sin grupo, la persona queda en el equipo (compatibilidad con lo que ya había).
+      const base = await crear({ name: "Ana Rojas", position: "Coordinación" });
+      expect(base.status).toBe(201);
+      expect(base.body.item).toMatchObject({ category: "CORE", affiliation: null });
+      const comite = await crear({
+        name: "Luis Pérez",
+        position: "Asesor",
+        category: "ADVISORY",
+        affiliation: "Universidad de Chile",
+        links: [{ red: "ORCID", url: "https://orcid.org/0000-0002-1825-0097" }],
+      });
+      expect(comite.body.item).toMatchObject({
+        category: "ADVISORY",
+        affiliation: "Universidad de Chile",
+      });
+      const invalido = await crear({ name: "X", position: "Y", category: "JEFATURA" });
+      expect(invalido.status).toBe(400);
+      expect(invalido.body.fields?.category ?? invalido.body.campos?.category).toBeTruthy();
+
+      // Editar otro campo no mueve a la persona de grupo.
+      await as(app, admin, "patch", `/api/admin/team/${comite.body.item.id}`).send({
+        position: "Asesora",
+      });
+      const publica = (await request(app).get("/api/public/team")).body.items;
+      expect(publica.map((p: { name: string; category: string }) => [p.name, p.category])).toEqual([
+        ["Ana Rojas", "CORE"],
+        ["Luis Pérez", "ADVISORY"],
+      ]);
+      expect(publica[1].affiliation).toBe("Universidad de Chile");
+    });
+
+    it("clasifica a los colaboradores por tipo", async () => {
+      const crear = (body: object) => as(app, admin, "post", "/api/admin/collaborators").send(body);
+      const sinTipo = await crear({ name: "Fundación Ver" });
+      expect(sinTipo.body.item.type).toBe("OTHER");
+      const conTipo = await crear({ name: "Universidad", type: "ACADEMIC" });
+      expect(conTipo.body.item.type).toBe("ACADEMIC");
+      expect((await crear({ name: "Otra", type: "ONG" })).status).toBe(400);
+      await as(app, admin, "patch", `/api/admin/collaborators/${sinTipo.body.item.id}`).send({
+        type: "CIVIL_SOCIETY",
+      });
+      const publicos = (await request(app).get("/api/public/collaborators")).body.items;
+      expect(publicos.map((c: { name: string; type: string }) => [c.name, c.type])).toEqual([
+        ["Fundación Ver", "CIVIL_SOCIETY"],
+        ["Universidad", "ACADEMIC"],
+      ]);
+    });
+
     it("valida el enlace del colaborador", async () => {
       const res = await as(app, admin, "post", "/api/admin/collaborators").send({
         name: "U",

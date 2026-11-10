@@ -138,6 +138,8 @@ export async function getTeam(db: Db) {
       bio: m.bio,
       area: m.area,
       education: m.education,
+      affiliation: m.affiliation,
+      category: m.category,
       email: m.email,
       links: m.links,
       photo: m.photo ? { ...m.photo, alt: m.photoAlt ?? "" } : null,
@@ -173,6 +175,7 @@ export async function getCollaborators(db: Db) {
       name: c.name,
       description: c.description,
       url: c.url,
+      type: c.type,
       logo: c.logo ? { ...c.logo, alt: c.logoAlt ?? c.name } : null,
     })),
   };

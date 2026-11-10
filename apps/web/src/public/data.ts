@@ -111,12 +111,32 @@ export interface Encuadre {
   zoom: number;
 }
 
+// Grupos de personas en «Nosotros», en el orden en que se muestran.
+export const GRUPOS_EQUIPO = [
+  { clave: "CORE", titulo: "Equipo" },
+  { clave: "ADVISORY", titulo: "Comité consultivo" },
+  { clave: "STUDENTS", titulo: "Estudiantes" },
+] as const;
+export type CategoriaEquipo = (typeof GRUPOS_EQUIPO)[number]["clave"];
+
+// Tipos de organización colaboradora, en el orden en que se muestran.
+export const TIPOS_COLABORADOR = [
+  { clave: "ACADEMIC", titulo: "Instituciones académicas" },
+  { clave: "CIVIL_SOCIETY", titulo: "Organizaciones de la sociedad civil" },
+  { clave: "PUBLIC_SECTOR", titulo: "Sector público" },
+  { clave: "COMPANY", titulo: "Empresas y tecnología" },
+  { clave: "OTHER", titulo: "Otras organizaciones" },
+] as const;
+export type TipoColaborador = (typeof TIPOS_COLABORADOR)[number]["clave"];
+
 export interface Persona {
   name: string;
   position: string;
   bio: string | null;
   area: string | null;
   education: string | null;
+  affiliation: string | null;
+  category: CategoriaEquipo;
   email: string | null;
   links: RedSocial[];
   photo: Imagen | null;
@@ -127,10 +147,11 @@ export interface Colaborador {
   name: string;
   description: string | null;
   url: string | null;
+  type: TipoColaborador;
   logo: Imagen | null;
 }
 
-export interface Respaldo extends Colaborador {
+export interface Respaldo extends Omit<Colaborador, "type"> {
   kind: string;
 }
 

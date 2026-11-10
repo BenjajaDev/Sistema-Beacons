@@ -1,5 +1,5 @@
 import { apiFetch, ApiError, type ApiFetchOptions } from "@shared/api";
-import type { Encuadre } from "../public/data";
+import type { CategoriaEquipo, Encuadre, TipoColaborador } from "../public/data";
 
 // Cliente de /api/admin. Agrega el token CSRF en las peticiones que modifican,
 // lo renueva una vez si caducó, y avisa a la app cuando la sesión expiró o
@@ -154,6 +154,8 @@ export interface Persona {
   bio: string | null;
   area: string | null;
   education: string | null;
+  affiliation: string | null;
+  category: CategoriaEquipo;
   email: string | null;
   photoId: string | null;
   photoAlt: string | null;
@@ -169,6 +171,7 @@ export interface Colaborador {
   name: string;
   description: string | null;
   url: string | null;
+  type: TipoColaborador;
   logoId: string | null;
   logoAlt: string | null;
   logo: Imagen | null;
@@ -177,7 +180,7 @@ export interface Colaborador {
 }
 
 // Institución que respalda el proyecto: «kind» es el texto que acompaña al logo.
-export interface Respaldo extends Colaborador {
+export interface Respaldo extends Omit<Colaborador, "type"> {
   kind: string;
 }
 

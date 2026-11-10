@@ -11,7 +11,17 @@ import { useAutoavance, useCarrusel } from "./useCarrusel";
 // forma de beacon), deslizando con el dedo o, con el foco en el carrusel, con
 // las flechas del teclado.
 
-export function EquipoTarjetas({ personas }: { personas: Persona[] }) {
+export function EquipoTarjetas({
+  personas,
+  etiqueta = "Integrantes del equipo",
+  nivelNombre = 3,
+}: {
+  personas: Persona[];
+  // Nombre del carrusel para el lector de pantalla (distinto en cada grupo).
+  etiqueta?: string;
+  // Nivel de los nombres: 4 cuando la tarjeta está bajo el título de un grupo.
+  nivelNombre?: 3 | 4;
+}) {
   const id = useId();
   const pista = useRef<HTMLDivElement>(null);
   const carrusel = useRef<HTMLDivElement>(null);
@@ -33,13 +43,13 @@ export function EquipoTarjetas({ personas }: { personas: Persona[] }) {
           tabIndex: 0,
           role: "region",
           "aria-roledescription": "carrusel",
-          "aria-label": "Integrantes del equipo",
+          "aria-label": etiqueta,
         })}
       >
         <ul className="personas">
           {personas.map((p, i) => (
             <li key={`${p.name}-${i}`} className="persona">
-              <TarjetaPersona persona={p} />
+              <TarjetaPersona persona={p} nivelNombre={nivelNombre} />
             </li>
           ))}
         </ul>
@@ -76,7 +86,14 @@ export function EquipoTarjetas({ personas }: { personas: Persona[] }) {
 }
 
 // Contenido de una tarjeta. Exportado para la vista previa del panel.
-export function TarjetaPersona({ persona: p }: { persona: Persona }) {
+export function TarjetaPersona({
+  persona: p,
+  nivelNombre = 3,
+}: {
+  persona: Persona;
+  nivelNombre?: 3 | 4;
+}) {
+  const Nombre = nivelNombre === 4 ? "h4" : "h3";
   const detalle = [p.area, p.education].filter(Boolean).join(" · ");
   return (
     <>
@@ -84,8 +101,9 @@ export function TarjetaPersona({ persona: p }: { persona: Persona }) {
         <FotoPersona persona={p} className="persona__foto" claseInicial="persona__inicial" />
         {p.photo && <VozDeImagen imagen={p.photo} />}
       </div>
-      <h3 className="persona__nombre">{p.name}</h3>
+      <Nombre className="persona__nombre">{p.name}</Nombre>
       <p className="persona__cargo">{p.position}</p>
+      {p.affiliation && <p className="persona__filiacion">{p.affiliation}</p>}
       {detalle && <p className="persona__detalle">{detalle}</p>}
       {p.bio && <p className="persona__bio">{p.bio}</p>}
       {p.email && (

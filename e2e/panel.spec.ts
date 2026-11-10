@@ -229,6 +229,53 @@ test("el editor agrega un respaldo y aparece en el pie, aparte de los colaborado
   expect((await (await page.request.get("/api/public/collaborators")).json()).items).toEqual([]);
 });
 
+test("Nosotros agrupa al comité consultivo y a las organizaciones por tipo", async ({ page }) => {
+  await iniciarSesion(page, "admin");
+  await page.goto(`${PANEL}/equipo`);
+
+  await page.getByRole("button", { name: "Agregar persona" }).first().click();
+  const persona = page.getByRole("dialog", { name: "Agregar persona" });
+  await persona.getByLabel("Nombre").fill("Marcos Asesor");
+  await persona.getByLabel("Cargo o rol").fill("Asesoría metodológica");
+  await persona.getByLabel("Grupo").selectOption({ label: "Comité consultivo" });
+  await persona.getByLabel("Institución").fill("Universidad de Chile");
+  await sinViolaciones(page, "formulario de persona con grupo");
+  await persona.getByRole("button", { name: "Guardar" }).click();
+  await expect(page.getByText("Persona agregada.")).toBeVisible();
+
+  await page.getByRole("button", { name: "Agregar colaborador" }).first().click();
+  const colaborador = page.getByRole("dialog", { name: "Agregar colaborador" });
+  await colaborador.getByLabel("Nombre").fill("Universidad Norte");
+  await colaborador.getByLabel("Tipo de organización").selectOption({
+    label: "Instituciones académicas",
+  });
+  await colaborador.getByRole("button", { name: "Guardar" }).click();
+  await expect(page.getByText("Colaborador agregado.")).toBeVisible();
+  await page.getByRole("button", { name: "Agregar colaborador" }).first().click();
+  await page
+    .getByRole("dialog", { name: "Agregar colaborador" })
+    .getByLabel("Nombre")
+    .fill("Taller Sur");
+  await page.getByRole("dialog").getByRole("button", { name: "Guardar" }).click();
+  await expect(page.getByText("Colaborador agregado.")).toBeVisible();
+
+  await page.goto("/nosotros");
+  const grupos = page.locator(".grupo-equipo__titulo");
+  await expect(grupos).toHaveText([
+    "Equipo",
+    "Comité consultivo",
+    "Instituciones académicas",
+    "Otras organizaciones",
+  ]);
+  const comite = page.locator(".grupo-equipo", { hasText: "Comité consultivo" });
+  await expect(comite.getByRole("heading", { level: 4, name: "Marcos Asesor" })).toBeVisible();
+  await expect(comite.getByText("Universidad de Chile")).toBeVisible();
+  await sinViolaciones(page, "/nosotros con grupos");
+  // En el inicio solo aparece el equipo, no el comité.
+  await page.goto("/");
+  await expect(page.getByRole("button", { name: /^Marcos Asesor/ })).toHaveCount(0);
+});
+
 test("un mensaje se responde por Gmail, Outlook, la app de correo o copiando la dirección", async ({
   page,
 }) => {

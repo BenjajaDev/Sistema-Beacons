@@ -78,3 +78,35 @@ Registro cronológico de lo que se hizo para llevar el sitio hacia la [propuesta
 
 - El test de sincronía no podía importar el código del servidor sin acoplar el typecheck de la web: lee la lista como texto.
 - El e2e sirve el build compilado: con el build anterior las secciones nuevas no aparecían (la web ignora claves de sección que no conoce). Hay que ejecutar `npm run build -w apps/web` antes de `npm run e2e`.
+
+## Paso 3: Nosotros con grupos, filiación y colaboradores por tipo
+
+**Qué pedía el documento.** Distinguir en «Nosotros» al equipo, el comité consultivo y las y los estudiantes; mostrar la institución de cada persona; enlazar perfiles académicos (ORCID, ResearchGate); y presentar a las organizaciones aliadas por tipo, con los logos en gris que toman color al apuntarlos.
+
+**Qué se construyó.**
+
+- **Grupos de personas:** _Equipo_, _Comité consultivo_ y _Estudiantes_ (campo `category`, por defecto Equipo, así que lo que ya existía no cambia). En «Nosotros» cada grupo lleva su subtítulo (h3) y su propio carrusel; los nombres pasan a h4. Con un solo grupo no se agregan subtítulos.
+- **Institución** de cada persona (`affiliation`), visible bajo su cargo y en la card del inicio.
+- **ORCID y ResearchGate:** ya se pueden agregar como enlaces de una persona; el sitio reconoce el nombre o el dominio y les pone su ícono.
+- **Colaboradores por tipo** (`type`): instituciones académicas, sociedad civil, sector público, empresas y tecnología, y otras (por defecto, para lo existente). Se agrupan con subtítulo; con un solo tipo no se rotula.
+- **Logos en gris** que recuperan el color al apuntar o al enfocar con el teclado.
+- **Panel:** el formulario de persona pide el grupo y la institución; el de colaborador, el tipo de organización.
+- Migración `20261110120000_nosotros_grupos`: dos enums y tres columnas, todas con valor por defecto.
+
+**Decisiones y por qué.**
+
+- **El inicio muestra solo al equipo.** El comité y las y los estudiantes están en «Nosotros»: la fila circular del inicio es una presentación breve.
+- **El gris es solo con puntero fino** (`hover: hover` y `pointer: fine`). Con el dedo no existe «apuntar», y dejar los logos grises para siempre los volvería ilegibles; en alto contraste tampoco se atenúan. Cambia de gris a color al instante, sin transición, así que no hay movimiento que revisar.
+- **El tipo de colaborador es una lista cerrada** y no texto libre, para que los grupos queden siempre en el mismo orden y sin variantes («ONG», «Ong»…). Los respaldos del pie conservan su campo de texto libre, porque son otra cosa (ver CLAUDE.md).
+- **Subtítulos solo si hay más de un grupo:** una página con un único grupo no debe tener un encabezado que no aporta.
+
+**Cómo se comprobó.**
+
+- Servidor: crear sin grupo cae en Equipo, grupo inválido se rechaza con el error junto al campo, editar otro dato no mueve de grupo, el tipo de colaborador se valida y se publica; la migración coincide con el esquema (`prisma migrate diff` sin diferencias).
+- Web: niveles de encabezado con uno y con varios grupos, orden de los tipos con «otras» al final, grupos vacíos que no se muestran, reconocimiento de ORCID/ResearchGate y axe.
+- e2e: desde el panel se crea una persona del comité con su institución y dos colaboradores de distinto tipo; «Nosotros» los agrupa con axe sin violaciones y el inicio no muestra al comité.
+
+**Problemas y cómo se resolvieron.**
+
+- `Respaldo` heredaba de `Colaborador` y ahora este tiene `type`: pasó a `Omit<Colaborador, "type">`, porque los respaldos no tienen tipo.
+- Los tests e2e de «Nosotros» cuentan cinco tarjetas del equipo y el carrusel con su nombre original, así que los datos de prueba no se tocaron y el caso de los grupos se prueba creándolos desde el panel.

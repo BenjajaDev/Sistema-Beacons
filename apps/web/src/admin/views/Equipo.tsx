@@ -1,6 +1,13 @@
 import { Button } from "@shared/ui/Button";
-import { TextArea, TextField } from "@shared/ui/Field";
-import type { Encuadre, Persona as PersonaPublica } from "../../public/data";
+import { SelectField, TextArea, TextField } from "@shared/ui/Field";
+import {
+  GRUPOS_EQUIPO,
+  TIPOS_COLABORADOR,
+  type CategoriaEquipo,
+  type Encuadre,
+  type Persona as PersonaPublica,
+  type TipoColaborador,
+} from "../../public/data";
 import type { Colaborador, Enlace, Persona } from "../api";
 import { Coleccion, type Config } from "../Coleccion";
 import { Cabecera, SelectorImagen, usePanelPage, type ImagenElegida } from "../ui";
@@ -14,11 +21,44 @@ interface FormPersona {
   bio: string;
   area: string;
   education: string;
+  affiliation: string;
+  category: CategoriaEquipo;
   email: string;
   photo: ImagenElegida | null;
   photoAlt: string;
   photoFrame: Encuadre | null;
   links: Enlace[];
+}
+
+// Lista desplegable con un valor de un conjunto cerrado. Un <select> nativo: se maneja
+// con el teclado y lo anuncia bien el lector de pantalla.
+function Selector<T extends string>({
+  etiqueta,
+  ayuda,
+  valor,
+  opciones,
+  onCambiar,
+}: {
+  etiqueta: string;
+  ayuda?: string;
+  valor: T;
+  opciones: readonly { clave: T; titulo: string }[];
+  onCambiar: (v: T) => void;
+}) {
+  return (
+    <SelectField
+      label={etiqueta}
+      ayuda={ayuda}
+      value={valor}
+      onChange={(e) => onCambiar(e.target.value as T)}
+    >
+      {opciones.map((o) => (
+        <option key={o.clave} value={o.clave}>
+          {o.titulo}
+        </option>
+      ))}
+    </SelectField>
+  );
 }
 
 // La persona como la recibe la landing, para la vista previa.
@@ -28,6 +68,8 @@ const comoEnLaLanding = (f: FormPersona): PersonaPublica => ({
   bio: f.bio || null,
   area: f.area || null,
   education: f.education || null,
+  affiliation: f.affiliation || null,
+  category: f.category,
   email: f.email || null,
   links: f.links.filter((l) => l.url),
   photo: f.photo ? { url: f.photo.url, alt: f.photoAlt, width: null, height: null } : null,
@@ -59,6 +101,23 @@ function CamposPersona({
         maxLength={120}
         onChange={(e) => set({ ...form, position: e.target.value })}
         error={errores.position}
+      />
+      <Selector
+        etiqueta="Grupo"
+        ayuda="Dónde aparece en «Nosotros». Solo el equipo se muestra también en el inicio."
+        valor={form.category}
+        opciones={GRUPOS_EQUIPO}
+        onCambiar={(category) => set({ ...form, category })}
+      />
+      <TextField
+        label="Institución"
+        opcional
+        value={form.affiliation}
+        maxLength={120}
+        placeholder="Universidad de Chile"
+        ayuda="A qué institución pertenece. Se muestra bajo su cargo."
+        onChange={(e) => set({ ...form, affiliation: e.target.value })}
+        error={errores.affiliation}
       />
       <TextField
         label="Área"
@@ -148,7 +207,7 @@ function ListaEnlaces({
           <TextField
             label={`Red o sitio ${i + 1}`}
             value={en.red}
-            placeholder="LinkedIn"
+            placeholder="LinkedIn, ORCID, ResearchGate…"
             onChange={(e) =>
               onCambiar(enlaces.map((x, j) => (j === i ? { ...x, red: e.target.value } : x)))
             }
@@ -191,6 +250,8 @@ const equipo: Config<Persona, FormPersona> = {
     bio: p?.bio ?? "",
     area: p?.area ?? "",
     education: p?.education ?? "",
+    affiliation: p?.affiliation ?? "",
+    category: p?.category ?? "CORE",
     email: p?.email ?? "",
     photo: p?.photo ? { id: p.photo.id, url: p.photo.url } : null,
     photoAlt: p?.photoAlt ?? "",
@@ -203,6 +264,8 @@ const equipo: Config<Persona, FormPersona> = {
     bio: f.bio || null,
     area: f.area || null,
     education: f.education || null,
+    affiliation: f.affiliation || null,
+    category: f.category,
     email: f.email || null,
     photoId: f.photo?.id ?? null,
     photoAlt: f.photo ? f.photoAlt : null,
@@ -218,6 +281,7 @@ interface FormColaborador {
   name: string;
   description: string;
   url: string;
+  type: TipoColaborador;
   logo: ImagenElegida | null;
   logoAlt: string;
 }
@@ -258,6 +322,13 @@ function CamposColaborador({
         onChange={(e) => set({ ...form, url: e.target.value })}
         error={errores.url}
       />
+      <Selector
+        etiqueta="Tipo de organización"
+        ayuda="Agrupa a los colaboradores en «Nosotros». Con un solo tipo no se muestran los títulos."
+        valor={form.type}
+        opciones={TIPOS_COLABORADOR}
+        onCambiar={(type) => set({ ...form, type })}
+      />
       <SelectorImagen
         etiqueta="Logo (opcional)"
         imagen={form.logo}
@@ -282,6 +353,7 @@ const colaboradores: Config<Colaborador, FormColaborador> = {
     name: c?.name ?? "",
     description: c?.description ?? "",
     url: c?.url ?? "",
+    type: c?.type ?? "OTHER",
     logo: c?.logo ? { id: c.logo.id, url: c.logo.url } : null,
     logoAlt: c?.logoAlt ?? "",
   }),
@@ -289,6 +361,7 @@ const colaboradores: Config<Colaborador, FormColaborador> = {
     name: f.name,
     description: f.description || null,
     url: f.url || null,
+    type: f.type,
     logoId: f.logo?.id ?? null,
     logoAlt: f.logo ? f.logoAlt : null,
   }),

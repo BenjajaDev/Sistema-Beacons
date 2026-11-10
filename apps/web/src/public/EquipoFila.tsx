@@ -148,7 +148,7 @@ function Integrante({
 
 // Lo que muestra la card abierta. Exportado para la vista previa del panel.
 export function ContenidoCard({ persona: p }: { persona: Persona }) {
-  const detalle = [p.area, p.education].filter(Boolean).join(" · ");
+  const detalle = [p.affiliation, p.area, p.education].filter(Boolean).join(" · ");
   return (
     <>
       <span className="integrante__card-marco">

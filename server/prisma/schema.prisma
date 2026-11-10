@@ -36,6 +36,22 @@ enum DraftStatus {
   REVIEW
 }
 
+// Grupo de una persona en «Nosotros»: el equipo, el comité consultivo o estudiantes.
+enum TeamCategory {
+  CORE
+  ADVISORY
+  STUDENTS
+}
+
+// Tipo de organización colaboradora, para agruparlas en «Nosotros».
+enum CollaboratorType {
+  ACADEMIC
+  CIVIL_SOCIETY
+  PUBLIC_SECTOR
+  COMPANY
+  OTHER
+}
+
 // Página de la landing a la que pertenece una sección.
 enum Page {
   INICIO
@@ -163,25 +179,28 @@ model News {
 }
 
 model TeamMember {
-  id         String   @id @default(uuid())
-  name       String
-  position   String
-  bio        String?
+  id          String       @id @default(uuid())
+  name        String
+  position    String
+  bio         String?
   // Datos opcionales de la card: área («Ingeniería»), formación y un correo
   // público (conviene el institucional).
-  area       String?
-  education  String?
-  email      String?
-  photoId    String?
-  photoAlt   String?
+  area        String?
+  education   String?
+  // Institución a la que pertenece («Universidad de Chile»).
+  affiliation String?
+  category    TeamCategory @default(CORE)
+  email       String?
+  photoId     String?
+  photoAlt    String?
   // Encuadre no destructivo de la foto: { x, y, zoom }. Null = centrada, sin zoom.
-  photoFrame Json?
+  photoFrame  Json?
   // [{ red, url, etiqueta }]
-  links      Json     @default("[]")
-  order      Int
-  visible    Boolean  @default(true)
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
+  links       Json         @default("[]")
+  order       Int
+  visible     Boolean      @default(true)
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
 
   photo Media? @relation(fields: [photoId], references: [id], onDelete: Restrict)
 
@@ -190,16 +209,17 @@ model TeamMember {
 }
 
 model Collaborator {
-  id          String   @id @default(uuid())
+  id          String           @id @default(uuid())
   name        String
   description String?
   url         String?
+  type        CollaboratorType @default(OTHER)
   logoId      String?
   logoAlt     String?
   order       Int
-  visible     Boolean  @default(true)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  visible     Boolean          @default(true)
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
 
   logo Media? @relation(fields: [logoId], references: [id], onDelete: Restrict)
 

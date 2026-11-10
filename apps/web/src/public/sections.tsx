@@ -8,9 +8,13 @@ import { BotonVoz } from "@shared/voz/BotonVoz";
 import { EnlaceEditable, Img, TarjetaNoticia, Titulo, VozDeImagen, type Nivel } from "./components";
 import {
   consultas,
+  GRUPOS_EQUIPO,
   NOTICIAS_EN_INICIO,
+  TIPOS_COLABORADOR,
   useTituloPagina,
+  type Colaborador,
   type Imagen,
+  type Persona,
   type Seccion,
   type SlugPagina,
 } from "./data";
@@ -402,8 +406,33 @@ function Equipo(p: PropsSeccion<Encabezado>) {
       ) : data.items.length === 0 ? (
         <EmptyState titulo="Pronto presentaremos al equipo" />
       ) : (
-        <EquipoTarjetas personas={data.items} />
+        <GruposDelEquipo personas={data.items} />
       )}
+    </>
+  );
+}
+
+// Las personas de «Nosotros», agrupadas (equipo, comité consultivo, estudiantes).
+// Si solo hay un grupo no se rotula: la página queda como antes, sin subtítulos
+// de más. Con varios, cada grupo lleva su h3 y los nombres pasan a h4.
+function GruposDelEquipo({ personas }: { personas: Persona[] }) {
+  const grupos = GRUPOS_EQUIPO.map((g) => ({
+    ...g,
+    personas: personas.filter((p) => p.category === g.clave),
+  })).filter((g) => g.personas.length > 0);
+  if (grupos.length <= 1) return <EquipoTarjetas personas={personas} />;
+  return (
+    <>
+      {grupos.map((g) => (
+        <div key={g.clave} className="grupo-equipo">
+          <h3 className="grupo-equipo__titulo">{g.titulo}</h3>
+          <EquipoTarjetas
+            personas={g.personas}
+            etiqueta={`Integrantes: ${g.titulo}`}
+            nivelNombre={4}
+          />
+        </div>
+      ))}
     </>
   );
 }
@@ -421,7 +450,8 @@ function NosotrosInicio(
 ) {
   const { data } = useQuery(consultas.equipo());
   const { imagen } = p.contenido;
-  const personas = data?.items ?? [];
+  // En el inicio solo el equipo; el comité y los estudiantes están en «Nosotros».
+  const personas = (data?.items ?? []).filter((p) => p.category === "CORE");
   return (
     <>
       <div className={imagen ? "nosotros-inicio dos-columnas" : "nosotros-inicio"}>
@@ -440,6 +470,56 @@ function NosotrosInicio(
   );
 }
 
+function ListaColaboradores({ colaboradores }: { colaboradores: Colaborador[] }) {
+  return (
+    <ul className="colaboradores">
+      {colaboradores.map((c) => {
+        const contenido = (
+          <>
+            {c.logo ? (
+              <Img imagen={c.logo} className="colaborador__logo" />
+            ) : (
+              <span className="colaborador__nombre">{c.name}</span>
+            )}
+            {c.description && <span className="colaborador__desc">{c.description}</span>}
+          </>
+        );
+        return (
+          <li key={c.name} className="colaborador">
+            {c.url ? (
+              <a href={c.url} rel="noopener noreferrer">
+                {contenido}
+              </a>
+            ) : (
+              contenido
+            )}
+          </li>
+        );
+      })}
+    </ul>
+  );
+}
+
+// Colaboradores agrupados por tipo de organización. Con un solo tipo no se rotula.
+// Los logos se ven en gris y recuperan el color al apuntarlos o enfocarlos (landing.css).
+function GruposDeColaboradores({ colaboradores }: { colaboradores: Colaborador[] }) {
+  const grupos = TIPOS_COLABORADOR.map((t) => ({
+    ...t,
+    colaboradores: colaboradores.filter((c) => c.type === t.clave),
+  })).filter((g) => g.colaboradores.length > 0);
+  if (grupos.length <= 1) return <ListaColaboradores colaboradores={colaboradores} />;
+  return (
+    <>
+      {grupos.map((g) => (
+        <div key={g.clave} className="grupo-colaboradores">
+          <h3 className="grupo-equipo__titulo">{g.titulo}</h3>
+          <ListaColaboradores colaboradores={g.colaboradores} />
+        </div>
+      ))}
+    </>
+  );
+}
+
 function Colaboradores(p: PropsSeccion<Encabezado>) {
   const { data, isPending, error, refetch } = useQuery(consultas.colaboradores());
   return (
@@ -454,31 +534,7 @@ function Colaboradores(p: PropsSeccion<Encabezado>) {
       ) : data.items.length === 0 ? (
         <EmptyState titulo="Pronto presentaremos a quienes colaboran con SIGNAL" />
       ) : (
-        <ul className="colaboradores">
-          {data.items.map((c) => {
-            const contenido = (
-              <>
-                {c.logo ? (
-                  <Img imagen={c.logo} className="colaborador__logo" />
-                ) : (
-                  <span className="colaborador__nombre">{c.name}</span>
-                )}
-                {c.description && <span className="colaborador__desc">{c.description}</span>}
-              </>
-            );
-            return (
-              <li key={c.name} className="colaborador">
-                {c.url ? (
-                  <a href={c.url} rel="noopener noreferrer">
-                    {contenido}
-                  </a>
-                ) : (
-                  contenido
-                )}
-              </li>
-            );
-          })}
-        </ul>
+        <GruposDeColaboradores colaboradores={data.items} />
       )}
     </>
   );

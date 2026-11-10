@@ -41,6 +41,8 @@ const teamBase = z.object({
   bio: textoOpcional(600),
   area: textoOpcional(80),
   education: textoOpcional(120),
+  affiliation: textoOpcional(120),
+  category: z.enum(["CORE", "ADVISORY", "STUDENTS"], "Elige el grupo de la persona."),
   email: z
     .string()
     .trim()
@@ -59,6 +61,7 @@ const teamBase = z.object({
 });
 const teamCreate = teamBase.extend({
   links: teamBase.shape.links.default([]),
+  category: teamBase.shape.category.default("CORE"),
   visible: z.boolean().default(true),
 });
 
@@ -70,7 +73,17 @@ const collaboratorBase = z.object({
   logoAlt: textoOpcional(300),
   visible: z.boolean(),
 });
-const collaboratorCreate = collaboratorBase.extend({ visible: z.boolean().default(true) });
+// El tipo solo lo tienen los colaboradores (los respaldos usan «kind», un texto libre).
+const collaboratorTipado = collaboratorBase.extend({
+  type: z.enum(
+    ["ACADEMIC", "CIVIL_SOCIETY", "PUBLIC_SECTOR", "COMPANY", "OTHER"],
+    "Elige el tipo de organización.",
+  ),
+});
+const collaboratorTipadoCreate = collaboratorTipado.extend({
+  type: collaboratorTipado.shape.type.default("OTHER"),
+  visible: z.boolean().default(true),
+});
 
 // Respaldo institucional: quién financia o patrocina el proyecto. `kind` es el texto
 // que acompaña al logo en el sitio («Financia», «Patrocina»).
@@ -251,8 +264,8 @@ export function teamRoutes(deps: AdminDeps): AdminRoute[] {
       delegado: "collaborator",
       accion: "COLLABORATOR",
       que: "El colaborador",
-      createSchema: collaboratorCreate,
-      updateSchema: collaboratorBase.partial(),
+      createSchema: collaboratorTipadoCreate,
+      updateSchema: collaboratorTipado.partial(),
       coleccion: deps.db.collaborator as unknown as Coleccion,
       imagen: { id: "logoId", alt: "logoAlt" },
       include: { logo: IMAGEN },
