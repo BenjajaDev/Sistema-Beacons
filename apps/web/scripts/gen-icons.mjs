@@ -20,7 +20,7 @@ const DESTINO = path.resolve(import.meta.dirname, "../public/icons");
 // Colores de la app Android (BeaconsAndroid/.../SignalColors.kt).
 const FONDO = "#004AAD"; // Blue
 const LUZ = "#004AAD"; // Blue
-const ONDAS = "#9DC2F7"; // BlueLight
+const ONDAS = "#79ACF0"; // BlueLight
 const FACETAS = "#ECDCC4"; // BlueBorder
 
 // Arco de onda centrado en (cx, cy), abierto hacia la derecha.

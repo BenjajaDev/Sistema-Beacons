@@ -30,7 +30,7 @@ La fuente de verdad es la app Android: `BeaconsAndroid/app/src/main/java/com/exa
 | Tarjetas (superficie)   | `#FFFFFF` | `#221521` | `CardLight` / `CardDark`            |
 | Texto                   | `#3D1534` | `#F2E6DC` | `TextPrimaryL` / `TextPrimaryD`     |
 | Texto secundario        | `#6B4F63` | `#D3C1CC` | `TextSecondaryL` / `TextSecondaryD` |
-| Primario, enlaces, foco | `#004AAD` | `#9DC2F7` | `Blue` / `BlueLight`                |
+| Primario, enlaces, foco | `#004AAD` | `#79ACF0` | `Blue` / `BlueLight`                |
 | Bordes                  | `#ECDCC4` | `#3D2A39` | `BlueBorder` / `BorderDark`         |
 | Bordes de campos        | `#8A7D84` | `#A6919E` | `TextMutedL` / `TextMutedD`         |
 | Error                   | `#C0392B` | `#F0796A` | `error` de `SignalTheme`            |
@@ -39,7 +39,7 @@ La fuente de verdad es la app Android: `BeaconsAndroid/app/src/main/java/com/exa
 - Toda paleta nueva debe pasar `checkPaletteContrast` (en `theme.ts`). Si un color de Android no llega al contraste en la web, se ajusta en ambos lados; no se rompe la accesibilidad para calzar un color.
 - No escribas colores sueltos en CSS: usa las variables `--color-*` (editables desde Identidad visual) o los tokens de `apps/web/src/shared/styles/tokens.css`.
 - `apps/web/public/offline.html` (de ella se derivan `404.html` y `sin-servidor.html` para Pages), `index.html` (`theme-color`), el manifest de `vite.public.config.ts` y `apps/web/scripts/gen-icons.mjs` tienen colores fijos: mantenlos alineados.
-- Las tipografías son Atkinson Hyperlegible Next (cuerpo) y Bricolage Grotesque (títulos), autoalojadas. No se cambian sin pedirlo.
+- La identidad es la de la propuesta (`docs/propuesta-web/`): Red Hat Display para el texto y los títulos, autoalojada. Glacial Indifference (H1/H2) y Garet (H3/H4 y botones) esperan sus archivos con licencia: ver `docs/propuesta-web/tipografias.md`. No se cambian sin pedirlo.
 
 ## Lenguaje visual y movimiento
 

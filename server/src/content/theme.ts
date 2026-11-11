@@ -33,7 +33,7 @@ type ColorToken = keyof PaletteMode;
 
 // La misma paleta que la app Android (BeaconsAndroid/.../SignalColors.kt): azul de
 // marca #004AAD, tinta ciruela y fondo crema cálido; en oscuro, fondo ciruela
-// profundo con texto crema y azul claro #9DC2F7. Si cambia allá, cambia aquí
+// profundo con texto crema y azul claro #79ACF0. Si cambia allá, cambia aquí
 // (y al revés), y después: npm run gen:theme -w server.
 export const DEFAULT_PALETTE: Palette = {
   light: {
@@ -47,7 +47,7 @@ export const DEFAULT_PALETTE: Palette = {
     borde: "#ECDCC4", // BlueBorder
     bordeControl: "#8A7D84", // TextMutedL
     foco: "#004AAD", // Blue
-    acento: "#9DC2F7", // BlueLight
+    acento: "#79ACF0", // BlueLight
   },
   dark: {
     fondo: "#150C14", // SurfaceDark
@@ -55,12 +55,12 @@ export const DEFAULT_PALETTE: Palette = {
     texto: "#F2E6DC", // TextPrimaryD
     textoSuave: "#D3C1CC", // TextSecondaryD
     // #004AAD no llega a 4,5:1 sobre #150C14: en oscuro el primario es el azul claro, como en la app.
-    primario: "#9DC2F7", // BlueLight
+    primario: "#79ACF0", // BlueLight
     textoSobrePrimario: "#150C14", // NavyDark
-    enlace: "#9DC2F7", // BlueLight
+    enlace: "#79ACF0", // BlueLight
     borde: "#3D2A39", // BorderDark
     bordeControl: "#A6919E", // TextMutedD
-    foco: "#9DC2F7", // BlueLight
+    foco: "#79ACF0", // BlueLight
     acento: "#004AAD", // Blue
   },
 };
@@ -74,6 +74,12 @@ export const FONT_OPTIONS = {
     // Nombre con que la registra @fontsource-variable (autoalojada en el build).
     stack:
       '"Atkinson Hyperlegible Next Variable", "Atkinson Hyperlegible Next", system-ui, sans-serif',
+  },
+  // Tipografía de la propuesta (cuerpo y títulos mientras no estén Glacial Indifference
+  // ni Garet; ver docs/propuesta-web/tipografias.md).
+  "red-hat-display": {
+    nombre: "Red Hat Display",
+    stack: '"Red Hat Display Variable", "Red Hat Display", system-ui, sans-serif',
   },
   "bricolage-grotesque": {
     nombre: "Bricolage Grotesque",
@@ -92,8 +98,8 @@ export const fontsSchema = z.object({ cuerpo: fontId, titulos: fontId });
 export type Fonts = z.infer<typeof fontsSchema>;
 
 export const DEFAULT_FONTS: Fonts = {
-  cuerpo: "atkinson-hyperlegible-next",
-  titulos: "bricolage-grotesque",
+  cuerpo: "red-hat-display",
+  titulos: "red-hat-display",
 };
 
 // --- Contraste (WCAG 2.1) ---------------------------------------------------

@@ -314,8 +314,9 @@ function Formulario({ ajustes }: { ajustes: Ajustes }) {
             ))}
           </div>
           <p className="campo__ayuda">
-            Atkinson Hyperlegible Next está diseñada para personas con baja visión: recomendada para
-            el texto.
+            Red Hat Display es la tipografía de la propuesta del proyecto. Atkinson Hyperlegible
+            Next está diseñada para personas con baja visión y es una buena alternativa para el
+            texto.
           </p>
         </section>
 

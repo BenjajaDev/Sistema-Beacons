@@ -42,8 +42,8 @@ Las debe tomar el equipo. Mientras tanto se mantiene lo ya existente.
 
 | Decisión                        | Opciones                                                                                              | Estado y recomendación                                                                                                                       |
 | ------------------------------- | ----------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------- |
-| Tipografías                     | Atkinson Hyperlegible (actual) frente a Glacial Indifference, Garet y Red Hat Display del documento   | **Abierta.** Se conserva Atkinson. Glacial y Garet no se pueden instalar como paquete y su licencia debe revisarse. Red Hat Display sí, para títulos. |
-| Azul Claro                      | `#9DC2F7` (app) o `#79ACF0` (documento)                                                               | **Abierta.** Se conserva `#9DC2F7`. `#79ACF0` da 2,3:1 sobre blanco: solo decorativo. Si se cambia, se cambia también en la app.              |
+| Tipografías                     | Atkinson Hyperlegible (anterior) frente a Glacial Indifference, Garet y Red Hat Display del documento | **Decidida: la identidad del documento.** Red Hat Display ya está; Glacial Indifference y Garet esperan sus archivos con licencia ([guía](tipografias.md)). |
+| Azul Claro                      | `#9DC2F7` (app anterior) o `#79ACF0` (documento)                                                      | **Decidida: `#79ACF0`**, en la app y en la web. El documento lo reserva para decoración y fondos oscuros, que es como lo usa el tema oscuro. |
 | Recursos: ¿subir PDF o enlazar? | Subir al sitio o enlazar a un repositorio institucional (DOI)                                         | **Resuelta por defecto, reversible:** se admiten las dos (PDF, DOI o enlace; al menos uno). Ver paso 5.                                      |
 | Boletín                         | Guardar suscriptores en la base propia o conectar un servicio externo                                 | **Resuelta por defecto, reversible:** base propia, con consentimiento y baja. Falta confirmar por correo y la revisión legal. Ver paso 7.    |
 
@@ -95,7 +95,7 @@ Siguen abiertas las cuatro decisiones del apartado 4 (tipografías, azul claro, 
 
 **Terminada.** Documentada en la [bitácora](bitacora.md), pasos 5 a 8: repositorio de recursos (PDF, DOI o enlace), galería de fotos, boletín con consentimiento y baja, y kit de prensa.
 
-Las decisiones abiertas de esta etapa se tomaron con la opción que no cierra puertas, a falta de respuesta del equipo. Se pueden cambiar sin perder datos.
+Las decisiones de esta etapa quedaron así: **recursos** (el equipo sube los PDF por ahora) y **boletín** (se guarda en la base propia), confirmadas por el equipo; ambas se pueden cambiar sin perder datos.
 
 Antes de publicar, falta que el equipo, desde el panel:
 
@@ -106,4 +106,4 @@ Antes de publicar, falta que el equipo, desde el panel:
 
 **Quedó fuera:** los videos de la galería (exigen subtítulos y audiodescripción), un visor ampliado de fotos y el envío de correos desde el sitio.
 
-Siguen abiertas las decisiones de **tipografías** y de **azul claro**; la etapa 3 (contenido real, dominio, revisión con lector de pantalla y difusión) no se empezó.
+La identidad del documento (azul claro y tipografías) quedó decidida; ver el [paso 9](bitacora.md). La etapa 3 (contenido real, dominio, revisión con lector de pantalla y difusión) no se empezó.

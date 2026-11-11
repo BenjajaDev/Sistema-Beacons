@@ -134,7 +134,7 @@ Garantías que impone el servidor, no solo la interfaz:
 - **Voz:** «Escuchar esta sección» lee la audiodescripción de las secciones principales (Portada, Qué es SIGNAL, Nosotros en el inicio, Quiénes somos y Contacto), editable en el panel. Cada imagen con texto alternativo tiene un botón para escucharlo. Usa la voz del dispositivo (Web Speech API, `es-CL`); suena una lectura a la vez y sin voz en el navegador los botones no aparecen.
 - **Componentes accesibles** en `src/shared/ui`: botones con estado de carga, campos con label y error asociados, resumen de errores, avisos con regiones `aria-live`, diálogo de confirmación sobre `<dialog>` nativo, y estados de carga, vacío y error. Cada uno tiene tests con axe-core.
 - **Animaciones** de 150 a 300 ms. Con `prefers-reduced-motion` se desactivan todas.
-- **Fuentes autoalojadas** (Atkinson Hyperlegible Next y Bricolage Grotesque): sin dependencia de Google Fonts y disponibles offline.
+- **Fuentes autoalojadas** (Red Hat Display, de la propuesta; Atkinson Hyperlegible Next y Bricolage Grotesque quedan como opciones): sin dependencia de Google Fonts y disponibles offline.
 
 ## Landing y PWA
 

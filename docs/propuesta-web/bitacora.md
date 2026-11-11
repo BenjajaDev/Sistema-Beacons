@@ -293,3 +293,27 @@ El equipo no respondió las decisiones abiertas de la etapa 2 y pidió empezar. 
 - El e2e de alto contraste con la fuente para dislexia detectó **46 px de desborde horizontal a 320 px** en `/recursos`: el buscador no encogía. Se agregó `min-width: 0` al campo. De paso, con seis enlaces en el menú se ajustó el relleno de la barra de navegación en escritorio para que quepan en una fila con esa fuente (más ancha).
 - Una prueba del panel descargaba el CSV y daba de baja a la primera persona de la lista, no a la que acababa de crear; ahora busca su propia fila.
 - Otra vez el espacio perdido ante un texto oculto («Logotipo para fondo claro(se abre…»): lo detectó la prueba con el nombre accesible exacto y se corrigió. Ya son tres veces en la etapa; está en las trampas de `CLAUDE.md`.
+
+---
+
+# Identidad del documento
+
+## Paso 9: azul claro y tipografías de la propuesta
+
+**Decisiones del equipo.** «Prioriza la identidad del documento», «el azul que plantea el documento», «los recursos los subimos nosotros, los PDF» y «el boletín lo guardamos en nuestra base». Las dos últimas coinciden con lo que ya estaba hecho (pasos 5 y 7); las dos primeras cambian la identidad visual.
+
+**Azul Claro `#79ACF0`.**
+
+- Reemplaza a `#9DC2F7` en **los dos lados**, en el mismo cambio: `SignalColors.kt` (`BlueLight`) en la app Android y `DEFAULT_PALETTE` en la web, más `tokens.css`, `offline.html` (de ahí salen `404.html` y `sin-servidor.html`) y `gen-icons.mjs`. Se regeneraron los íconos de la PWA y `theme-default.css`.
+- El documento lo describe como «bajo contraste para texto sobre blanco: reservar para decoración y contenedores oscuros». En el sitio solo se usa sobre fondos oscuros (texto, enlaces y foco del tema oscuro), donde da más de 7:1; `checkPaletteContrast` sigue pasando.
+- **Migración `20261113120000_identidad_del_documento`:** actualiza las bases existentes, pero **solo** si siguen con el valor anterior (`#9DC2F7`, o las fuentes por defecto de antes). Un color o una fuente que el equipo eligió a mano no se toca. Sin esta migración habría que pulsar «Volver a los colores y tipografías por defecto» en cada base.
+
+**Tipografías.**
+
+- **Red Hat Display** (licencia libre, autoalojada, variable con cursiva) pasa a ser la fuente del texto, como pide el documento, y por ahora también de los títulos. Atkinson Hyperlegible Next y Bricolage Grotesque siguen disponibles en Identidad visual; la de dislexia no cambia.
+- **Glacial Indifference** (títulos) y **Garet** (subtítulos y botones) **no se pudieron incorporar**: no están en npm y descargarlas sin ver su licencia no es una opción. Quedaron documentadas, con los pasos exactos, en [tipografías](tipografias.md). Hace falta que el equipo aporte los archivos con licencia de uso web.
+- El cuerpo (17 px) y el interlineado (1,6) ya eran los del documento; los títulos usan escalas fluidas que contienen sus rangos.
+
+**Cómo se comprobó.** Batería completa en verde (612, 114 y 43 pruebas, con el chequeo de contraste de la paleta), e2e completo (53 pruebas, con axe en claro, oscuro y alto contraste) y Lighthouse móvil en seis páginas: rendimiento 97 a 98 y accesibilidad 100.
+
+**Pendiente del equipo.** Los archivos con licencia de Glacial Indifference y Garet (ver [tipografías](tipografias.md)). La app Android debe recompilarse para tomar el nuevo `BlueLight`.

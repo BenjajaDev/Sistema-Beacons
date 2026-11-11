@@ -25,7 +25,7 @@ object SignalColors {
     /** `--marca-azul` / `--primary` del CMS. */
     val Blue         = Color(0xFF004AAD)
     /** `--titulo` en tema oscuro del CMS: azul claro para acentos sobre fondo oscuro. */
-    val BlueLight    = Color(0xFF9DC2F7)
+    val BlueLight    = Color(0xFF79ACF0)
     /** Azul de marca al 8% sobre blanco, igual que `--primary-suave` del CMS. */
     val BluePale     = Color(0xFFEBF1F8)
     /** `--borde` (claro) del CMS: borde cálido, no azul. */
